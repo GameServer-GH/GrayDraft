@@ -1,0 +1,26 @@
+name: CI Worker
+
+on:
+  push:
+    paths:
+      - 'internal/worker/**'
+      - 'docs/testing/agent-reliability-golden-cases.md'
+      - '.github/workflows/ci-worker.yml'
+  pull_request:
+    paths:
+      - 'internal/worker/**'
+      - 'docs/testing/agent-reliability-golden-cases.md'
+      - '.github/workflows/ci-worker.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r internal/worker/requirements.txt
+      - run: cd internal/worker && python -m pytest -q
+      - name: Agent reliability golden cases
+        run: cd internal/worker && python -m pytest -q tests/test_cache_purge.py

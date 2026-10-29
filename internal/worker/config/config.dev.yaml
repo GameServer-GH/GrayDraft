@@ -1,0 +1,77 @@
+app:
+  name: graydraft-worker
+  env: development
+
+http:
+  port: 18001
+
+database:
+  host: postgres
+  port: 5432
+  user: graydraft_admin
+  password: dev_password_123
+  name: graydraft_kb
+  sslmode: disable
+
+redis:
+  host: redis
+  port: 6379
+  password: dev_redis_pass
+  db: 0
+
+cache:
+  enabled: true
+
+answer_cache:
+  enabled: true
+
+nats:
+  url: nats://nats:4222
+  ugc_subject: graydraft.ugc.ingest
+  enabled: true
+  jetstream:
+    enabled: true
+    stream: GRAYDRAFT_UGC
+    subjects:
+      - graydraft.ugc.ingest
+    storage: file
+    max_age_hours: 168
+    max_bytes: 1073741824
+    replicas: 1
+    dlq_stream: GRAYDRAFT_UGC_DLQ
+    dlq_subject: graydraft.ugc.dlq
+    dlq_subjects:
+      - graydraft.ugc.dlq
+    consumer: graydraft-worker-ugc
+    max_deliver: 5
+    ack_wait_seconds: 120
+    fetch_batch: 5
+    fetch_timeout_seconds: 5
+
+chunking:
+  size: 512
+  overlap: 64
+
+embedding:
+  dim: 1024
+  model: text-embedding-v4
+  gateway_url: http://gateway:18002
+
+rerank:
+  model: qwen3-rerank
+  use_api: true
+  fallback_lexical: true
+  l1_top_n: 15
+  l2_top_n: 5
+
+quality_gate:
+  min_length: 20
+  max_length: 50000
+  local_model_url: http://vllm-local:8000
+
+qa:
+  max_pairs: 5
+
+enrichment:
+  anchor_extraction_enabled: true
+  llm_model: auto

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package graydraft.core.v1;
+
+option go_package = "github.com/graydraft/gen/go/core/v1;corev1";
+
+// OrchestrationService coordinates retrieval, rerank, and LLM generation.
+service OrchestrationService {
+  rpc ChatStream(ChatRequest) returns (stream ChatChunk);
+}
+
+message ChatRequest {
+  string query = 1;
+  string kb_type = 2;
+  string session_id = 3;
+}
+
+message ChatChunk {
+  string delta = 1;
+  bool done = 2;
+}

@@ -1,0 +1,20 @@
+{
+  "kb_type": "regression_fixture",
+  "documents": [
+    {"doc_id": "c63de565-7b6c-523e-a059-b7f009445f44", "title": "index_ready 状态说明", "content": "解释文档何时可被检索。"},
+    {"doc_id": "1e77c99f-c8d4-5741-89a4-03c925860933", "title": "InternVL 使用说明", "content": "InternVL 的视觉编码、输入长度和调用方式。"},
+    {"doc_id": "15c3473f-ffd5-58f9-a25c-dae47d3ce652", "title": "InternLM 推理参数", "content": "InternLM 的温度、上下文长度和部署参数。"},
+    {"doc_id": "ca0b0248-6ad2-5237-bd1b-3e8b46d59a51", "title": "InternVL 别名与简称", "content": "InternVL、书生多模态、internvl 指同一模型。"},
+    {"doc_id": "6a1c1868-3ea2-55f8-92e2-210010681e8f", "title": "向量检索与全文检索", "content": "介绍混合检索、RRF 和候选融合。"},
+    {"doc_id": "009a7494-8e91-5b77-80e6-ab5b1594e25d", "title": "InternVL 与 InternLM 的分工", "content": "比较多模态理解与文本推理的适用场景。"},
+    {"doc_id": "86671b6e-f07e-54b4-942f-575f5f9a5bbd", "title": "实验室日志", "content": "与模型文档无关的普通文本。"}
+  ],
+  "cases": [
+    {"id": "exact-proper-name", "query": "InternVL 使用说明", "expected_doc_ids": ["1e77c99f-c8d4-5741-89a4-03c925860933"], "scenario": "精确专名"},
+    {"id": "alias-short-name", "query": "书生多模态怎么调用", "expected_doc_ids": ["1e77c99f-c8d4-5741-89a4-03c925860933", "ca0b0248-6ad2-5237-bd1b-3e8b46d59a51"], "scenario": "别名/简称"},
+    {"id": "chinese-natural", "query": "什么是 index_ready", "expected_doc_ids": ["c63de565-7b6c-523e-a059-b7f009445f44"], "scenario": "中文自然语言"},
+    {"id": "concept", "query": "混合检索如何融合全文和向量", "expected_doc_ids": ["6a1c1868-3ea2-55f8-92e2-210010681e8f"], "scenario": "概念型问题"},
+    {"id": "multi-entity", "query": "InternVL 和 InternLM 分别做什么", "expected_doc_ids": ["009a7494-8e91-5b77-80e6-ab5b1594e25d"], "scenario": "多实体"},
+    {"id": "no-answer", "query": "不存在的隐藏超参数默认值是多少", "expected_doc_ids": [], "scenario": "无答案"}
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "graydraft",
+  "outputfilename": "GrayDraft",
+  "frontend:dir": ".",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "http://localhost:5173",
+  "author": {
+    "name": "GrayDraft"
+  },
+  "info": {
+    "productName": "GrayDraft",
+    "productVersion": "0.1.0",
+    "copyright": "",
+    "comments": "GrayDraft Web — see docs/init"
+  },
+  "nsisType": "multiple",
+  "obfuscated": false,
+  "garbleargs": ""
+}

@@ -1,0 +1,31 @@
+/* 毛玻璃；不支持 backdrop-filter 时由 tokens 降级 */
+@supports not (backdrop-filter: blur(1px)) {
+  :root {
+    --glass-blur: 0px;
+  }
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: var(--shadow-float-md);
+}
+
+.glass-panel--solid {
+  --glass-blur: 0px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-float-sm);
+}
+
+.glass-chip {
+  display: flex;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 12px;
+  box-shadow: var(--shadow-float-sm);
+}

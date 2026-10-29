@@ -1,0 +1,30 @@
+name: CI Core
+
+on:
+  push:
+    paths:
+      - 'internal/core/**'
+      - 'pkg/gocommon/**'
+      - 'protos/**'
+      - 'docs/testing/agent-reliability-golden-cases.md'
+      - '.github/workflows/ci-core.yml'
+  pull_request:
+    paths:
+      - 'internal/core/**'
+      - 'pkg/gocommon/**'
+      - 'docs/testing/agent-reliability-golden-cases.md'
+      - '.github/workflows/ci-core.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - run: cd internal/core && go test ./...
+      - name: Agent reliability golden cases
+        run: |
+          cd internal/core
+          go test ./service/cache ./service/confidence ./service/retriever ./service/textutil ./service/ugc

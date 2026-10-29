@@ -1,0 +1,18 @@
+app:
+  name: graydraft-ops
+  env: development
+
+http:
+  port: 18003
+
+evaluation:
+  sample_min: 50
+  sample_max: 200
+  judge_model: local-qwen-7b
+
+auto_healer:
+  faithfulness_threshold: 0.7
+  consecutive_days: 3
+
+core:
+  url: http://core:18080

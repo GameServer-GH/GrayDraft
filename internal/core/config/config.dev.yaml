@@ -1,0 +1,184 @@
+app:
+  name: graydraft-core
+  env: development
+
+http:
+  port: 18080
+
+grpc:
+  port: 19090
+
+database:
+  host: postgres
+  port: 5432
+  user: graydraft_admin
+  password: dev_password_123
+  name: graydraft_kb
+  sslmode: disable
+
+classifier:
+  enabled: true
+  llm_enabled: true
+  global_boost_weight: 0.35
+  weights:
+    proper_noun:
+      fulltext: 0.78
+      vector: 0.22
+    fact:
+      fulltext: 0.58
+      vector: 0.42
+    concept:
+      fulltext: 0.22
+      vector: 0.78
+    hybrid:
+      fulltext: 0.45
+      vector: 0.55
+
+retrieval:
+  default_top_k: 10
+  max_top_k: 50
+  rrf_constant_k: 60
+  vector_weight: 0.5
+  fulltext_weight: 0.5
+  structured_vector_weight: 0.35
+  auto_embed: true
+  rerank_enabled: true
+  rerank_l1_pool: 50
+  rerank_l1_top_n: 15
+  rerank_l2_top_n: 5
+  semantic_4d_filter_enabled: true
+  semantic_4d_llm_enabled: true
+  semantic_4d_strict_filter: false
+  semantic_4d_entity_strict: false
+  rerank_skip_min_score: 0.78
+
+model_gateway:
+  url: http://gateway:18002
+  timeout_seconds: 10
+  stream_timeout_seconds: 300
+  embedding_dim: 1024
+  embedding_model: text-embedding-v4
+  llm_model_fast: intern-s1-mini
+  llm_model: intern-s2
+  rerank_model: qwen3-rerank
+
+chat:
+  max_context_chunks: 5
+  search_only_fallback: true
+  answer_self_check: true
+  feedback_downvote_penalty: 0.12
+  feedback_upvote_boost: 0.08
+  feedback_delete_below: 0.35
+
+ai_worker:
+  url: http://worker:18001
+  timeout_seconds: 15
+
+nats:
+  url: nats://nats:4222
+  enabled: true
+  ugc_subject: graydraft.ugc.ingest
+  connect_timeout_seconds: 5
+  jetstream:
+    enabled: true
+    stream: GRAYDRAFT_UGC
+    # 勿用 graydraft.ugc.>：会与 DLQ subject graydraft.ugc.dlq 重叠导致建流失败
+    subjects:
+      - graydraft.ugc.ingest
+    storage: file
+    max_age_hours: 168
+    max_bytes: 1073741824
+    replicas: 1
+    dlq_stream: GRAYDRAFT_UGC_DLQ
+    dlq_subject: graydraft.ugc.dlq
+
+ugc:
+  sync_fallback: true
+
+smart_import:
+  min_confidence: 0.55
+
+redis:
+  host: redis
+  port: 6379
+  password: dev_redis_pass
+  db: 0
+
+cache:
+  enabled: true
+  redis_enabled: true
+  l3_enabled: true
+  similarity_threshold: 0.92
+  ttl_seconds: 3600
+  l1_max_items: 10000
+  semantic_scan_limit: 32
+  semantic_index_max: 200
+  entity_pool_ttl_seconds: 3600
+
+answer_cache:
+  enabled: true
+  redis_enabled: true
+  ttl_seconds: 1800
+  l1_max_items: 5000
+
+observability:
+  metrics_enabled: true
+  otel_enabled: true
+  otel_endpoint: ""          # 空则 stdout；生产设 OTEL_EXPORTER_OTLP_ENDPOINT
+  otel_service_name: graydraft-core
+
+# Console Admin JWT（JWT_SECRET 由 deploy/config/dev/.env.core 注入）
+auth:
+  admin_user: admin
+  admin_password: dev_admin_pass
+  token_ttl_hours: 24
+
+budget:
+  enabled: false
+  daily_chat_limit: 10000
+  daily_token_limit: 0
+
+global_index:
+  auto_refresh_hours: 6
+  refresh_concurrent: true
+
+storage_tier:
+  cold_after_days: 90
+  exclude_cold_default: true
+
+ragops:
+  enabled: true
+  strike_days: 3
+  strike_threshold: 3
+  quality_below: 0.45
+  default_action: rechunk
+
+# 视觉抽取走书生 internvl-latest。Key 用 INTERN_API_KEY 或 MULTIMODAL_API_KEY。
+multimodal:
+  enabled: true
+  base_url: https://chat.intern-ai.org.cn/api/v1
+  vl_plus_model: internvl-latest
+  vl_max_model: internvl-latest
+  max_file_bytes: 12582912
+  timeout_seconds: 120
+  force_vlm_only: true
+  chain_vlm_enabled: true
+  doc_intel_enabled: false
+  doc_intel_model: doc-ocr
+
+# 工作区 4D Mapping 增量演进（候选区 + 定期压缩）
+taxonomy_evolve:
+  enabled: true
+  blueprint_enabled: true
+  blueprint_validator_enabled: true
+  blueprint_min_docs: 5
+  embed_align_min: 0.85
+  label_birth_doc_count: 8
+  backfill_batch_size: 80
+  candidate_promote_doc_count: 5
+  compress_candidate_threshold: 20
+  max_keywords_per_label: 10
+  similarity_merge_min: 0.85
+  similarity_distinct_max: 0.5
+  llm_merge_enabled: true
+  compress_enabled: true

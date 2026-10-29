@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package graydraft.gateway;
+
+option go_package = "github.com/graydraft/gen/go/gateway;gatewayv1";
+
+service InferenceService {
+  rpc Embed(EmbedRequest) returns (EmbedResponse);
+  rpc Complete(CompleteRequest) returns (stream CompleteChunk);
+}
+
+message EmbedRequest {
+  repeated string texts = 1;
+  string model = 2;
+}
+
+message EmbedResponse {
+  repeated Embedding vectors = 1;
+}
+
+message Embedding {
+  repeated float values = 1;
+}
+
+message CompleteRequest {
+  string model = 1;
+  string prompt = 2;
+}
+
+message CompleteChunk {
+  string delta = 1;
+  bool done = 2;
+}

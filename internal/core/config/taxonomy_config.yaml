@@ -1,0 +1,33 @@
+# Universal scaffold (cold-start only). No industry-specific seeds — per-workspace Blueprint is authoritative.
+# Override: env GRAYDRAFT_TAXONOMY_CONFIG
+
+default_domain: universal
+
+domains:
+  universal:
+    aliases: ["通用", "知识库", "general"]
+    detect_keywords: []
+    scenes:
+      - label: 基础介绍
+        keywords: ["介绍", "概述", "是什么", "什么是", "聊聊", "讲讲"]
+      - label: 概念解释
+        keywords: ["概念", "原理", "含义", "定义", "理解"]
+      - label: 操作步骤
+        keywords: ["怎么", "如何", "步骤", "流程", "配置", "设置"]
+      - label: 故障排查
+        keywords: ["故障", "报错", "无法", "失败", "error", "问题"]
+      - label: Q&A
+        keywords: ["吗", "？", "?", "问答"]
+    styles:
+      - label: 教程说明
+        keywords: ["教程", "指南", "汇总", "说明"]
+      - label: 步骤说明
+        keywords: ["怎么", "如何", "步骤", "流程"]
+      - label: 概念解释
+        keywords: ["是什么", "什么是", "介绍", "概念"]
+      - label: Q&A
+        keywords: ["吗", "？", "?"]
+      - label: 对比表
+        keywords: ["对比", "区别", "vs"]
+      - label: 时间表
+        keywords: ["时间", "日程", "几点", "时间表"]

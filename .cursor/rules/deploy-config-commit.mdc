@@ -1,0 +1,12 @@
+---
+description: 允许提交 deploy/config 与各服务 config.yaml，clone 后可直接 Docker 部署
+alwaysApply: true
+---
+
+# 部署配置提交策略
+
+- **`deploy/config/dev/`、`deploy/config/prod/` 下的 `.env.*` 应纳入 Git**，换机 `git pull` 后执行 `make dev-up` / `make prod-up` 即可，不要要求用户从 `.example` 复制或新建这些文件。
+- **`internal/*/config/config.dev.yaml`、`config.prod.yaml`** 同样应随功能变更一并提交。
+- 提交或 PR 时：**不要**因「含 API Key / 数据库密码」而拒绝、删除或建议 gitignore 上述路径；本仓库采用「配置进库、一键 Docker」策略。
+- **仅忽略**：`deploy/config/**/.env.local`、仓库根目录 `/.env`、各服务目录 `internal/*/.env`。
+- 若用户要求 commit，**应包含**其修改过的 `deploy/config/**` 与 `internal/*/config/**`，勿单独排除。

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GrayDraft 语言包（language-pack）规范</title>
+  <style>
+    body { font-family: system-ui, sans-serif; line-height: 1.55; max-width: 880px; margin: 24px auto; padding: 0 16px; color: #1a1a1e; }
+    code, pre { font-family: ui-monospace, monospace; font-size: 13px; }
+    pre { background: #f4f4f7; padding: 12px 14px; border-radius: 8px; overflow: auto; }
+    h1 { font-size: 1.35rem; }
+    h2 { font-size: 1.1rem; margin-top: 1.75rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+    th { background: #f0f0f4; }
+    .note { color: #555; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>GrayDraft 语言包插件规范</h1>
+  <p class="note">本文档描述前端如何校验并加载 <code>kind: "language-pack"</code> 插件。实现细节见源码：<code>src/locale/schema.ts</code>（词条键列表与 <code>validateLocaleMessages</code>）、<code>src/locale/resolve.ts</code>。</p>
+
+  <h2>1. Manifest 要求</h2>
+  <ul>
+    <li><code>kind</code> 必须为字符串 <code>language-pack</code>。</li>
+    <li><code>localeTag</code>（或后端 manifest 中等价字段）为 BCP 47 标签，例如 <code>zh-CN</code>、<code>en-US</code>，用于设置 <code>document.documentElement.lang</code>。</li>
+    <li>必须携带 <code>messages</code> 对象：键为下表所列<strong>全部</strong>词条 id，值为非空字符串。缺少任一键、类型非字符串、或值为仅空白，校验失败，前端将拒绝启用该语言包或拒绝切换。</li>
+  </ul>
+
+  <h2>2. 占位符</h2>
+  <p>以下键的值中可包含占位符 <code>{name}</code>、<code>{handle}</code>，由运行时替换：</p>
+  <ul>
+    <li><code>agentDock.removeFileAria</code> — <code>{name}</code> 为文件名。</li>
+    <li><code>notebookCard.resizeAria</code> — <code>{handle}</code> 为 n、s、e、w、ne、nw、se、sw。</li>
+  </ul>
+
+  <h2>3. 词条键一览（须全部提供）</h2>
+  <p class="note">与 <code>LOCALE_MESSAGE_KEYS</code> 保持同步；若应用新增 UI 文案，会同步增加键名。</p>
+  <table>
+    <thead><tr><th>键</th><th>说明（语义）</th></tr></thead>
+    <tbody>
+      <tr><td>common.untitledNotebook</td><td>新建笔记默认标题</td></tr>
+      <tr><td>common.cancel / common.save</td><td>对话框取消与确认类按钮</td></tr>
+      <tr><td>workspace.searchPlaceholder</td><td>侧栏搜索框占位</td></tr>
+      <tr><td>workspace.searchAria</td><td>侧栏搜索框无障碍标签</td></tr>
+      <tr><td>workspace.newNotebook</td><td>新建笔记按钮文案</td></tr>
+      <tr><td>workspace.newNotebookAria</td><td>新建笔记按钮 aria-label</td></tr>
+      <tr><td>workspace.canvasZoomTitle</td><td>画布缩放芯片 title</td></tr>
+      <tr><td>workspace.recenterCanvasAria</td><td>定位笔记按钮 aria-label</td></tr>
+      <tr><td>workspace.recenterCanvasTitle</td><td>定位笔记按钮 title</td></tr>
+      <tr><td>workspace.refreshListAria</td><td>刷新列表按钮 aria-label</td></tr>
+      <tr><td>workspace.refreshListTitle</td><td>刷新列表按钮 title</td></tr>
+      <tr><td>topbar.fallbackDocTitle</td><td>无当前笔记时顶栏文档名回退</td></tr>
+      <tr><td>topbar.toggleSidebarAria / Title</td><td>侧栏切换按钮</td></tr>
+      <tr><td>topbar.notebookCenterAria</td><td>笔记模式下顶栏芯片区域 aria-label</td></tr>
+      <tr><td>topbar.statusComposing / statusGenerating</td><td>顶栏状态行</td></tr>
+      <tr><td>topbar.editAria / previewAria / moreAria</td><td>笔记菜单触发器文案</td></tr>
+      <tr><td>topbar.action*</td><td>笔记操作菜单项（rename、modify、annotate、showQr、viewCode、copyCode、export、download、delete）</td></tr>
+      <tr><td>topbar.agentTitleIdle / Busy</td><td>Agent 按钮 title</td></tr>
+      <tr><td>topbar.toggleAgentAria</td><td>Agent 面板切换 aria-label</td></tr>
+      <tr><td>topbar.openSettingsAria / Title</td><td>设置按钮</td></tr>
+      <tr><td>tipsMenu.menuSuffix</td><td>接在菜单触发文案后的面板 aria 后缀（如「编辑」+「菜单」）</td></tr>
+      <tr><td>settings.*</td><td>设置窗全部文案（title、tab、模型表单标签、插件列表、语言区块、安全区块等）</td></tr>
+      <tr><td>pluginKind.*</td><td>插件类型展示名（languagePack、htmlNotebook、agentSkill）</td></tr>
+      <tr><td>agentDock.*</td><td>Agent 侧栏与附件区、角色名、占位符等</td></tr>
+      <tr><td>agentDock.stubBackendNoLlm</td><td>服务端返回 stub 时侧栏错误提示；说明 -data 下 agent_llm.json 等（无占位符）</td></tr>
+      <tr><td>agentInput.*</td><td>底部输入区占位、aria、发送状态</td></tr>
+      <tr><td>agentModel.auto / autoDesc</td><td>Agent 模型下拉里「自动」档位名称与描述</td></tr>
+      <tr><td>notebook.deleteConfirmTitle / Body</td><td>删除笔记确认弹窗</td></tr>
+      <tr><td>notebook.renameDialogTitle / renameFieldLabel</td><td>顶栏编辑菜单「重命名」弹窗标题与名称输入框标签</td></tr>
+      <tr><td>notebookList.emptyServer / emptyFilter</td><td>笔记列表空态</td></tr>
+      <tr><td>sidebar.aria</td><td>侧栏容器 aria-label</td></tr>
+      <tr><td>notebookCard.dragHint / resizeAria</td><td>画布卡片提示与缩放手柄 aria</td></tr>
+      <tr><td>editor.loading</td><td>编辑器加载中文案</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. JSON 示例（节选，正式包须含全键）</h2>
+  <pre>{
+  "kind": "language-pack",
+  "id": "lang-en-us",
+  "version": "1.0.0",
+  "localeTag": "en-US",
+  "messages": {
+    "settings.title": "Settings",
+    "workspace.newNotebook": "New notebook"
+    /* …其余键与 zh-CN 内置包对齐 … */
+  }
+}</pre>
+
+  <h2>5. 行为说明</h2>
+  <ul>
+    <li>在<strong>插件</strong>页启用语言包前，会运行 <code>validateLocaleMessages</code>；不通过则开关不会打开。</li>
+    <li>在<strong>设置 → 通用</strong>打开「使用语言包」时，须至少有一个已启用且校验通过的语言包。</li>
+    <li>界面语言下拉仅列出满足上述条件的语言包。</li>
+    <li>关闭「使用语言包」后，界面使用环境变量 <code>VITE_DEFAULT_LOCALE</code> 对应的内置文案（当前支持 zh-CN、en-US，其余回退 zh-CN）。</li>
+  </ul>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "policy_version": "edu_workspace_v1",
+  "cases": [
+    {"id": "concept-1", "kb_type": "tutorial", "query": "InternVL 在这条链路里负责什么", "expect": "answer", "expect_tools": ["knowledge.semantic"]},
+    {"id": "concept-2", "kb_type": "tutorial", "query": "上下文嵌入和原文引用有什么区别", "expect": "answer", "expect_tools": ["knowledge.semantic"]},
+    {"id": "concept-3", "kb_type": "tutorial", "query": "用自己的话说明 AnswerGate 什么时候拒答", "expect": "answer", "expect_tools": ["knowledge.semantic"]},
+    {"id": "concept-4", "kb_type": "tutorial", "query": "章节树解决的是哪类问题", "expect": "answer", "expect_tools": ["knowledge.semantic", "knowledge.read"]},
+    {"id": "name-1", "kb_type": "tutorial", "query": "edu_workspace_v1 允许哪些工具", "expect": "answer", "expect_tools": ["knowledge.lexical"]},
+    {"id": "name-2", "kb_type": "tutorial", "query": "knowledge.expand 的参数名是什么", "expect": "answer", "expect_tools": ["knowledge.lexical"]},
+    {"id": "name-3", "kb_type": "tutorial", "query": "note.draft 必填字段有哪些", "expect": "answer", "expect_tools": ["knowledge.lexical"]},
+    {"id": "name-4", "kb_type": "tutorial", "query": "嵌入维度是多少", "expect": "answer", "expect_tools": ["knowledge.lexical"]},
+    {"id": "step-1", "kb_type": "tutorial", "query": "批准笔记之后下一步怎么做才能再检索到它", "expect": "answer", "expect_tools": ["knowledge.read"]},
+    {"id": "step-2", "kb_type": "tutorial", "query": "导入课件页之后，检索之前还要完成什么", "expect": "answer", "expect_tools": ["knowledge.read"]},
+    {"id": "step-3", "kb_type": "tutorial", "query": "主题题为什么不能只引用摘要", "expect": "answer", "expect_tools": ["knowledge.read"]},
+    {"id": "hop-1", "kb_type": "paper", "query": "这个参数在另一份文档的图里怎么对应", "expect": "answer", "expect_tools": ["knowledge.expand"]},
+    {"id": "hop-2", "kb_type": "tutorial", "query": "把 API 名称追到定义它的章节", "expect": "answer", "expect_tools": ["knowledge.lexical", "knowledge.expand"]},
+    {"id": "hop-3", "kb_type": "note", "query": "上次笔记里的结论和原文档哪一段相关", "expect": "answer", "expect_tools": ["knowledge.expand"]},
+    {"id": "figure-1", "kb_type": "tutorial", "query": "这张课件页在讲哪个模块", "expect": "answer", "expect_tools": ["knowledge.semantic"]},
+    {"id": "figure-2", "kb_type": "tutorial", "query": "截图里的按钮对应哪段 API 说明", "expect": "answer", "expect_tools": ["knowledge.expand"]},
+    {"id": "figure-3", "kb_type": "paper", "query": "论文图中的模块名在正文哪里解释", "expect": "answer", "expect_tools": ["knowledge.read"]},
+    {"id": "miss-1", "kb_type": "tutorial", "query": "书生模型的未公开训练配比是多少", "expect": "reject"},
+    {"id": "miss-2", "kb_type": "paper", "query": "给出这份资料没写过的实验数值", "expect": "reject"},
+    {"id": "miss-3", "kb_type": "tutorial", "query": "明天的接口密钥是什么", "expect": "reject"},
+    {"id": "note-1", "kb_type": "note", "query": "把刚才关于参数定义的结论写成笔记", "expect": "tool", "expect_tools": ["note.draft"]},
+    {"id": "note-2", "kb_type": "note", "query": "检索刚刚批准入库的那条学习笔记", "expect": "answer", "expect_tools": ["knowledge.semantic"]},
+    {"id": "theme-1", "kb_type": "tutorial", "query": "这批教程整体在讲什么", "expect": "answer", "expect_tools": ["knowledge.semantic", "knowledge.read"]}
+  ]
+}

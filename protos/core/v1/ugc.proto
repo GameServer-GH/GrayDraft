@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package graydraft.core.v1;
+
+option go_package = "github.com/graydraft/gen/go/core/v1;corev1";
+
+// UGCService handles community content ingestion callbacks.
+service UGCService {
+  rpc Notify(UGCNotifyRequest) returns (UGCNotifyResponse);
+}
+
+message UGCNotifyRequest {
+  string doc_id = 1;
+  string source_url = 2;
+  string kb_type = 3;
+}
+
+message UGCNotifyResponse {
+  string task_id = 1;
+  bool accepted = 2;
+}

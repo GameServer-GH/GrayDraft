@@ -1,0 +1,21 @@
+# CI / 集成测试用精简编排
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: graydraft_kb_test
+      POSTGRES_USER: graydraft_admin
+      POSTGRES_PASSWORD: test
+    ports:
+      - "25433:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "26380:6379"
+
+  nats:
+    image: nats:2.10-alpine
+    command: "-js"
+    ports:
+      - "24223:4222"

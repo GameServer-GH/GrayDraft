@@ -1,0 +1,8 @@
+[
+  {"id":"concept-internvl","category":"concept","query":"InternVL 在这条链路里负责什么","tenant_id":"tenant_edu","expected_tools":["knowledge.semantic"],"required_citations":1},
+  {"id":"name-policy","category":"lexical","query":"edu_workspace_v1 允许哪些工具","tenant_id":"tenant_edu","expected_tools":["knowledge.lexical"],"required_citations":1},
+  {"id":"read-section","category":"section","query":"把参数定义读到相邻章节","tenant_id":"tenant_edu","expected_tools":["knowledge.read"],"required_citations":1},
+  {"id":"expand-entity","category":"expand","query":"这个 API 名称在哪一节定义","tenant_id":"tenant_edu","expected_tools":["knowledge.expand"],"required_citations":1},
+  {"id":"no-answer","category":"no_answer","query":"给出资料里没写过的实验数值","tenant_id":"tenant_edu","must_refuse":true},
+  {"id":"note-write","category":"note","query":"把刚才的参数结论写成笔记","tenant_id":"tenant_edu","expected_tools":["note.draft"]}
+]

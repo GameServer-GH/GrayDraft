@@ -1,0 +1,84 @@
+# GrayDraft Prometheus alert rules (O-03 DLQ backlog).
+groups:
+  - name: graydraft_ugc
+    rules:
+      - alert: GrayDraftDLQMessagesPresent
+        expr: graydraft_dlq_messages > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: ugc
+        annotations:
+          summary: "UGC dead-letter queue has messages"
+          description: >-
+            JetStream DLQ stream GRAYDRAFT_UGC_DLQ holds {{ $value }} message(s) for at least 5 minutes.
+            Inspect Console DLQ page or GET /api/v1/admin/dlq/messages.
+
+      - alert: GrayDraftDLQBacklogHigh
+        expr: graydraft_dlq_messages >= 10
+        for: 2m
+        labels:
+          severity: critical
+          component: ugc
+        annotations:
+          summary: "UGC DLQ backlog is high"
+          description: "{{ $value }} messages in DLQ; review Worker logs and replay or discard via Admin API."
+  - name: graydraft_quality
+    rules:
+      - alert: GrayDraftNoUsefulGateSpike
+        expr: |
+          rate(graydraft_chat_retrieval_gate_total{useful="false"}[5m])
+          / (rate(graydraft_chat_retrieval_gate_total[5m]) + 0.001)
+          > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: retrieval
+        annotations:
+          summary: "Chat retrieval no-useful gate ratio exceeded 50%"n
+          description: |
+            kb_type={{ $labels.kb_type }} reason={{ $labels.reason }}.
+            Over half of recent chat retrievals are failing the useful gate.
+            Check Query4D accuracy, direct evidence pass-through, or threshold tuning.
+
+      - alert: GrayDraftWaterfallSoftAnomaly
+        expr: |
+          rate(graydraft_chat_waterfall_total{suffix="wf_soft"}[10m])
+          / (rate(graydraft_chat_waterfall_total[10m]) + 0.001)
+          > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: retrieval
+        annotations:
+          summary: "4D waterfall soft-fallback ratio exceeded 50%"n
+          description: |
+            kb_type={{ $labels.kb_type }}. A high wf_soft ratio means the
+            strict 4D filter is rejecting too many candidates. Review entity
+            extraction and domain taxonomy coverage.
+
+      - alert: GrayDraftLLMEmptyBurst
+        expr: rate(graydraft_chat_llm_empty_total[10m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: llm
+        annotations:
+          summary: "LLM returning empty answers at elevated rate"n
+          description: |
+            kb_type={{ $labels.kb_type }} chat_mode={{ $labels.chat_mode }}.
+            Empty LLM outputs may indicate prompt failures, model downtime,
+            or content truncation issues.
+
+      - alert: GrayDraftIndexLagHigh
+        expr: histogram_quantile(0.95, rate(graydraft_ugc_task_index_lag_seconds_bucket[30m])) > 120
+        for: 10m
+        labels:
+          severity: warning
+          component: ugc
+        annotations:
+          summary: "UGC task index lag P95 > 2 minutes"n
+          description: |
+            kb_type={{ $labels.kb_type }} readiness={{ $labels.readiness }}.
+            Newly ingested documents are taking too long to become queryable.
+            Check worker throughput, embedding service latency, or DB load.

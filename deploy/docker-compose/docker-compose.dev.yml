@@ -1,0 +1,221 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: graydraft-postgres-dev
+    environment:
+      POSTGRES_DB: graydraft_kb
+      POSTGRES_USER: graydraft_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dev_password_123}
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+      - ../migrations:/docker-entrypoint-initdb.d/migrations:ro
+      - ../scripts/init-db.sh:/docker-entrypoint-initdb.d/00-init.sh:ro
+    ports:
+      - "${POSTGRES_PORT:-25432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U graydraft_admin -d graydraft_kb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: graydraft-redis-dev
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-dev_redis_pass}
+    volumes:
+      - redisdata_dev:/data
+    ports:
+      - "${REDIS_PORT:-26379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_redis_pass}", "ping"]
+      interval: 5s
+      retries: 5
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: graydraft-nats-dev
+    command: "-js -m 8222 -sd /data"
+    volumes:
+      - nats_data_dev:/data
+    ports:
+      - "${NATS_CLIENT_PORT:-24222}:4222"
+      - "${NATS_MONITOR_PORT:-28222}:8222"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.103.0
+    container_name: graydraft-otel-collector-dev
+    profiles: [observability]
+    command: ["--config=/etc/otel-collector/config.yaml"]
+    volumes:
+      - ../monitoring/otel-collector/config.yaml:/etc/otel-collector/config.yaml:ro
+    ports:
+      - "${OTEL_GRPC_PORT:-24317}:4317"
+
+  vllm-local:
+    image: vllm/vllm-openai:latest
+    container_name: graydraft-vllm-dev
+    profiles: [gpu]
+    volumes:
+      - ../../internal/worker/models:/models:ro
+    command: --model /models/qwen2.5-7b-instruct --port 8000
+    ports:
+      - "${VLLM_PORT:-18000}:8000"
+
+  core:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/core.Dockerfile
+    container_name: graydraft-core-dev
+    env_file:
+      - ../config/dev/.env.core
+    environment:
+      CONFIG_PATH: /app/config/config.dev.yaml
+      AGENT_LOG_ROOT: /app
+      NATS_URL: nats://nats:4222
+      NATS_ENABLED: "true"
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-dev_redis_pass}
+      CACHE_ENABLED: "true"
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    volumes:
+      - ../../logs:/app/logs
+    ports:
+      - "${CORE_HTTP_PORT:-18080}:18080"
+      - "${CORE_GRPC_PORT:-19090}:19090"
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/worker.Dockerfile
+    container_name: graydraft-worker-dev
+    env_file:
+      - ../config/dev/.env.worker
+    environment:
+      CONFIG_PATH: /app/config/config.dev.yaml
+      DB_HOST: postgres
+      NATS_URL: nats://nats:4222
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-dev_redis_pass}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    ports:
+      - "${WORKER_PORT:-18001}:18001"
+
+  gateway:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/gateway.Dockerfile
+    container_name: graydraft-gateway-dev
+    env_file:
+      - ../config/dev/.env.gateway
+    environment:
+      CONFIG_PATH: /app/config/config.dev.yaml
+    ports:
+      - "${GATEWAY_PORT:-18002}:18002"
+
+  console:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/console.Dockerfile
+    container_name: graydraft-console-dev
+    env_file:
+      - ../config/dev/.env.console
+    ports:
+      - "${CONSOLE_PORT:-13000}:13000"
+
+  ops:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/ops.Dockerfile
+    container_name: graydraft-ops-dev
+    env_file:
+      - ../config/dev/.env.ops
+    depends_on:
+      - postgres
+      - core
+    ports:
+      - "${OPS_PORT:-18003}:18003"
+
+  graydraft:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/graydraft.Dockerfile
+    container_name: graydraft-graydraft-dev
+    env_file:
+      - ../config/dev/.env.graydraft
+    environment:
+      GRAYDRAFT_CORE_URL: http://core:18080
+      GRAYDRAFT_DATA_DIR: /data
+      AGENT_LOG_DIR: /app
+    depends_on:
+      - core
+    ports:
+      - "${GRAYDRAFT_PORT:-8787}:8787"
+    volumes:
+      - graydraft_data_dev:/data
+      - ../../logs:/app/logs
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/web.Dockerfile
+    container_name: graydraft-web-dev
+    depends_on:
+      - graydraft
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: graydraft-nginx-dev
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/dev/conf.d:/etc/nginx/conf.d:ro
+      - ../nginx/common:/etc/nginx/common:ro
+    ports:
+      - "${NGINX_HTTP_PORT:-8443}:80"
+    depends_on:
+      - core
+      - console
+      - gateway
+      - graydraft
+      - web
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: graydraft-prometheus-dev
+    profiles: [monitoring]
+    volumes:
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "${PROMETHEUS_PORT:-19091}:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: graydraft-grafana-dev
+    profiles: [monitoring]
+    environment:
+      GF_SERVER_HTTP_PORT: 13030
+    ports:
+      - "${GRAFANA_PORT:-13030}:13030"
+
+volumes:
+  pgdata_dev:
+  redisdata_dev:
+  nats_data_dev:
+  graydraft_data_dev:

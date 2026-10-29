@@ -1,0 +1,12 @@
+app:
+  name: graydraft-console
+  env: development
+
+http:
+  port: 13000
+
+core:
+  url: http://core:18080
+
+static:
+  dir: static

@@ -1,0 +1,18 @@
+app:
+  name: graydraft-ops
+  env: production
+
+http:
+  port: 18003
+
+evaluation:
+  sample_min: 50
+  sample_max: 200
+  judge_model: ${JUDGE_MODEL}
+
+auto_healer:
+  faithfulness_threshold: 0.7
+  consecutive_days: 3
+
+core:
+  url: ${CORE_URL}

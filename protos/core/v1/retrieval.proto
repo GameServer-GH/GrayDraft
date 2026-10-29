@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package graydraft.core.v1;
+
+option go_package = "github.com/graydraft/gen/go/core/v1;corev1";
+
+// RetrievalService handles adaptive hybrid retrieval.
+service RetrievalService {
+  rpc Search(SearchRequest) returns (SearchResponse);
+}
+
+message SearchRequest {
+  string query = 1;
+  string kb_type = 2;
+  int32 top_k = 3;
+}
+
+message SearchResponse {
+  repeated Chunk chunks = 1;
+}
+
+message Chunk {
+  string id = 1;
+  string content = 2;
+  float score = 3;
+  string kb_type = 4;
+}

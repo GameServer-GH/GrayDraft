@@ -1,0 +1,369 @@
+{
+  "title": "GrayDraft RAG",
+  "uid": "graydraft-rag",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Retrieval QPS",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(graydraft_retrieval_requests_total[1m]))",
+          "legendFormat": "total"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Retrieval cache hit rate",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(graydraft_retrieval_requests_total{cache_hit!=\"none\"}[5m])) / sum(rate(graydraft_retrieval_requests_total[5m]))",
+          "legendFormat": "hit_rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Retrieval P95 (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(graydraft_retrieval_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Chat answer cache hit rate",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(graydraft_chat_requests_total{answer_cache_hit!=\"none\"}[5m])) / sum(rate(graydraft_chat_requests_total[5m]))",
+          "legendFormat": "answer_hit_rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Query intent (retrieval)",
+      "type": "piechart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "sum by (query_intent) (increase(graydraft_retrieval_requests_total[1h]))",
+          "legendFormat": "{{query_intent}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "UGC notify by channel",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "sum by (channel) (rate(graydraft_ugc_notify_total[5m]))",
+          "legendFormat": "{{channel}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Chat no-useful gate",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "expr": "sum by (reason) (rate(graydraft_chat_retrieval_gate_total{useful=\"false\"}[5m]))",
+          "legendFormat": "{{reason}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "4D waterfall tiers",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "targets": [
+        {
+          "expr": "sum by (suffix) (rate(graydraft_chat_waterfall_total[5m]))",
+          "legendFormat": "{{suffix}}"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "LLM empty answers",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "targets": [
+        {
+          "expr": "sum by (chat_mode) (rate(graydraft_chat_llm_empty_total[5m]))",
+          "legendFormat": "{{chat_mode}}"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "UGC index lag P95 (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(graydraft_ugc_task_index_lag_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Chat first token latency P95 (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(graydraft_chat_first_token_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Chat fallback rate",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "targets": [
+        {
+          "expr": "sum by (reason) (rate(graydraft_chat_fallback_total[5m]))",
+          "legendFormat": "{{reason}}"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Retrieval cache lookup by level",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "targets": [
+        {
+          "expr": "sum by (level) (rate(graydraft_retrieval_cache_lookup_total[5m]))",
+          "legendFormat": "{{level}}"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Answer cache lookup by hit",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "targets": [
+        {
+          "expr": "sum by (hit) (rate(graydraft_answer_cache_lookup_total[5m]))",
+          "legendFormat": "{{hit}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "Embedding latency P95 (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(graydraft_embedding_latency_seconds_bucket[5m])) by (le, provider))",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Rerank latency P95 (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 56
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(graydraft_rerank_latency_seconds_bucket[5m])) by (le, provider))",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "title": "LLM latency P95 (s) by phase",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 64
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(graydraft_llm_latency_seconds_bucket[5m])) by (le, phase))",
+          "legendFormat": "{{phase}}"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Model token usage",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 64
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(graydraft_model_token_usage_total[5m]))",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "title": "DLQ backlog",
+      "type": "stat",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 72
+      },
+      "targets": [
+        {
+          "expr": "graydraft_dlq_messages",
+          "legendFormat": ""
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "title": "Chat P95 total (s)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 6,
+        "y": 72
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(graydraft_chat_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    }
+  ]
+}

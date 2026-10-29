@@ -1,0 +1,192 @@
+# 生产编排 — 一键部署
+# 启动: docker compose -f deploy/docker-compose/docker-compose.prod.yml --env-file deploy/config/prod/.env.ports up -d
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    env_file:
+      - ../config/prod/.env.postgres
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+      - ../migrations:/docker-entrypoint-initdb.d/migrations:ro
+      - ../scripts/init-db.sh:/docker-entrypoint-initdb.d/00-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-graydraft_admin} -d ${POSTGRES_DB:-graydraft_kb}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    env_file:
+      - ../config/prod/.env.redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-dev_redis_pass}
+    volumes:
+      - redisdata_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_redis_pass}", "ping"]
+      interval: 5s
+      retries: 5
+
+  nats:
+    image: nats:2.10-alpine
+    restart: unless-stopped
+    command: "-js -m 8222 -sd /data"
+    volumes:
+      - nats_data_prod:/data
+
+  core:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/core.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../config/prod/.env.core
+    environment:
+      CONFIG_PATH: /app/config/config.prod.yaml
+      AGENT_LOG_ROOT: /app
+      GRAYDRAFT_TOOL_RUNNER_URL: http://tool-runner:18090
+      GRAYDRAFT_TOOL_RUNNER_TOKEN: ${GRAYDRAFT_TOOL_RUNNER_TOKEN:?required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+    volumes:
+      - ../../logs:/app/logs
+
+  tool-runner:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/tool-runner.Dockerfile
+    restart: unless-stopped
+    environment:
+      GRAYDRAFT_TOOL_RUNNER_IMAGE: ${GRAYDRAFT_TOOL_RUNNER_IMAGE:-graydraft/tool-worker:latest}
+      GRAYDRAFT_TOOL_EGRESS_NETWORK: graydraft_tool_egress
+      GRAYDRAFT_TOOL_RUNNER_TOKEN: ${GRAYDRAFT_TOOL_RUNNER_TOKEN:?required}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - default
+      - tool_egress
+
+  tool-egress-proxy:
+    image: ubuntu/squid:6.10-24.10_edge
+    restart: unless-stopped
+    volumes:
+      - ../tool-egress/squid.conf:/etc/squid/squid.conf:ro
+    networks:
+      - tool_egress
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/worker.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../config/prod/.env.worker
+    environment:
+      CONFIG_PATH: config/config.prod.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  gateway:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/gateway.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../config/prod/.env.gateway
+    environment:
+      CONFIG_PATH: /app/config/config.prod.yaml
+    depends_on:
+      - nats
+
+  console:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/console.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../config/prod/.env.console
+    environment:
+      CONFIG_PATH: /app/config/config.prod.yaml
+    depends_on:
+      - core
+
+  ops:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/ops.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../config/prod/.env.ops
+    depends_on:
+      - core
+
+  graydraft:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/graydraft.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../config/prod/.env.graydraft
+    environment:
+      GRAYDRAFT_CORE_URL: http://core:18080
+      GRAYDRAFT_DATA_DIR: /data
+      AGENT_LOG_DIR: /app
+    volumes:
+      - graydraft_data_prod:/data
+      - ../../logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      core:
+        condition: service_started
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/dockerfiles/web.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - graydraft
+
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/prod/conf.d:/etc/nginx/conf.d:ro
+      - ../nginx/common:/etc/nginx/common:ro
+      - ../nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - core
+      - console
+      - gateway
+      - graydraft
+      - web
+
+volumes:
+  pgdata_prod:
+  redisdata_prod:
+  nats_data_prod:
+  graydraft_data_prod:
+
+networks:
+  tool_egress:
+    name: graydraft_tool_egress
+    internal: false

@@ -1,0 +1,76 @@
+# Binaries
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+/cmd
+/backfill-semantic4d
+/gateway
+/internal/core/gateway
+
+# Go
+vendor/
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+
+# Node
+node_modules/
+.npm
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Build / generated
+gen/
+*.pb.go
+*_pb2.py
+*_pb2_grpc.py
+
+# 仅忽略仓库根目录或各服务目录下的裸 .env（勿用全局 .env，否则会误伤 deploy/config/**/.env.*）
+/.env
+internal/*/.env
+
+# 本地私密覆盖（不提交）；正式配置见 deploy/config/{dev,prod}/.env.*
+deploy/config/**/.env.local
+**/.env.local
+
+# TLS 私钥由 make prod-up 从程序内密文写出，不提交明文
+deploy/nginx/ssl/*.key
+
+# Model weights (use Git LFS)
+internal/worker/models/*
+!internal/worker/models/.gitkeep
+
+# Logs & temp
+logs/
+*.log
+tmp/
+temp/
+
+# Docker volumes
+pgdata*/
+redisdata*/
+

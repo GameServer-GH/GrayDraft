@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package graydraft.worker;
+
+option go_package = "github.com/graydraft/gen/go/worker;workerv1";
+
+service RerankService {
+  rpc RerankL1(RerankRequest) returns (RerankResponse);
+  rpc RerankL2(RerankRequest) returns (RerankResponse);
+}
+
+message RerankRequest {
+  string query = 1;
+  repeated Candidate candidates = 2;
+}
+
+message Candidate {
+  string id = 1;
+  string text = 2;
+}
+
+message RerankResponse {
+  repeated ScoredCandidate results = 1;
+}
+
+message ScoredCandidate {
+  string id = 1;
+  float score = 2;
+}

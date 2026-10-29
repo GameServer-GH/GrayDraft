@@ -1,0 +1,46 @@
+app:
+  name: graydraft-gateway
+  env: production
+
+http:
+  port: 18002
+
+models:
+  embedding:
+    provider: dashscope
+    model: text-embedding-v4
+  llm_fast:
+    provider: intern
+    model: intern-s1-mini
+  llm:
+    provider: intern
+    model: intern-s2
+  rerank:
+    provider: dashscope
+    model: qwen3-rerank
+
+embedding:
+  dim: 1024
+  fallback_local: false
+
+llm:
+  max_tokens: 4096
+  temperature: 0.7
+  fallback_local: false
+
+rerank:
+  fallback_local: false
+
+providers:
+  deepseek:
+    enabled: true
+    base_url: https://api.deepseek.com
+  dashscope:
+    enabled: true
+    base_url: https://dashscope.aliyuncs.com/compatible-mode
+  openai:
+    enabled: false
+    base_url: https://api.openai.com
+  intern:
+    enabled: true
+    base_url: https://chat.intern-ai.org.cn/api/v1

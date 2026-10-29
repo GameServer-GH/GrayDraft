@@ -1,0 +1,9 @@
+go 1.24
+
+use (
+	./internal/core
+	./internal/gateway
+	./internal/console/backend
+	./internal/graydraft
+	./pkg/gocommon
+)

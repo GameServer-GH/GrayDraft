@@ -1,0 +1,54 @@
+app:
+  name: graydraft-worker
+  env: production
+
+http:
+  port: 18001
+
+database:
+  host: ${DB_HOST}
+  port: 5432
+  user: ${DB_USER}
+  password: ${DB_PASSWORD}
+  name: graydraft_kb
+  sslmode: require
+
+redis:
+  host: ${REDIS_HOST}
+  port: 6379
+  password: ${REDIS_PASSWORD}
+  db: 0
+
+cache:
+  enabled: true
+
+answer_cache:
+  enabled: true
+
+nats:
+  url: ${NATS_URL}
+  ugc_subject: graydraft.ugc.ingest
+  enabled: true
+
+chunking:
+  size: 512
+  overlap: 64
+
+embedding:
+  dim: 1024
+  model: text-embedding-v4
+  gateway_url: ${MODEL_GATEWAY_URL}
+
+rerank:
+  model: qwen3-rerank
+  use_api: true
+  fallback_lexical: true
+  l1_top_n: 15
+  l2_top_n: 5
+
+quality_gate:
+  min_length: 20
+  max_length: 50000
+
+qa:
+  max_pairs: 5

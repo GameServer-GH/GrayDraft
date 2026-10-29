@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package graydraft.ops;
+
+option go_package = "github.com/graydraft/gen/go/ops;opsv1";
+
+service EvaluationService {
+  rpc RunEvaluation(EvalRequest) returns (EvalResponse);
+}
+
+message EvalRequest {
+  string kb_type = 1;
+  int32 sample_size = 2;
+}
+
+message EvalResponse {
+  float avg_faithfulness = 1;
+  repeated Defect defects = 2;
+}
+
+message Defect {
+  string chunk_id = 1;
+  string reason = 2;
+}
