@@ -97,6 +97,7 @@ func (l *Launcher) Run(parent context.Context, run RunRecord, limits Limits) (Re
 			}
 		}
 	}
+	var seed []Observation
 	if memories := FuseMemoryResults(relational, semantic, 8); len(memories) > 0 {
 		var b strings.Builder
 		for _, m := range memories {
@@ -105,9 +106,15 @@ func (l *Launcher) Run(parent context.Context, run RunRecord, limits Limits) (Re
 			b.WriteString(fmt.Sprint(m.Value))
 			b.WriteString("\n")
 		}
-		run.Prompt = []byte("long_term_memory:\n" + b.String() + "\n" + string(run.Prompt))
+		// Memory is a seed observation, not part of the user prompt, so the planner
+		// cannot treat it as the question and skip retrieval.
+		seed = append(seed, Observation{
+			CallID: "long_memory",
+			Name:   "memory.long_term",
+			Output: []byte(b.String()),
+		})
 	}
-	result, err := ExecuteRunWith(ctx, l.Store, run, l.Planner, tools, limits, l.Streamer, l.Validator)
+	result, err := ExecuteRunWith(ctx, l.Store, run, l.Planner, tools, limits, l.Streamer, l.Validator, seed...)
 	if l.OnComplete != nil {
 		l.OnComplete(run, result, err)
 	}

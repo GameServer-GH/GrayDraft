@@ -1,0 +1,1696 @@
+InternLM2 Technical Report Report GitHub Issue × 
+Title: 
+Content selection saved. Describe the issue below: 
+Description: 
+
+arXiv is now an independent nonprofit! Learn more × 
+
+Back to arXiv 
+
+License: arXiv.org perpetual non-exclusive license 
+arXiv:2403.17297v1 [cs.CL] 26 Mar 2024 
+
+InternLM2 Technical Report 
+
+Zheng Cai, Maosong Cao, Haojiong Chen, Kai Chen, Keyu Chen, Xin Chen, Xun Chen, Zehui Chen, Zhi Chen, Pei Chu, Xiaoyi Dong, Haodong Duan, Qi Fan, Zhaoye Fei, Yang Gao, Jiaye Ge, Chenya Gu, Yuzhe Gu, Tao Gui, Aijia Guo, Qipeng Guo, Conghui He, Yingfan Hu, Ting Huang, Tao Jiang, Penglong Jiao, Zhenjiang Jin, Zhikai Lei, Jiaxing Li, Jingwen Li, Linyang Li, Shuaibin Li, Wei Li, Yining Li, Hongwei Liu, Jiangning Liu, Jiawei Hong, Kaiwen Liu, Kuikun Liu, Xiaoran Liu, Chengqi Lv, Haijun Lv, Kai Lv, Li Ma, Runyuan Ma, Zerun Ma, Wenchang Ning, Linke Ouyang, Jiantao Qiu, Yuan Qu, Fukai Shang, Yunfan Shao, Demin Song, Zifan Song, Zhihao Sui, Peng Sun, Yu Sun, Huanze Tang, Bin Wang, Guoteng Wang, Jiaqi Wang, Jiayu Wang, Rui Wang, Yudong Wang, Ziyi Wang, Xingjian Wei, Qizhen Weng, Fan Wu, Yingtong Xiong, Chao Xu, Ruiliang Xu, Hang Yan, Yirong Yan, Xiaogui Yang, Haochen Ye, Huaiyuan Ying, Jia Yu, Jing Yu, Yuhang Zang, Chuyu Zhang, Li Zhang, Pan Zhang, Peng Zhang, Ruijie Zhang, Shuo Zhang, Songyang Zhang, Wenjian Zhang, Wenwei Zhang, Xingcheng Zhang, Xinyue Zhang, Hui Zhao, Qian Zhao, Xiaomeng Zhao, Fengzhe Zhou, Zaida Zhou, Jingming Zhuo, Yicheng Zou, Xipeng Qiu, Yu Qiao, Dahua Lin Affiliation: Shanghai AI Laboratory Affiliation: SenseTime Group Affiliation: The Chinese University of Hong Kong Affiliation: Fudan University Email: internlm@pjlab.org.cn 
+
+Abstract 
+The evolution of Large Language Models (LLMs) like ChatGPT and GPT-4 has sparked discussions on the advent of Artificial General Intelligence (AGI). However, replicating such advancements in open-source models has been challenging. This paper introduces InternLM2, an open-source LLM that outperforms its predecessors in comprehensive evaluations across 6 dimensions and 30 benchmarks, long-context modeling, and open-ended subjective evaluations through innovative pre-training and optimization techniques. The pre-training process of InternLM2 is meticulously detailed, highlighting the preparation of diverse data types including text, code, and long-context data. InternLM2 efficiently captures long-term dependencies, initially trained on 4k tokens before advancing to 32k tokens in pre-training and fine-tuning stages, exhibiting remarkable performance on the 200k “Needle-in-a-Haystack” test. InternLM2 is further aligned using Supervised Fine-Tuning (SFT) and a novel Conditional Online Reinforcement Learning from Human Feedback (COOL RLHF) strategy that addresses conflicting human preferences and reward hacking. By releasing InternLM2 models in different training stages and model sizes, we provide the community with insights into the model’s evolution. 
+
+1 Introduction 
+
+Since the introduction of ChatGPT and GPT-4 ( OpenAI, 2023 ) , Large Language Models (LLMs) have surged in popularity across the academic and industrial spheres. Models trained on billions of tokens have demonstrated profound empathy and problem-solving capabilities, leading to widespread speculation that the era of Artificial General Intelligence (AGI) may soon be upon us. Despite this enthusiasm, the path to developing models with capabilities comparable to those of ChatGPT or GPT-4 remains elusive. The open-source community has been working diligently to bridge the gap between proprietary LLMs and their open-source counterparts. In the past year, several notable open-source LLMs, such as LLaMA ( Touvron et al., 2023a ; Touvron et al., 2023b ) , Qwen ( Bai et al., 2023a ) , Mistral ( Jiang et al., 2023 ) , and Deepseek ( Bi et al., 2024 ) , have made significant strides. In this paper, we introduce InternLM2, a new Large Language Model that outperforms the previously mentioned models. 
+
+The development of Large Language Models (LLMs) encompasses several main phases: pre-training, Supervised Fine-Tuning (SFT), and Reinforcement Learning from Human Feedback (RLHF) ( Ouyang et al., 2022 ) . Pre-training is chiefly based on leveraging a vast corpus of natural text, amassing trillions of tokens. This phase is aimed at equipping LLMs with a broad repository of knowledge and fundamental skills. The quality of data is considered the most crucial factor during pre-training. However, technical reports on LLMs ( Touvron et al., 2023a ; Touvron et al., 2023b ; Bai et al., 2023a ; Bi et al., 2024 ) in the past have seldom addressed the processing of pre-training data. InternLM2 extensively details how it prepares text, code, and long-context data for pre-training. 
+
+How to effectively extend the context length of LLMs is currently a hot research topic, since many downstream applications, such as Retrieval-Augmented Generation (RAG) ( Gao et al., 2023 ) and agents ( Xi et al., 2023 ) , rely on long contexts.
+InternLM2 first employs Group Query Attention (GQA) to enable a smaller memory footprint when inferring long sequences. In the pre-training phase, we initially train InternLM2 with 4k context texts, then transit the training corpus to high-quality 32k texts for further training. Upon completion, through positional encoding extrapolation ( LocalLLaMA, 2023 ) , InternLM2 achieves commendable performance in the “Needle-in-a-Haystack” test within 200k contexts. 
+
+Following long-context pre-training, we utilize supervised fine-tuning (SFT) and reinforcement learning from human feedback (RLHF) to ensure the model adheres well to human instructions and aligns with human values. Notably, we also construct corresponding 32k data during these processes to further improve the long-context processing capability of InternLM2. Besides, we introduce CO nditional O n L ine RLHF (COOL RLHF), which adopts a conditional reward model to reconcile diverse but potentially conflicting preferences and executes Proximal Policy Optimization (PPO) over multiple rounds to mitigate emerging reward hacking in each phase. To elucidate the impact of RLHF within the community, we also release models in their pre- and post-RLHF stages, named InternLM2-Chat-{size}-SFT and InternLM2-Chat-{size}, respectively. 
+
+Our contributions are twofold, highlighting not only the model’s exceptional performance across diverse benchmarks but also our comprehensive approach to its development in different stages. Key points include 
+
+1. 
+
+Open-Sourcing InternLM2 with Exceptional Performance: We have open-sourced models of various sizes, including 1.8B, 7B, and 20B, all of which perform well in both subjective and objective evaluations. Additionally, we have released models from different stages to facilitate community analysis of changes post-SFT and RLHF training. 
+
+2. 
+
+Designed with a 200k Context Window: InternLM2 exhibits impressive long-context performance, nearly perfectly identifying all “needles” in the “Needle-in-a-Haystack” experiment with a 200k context. Furthermore, we provide experience of training long-context LLMs across all stages, including pretraining, SFT, and RLHF. 
+
+3. 
+
+Comprehensive Data Preparation Guidance: We have elaborated on the preparation of data for LLMs, including pre-training data, domain-specific enhancement data, SFT data, and RLHF data. These details will benefit the community in better training of LLMs. 
+
+4. 
+
+Innovative RLHF Training Techniques: We introduced Conditional Online RLHF (COOL RLHF) to harmonize various preferences, significantly enhancing the performance of InternLM2 in various subjective dialogue evaluations. We have also conducted a preliminary analysis and comparison of RLHF’s subjective and objective results to offer the community insights into RLHF. 
+
+2 Infrastructure 
+
+In this part, we introduce the training framework InternEvo which was used during pretraining, SFT and RLHF. 
+
+2.1 InternEvo 
+
+We utilize InternEvo, an efficient and lightweight pretraining framework, for model training. This framework enables us to scale model training across thousands of GPUs. This is achieved through a combination of data, tensor ( Shoeybi et al., 2019 ) , sequence ( Korthikanti et al., 2023 ) , and pipeline ( Huang et al., 2019 ) parallelism. To further enhance GPU memory efficiency, InternEvo incorporates various Zero Redundancy Optimizer (ZeRO) ( Rajbhandari et al., 2020 ) strategies, significantly reducing the memory footprint required for training. In addition, to enhance hardware utilization, we incorporate the FlashAttention technique ( Dao, 2023 ) and mixed-precision training ( Narang et al., 2017 ) with BF16. 
+
+InternEvo demonstrates strong scaling performance when training InternLM across thousands of GPUs. As shown in Figure 1 , when training InternLM-7B on 8 GPUs with a global batch size of 4 million tokens, InternEvo achieves 64% Model FLOPs Utilization (MFU). Scaling up the training to 1024 GPUs, InternEvo maintains an impressive 53% MFU with the same global batch size. This level of scaling performance is particularly challenging to attain, as the batch size remains constant and the computation-to-communication ratio decreases with an increased number of GPUs. In contrast, DeepSpeed ( Rasley et al., 2020 ) only manages to achieve around 36% MFU when training the InternLM-7B on 1024 GPUs using ZeRO-1 ( Rajbhandari et al., 2020 ) and MiCS ( Zhang et al., 2022 ) . 
+
+InternEvo also exhibits strong scaling of sequence length, supporting 256,000 256,000 tokens when training LLMs of varying sizes. For instance, when training the InternLM-7B model with a sequence length of 256,000 256,000 tokens, InternEvo can achieve nearly 88% MFU. In comparison, DeepSpeed-Ulysses and Megatron-LM only reach about 65% MFU. This improvement in training performance is also observed with LLMs of larger sizes, such as models with 30 billion or 70 billion parameters. 
+
+Figure 1: Model FLOPs Utilization (MFU) of training InternLM-7B with InternEvo. We benchmark training performance using a sequence length of 4096 tokens with varying GPU numbers, and benchmark training performance on 128 GPUs with varying sequence lengths. Reducing Communication Overhead 
+
+A trade-off exists between memory utilization and communication cost in distributed LLM training. Initially, the communication cost can be effectively reduced by diminishing the communication scale. This involves limiting communications to a smaller group of GPUs, potentially within the same node, which mitigates the overall communication cost. Building upon this principle, InternEvo addresses communication challenges by implementing a suite of adaptive sharding techniques to achieve strong scaling performance ( Chen et al., 2024b ) . These include Full-Replica, Full-Sharding, and Partial-Sharding, which allow each component of the model states—parameters, gradients, and optimizer states—to independently select the most appropriate sharding approach and device mesh configuration. This flexibility facilitates a more nuanced distribution of model states across the GPU infrastructure. InternEvo also introduces an optimization framework designed to identify the most efficient sharding factors. This aims to minimize communication expenses while adhering to the memory constraints of the GPU. 
+
+Communication-Computation Overlap 
+
+Further reducing communication overhead, InternEvo strategically coordinates communication and computation to optimize overall system performance. When employing parameter sharding, the model’s entire parameters are distributed across multiple GPUs to conserve GPU memory. During each forward and backward pass of every micro-batch in a training step, InternEvo efficiently pre-fetches the complete parameter set for upcoming layers through AllGather, while concurrently computing the current layer. The generated gradients undergo synchronization within the parameter sharding group through ReduceScatter and are subsequently synchronized across parameter sharding groups using AllReduce. These communication processes are skillfully overlapped with the backward computation, maximizing efficiency in the training pipeline. In the case of optimizer state sharding, where the GPU broadcasts updated parameters within the sharding group through Broadcast, InternEvo employs a strategic overlap with the forward computation of the next training step. These innovative overlap approaches effectively balance communication overhead and computation execution time, resulting in a significant enhancement in overall system performance. 
+
+Long-Sequence Training 
+
+One of the primary challenges in long-sequence training is the trade-off between computation speed and communication overhead. InternEvo breaks down GPU memory management into a hierarchical space with four parallel dimensions—data, tensor, sequence, and pipeline—and three sharding dimensions—parameter, gradient, and optimizer state ( Chen et al., 2024a ) . We conduct a thorough analysis of memory and communication costs for each dimension, utilizing an execution simulator to identify and implement the optimal parallelization strategy. The optimal execution plan can be automatically searched based on the training scale, sequence length, model size, and batch size. With this execution plan, InternEvo exhibits the capability to handle long contexts (up to 1 million tokens) during training. InternEvo also implements memory management techniques to reduce GPU memory fragmentation, a common issue in long-sequence training scenarios. It uses a memory pool for unified memory management and introduces a defragmentation technique that proactively consolidates small memory chunks to prevent out-of-memory errors. 
+
+Fault Tolerance 
+
+We have also addressed the challenges of efficiently training LLMs in GPU datacenters, which often face issues such as frequent hardware failures, complex parallelization strategies, and imbalanced resource utilization. To tackle these issues, we conducted an in-depth characterization study of a six-month LLM development workload trace from our GPU datacenter ( Hu et al., 2024 ) . This study identified discrepancies between LLMs and previous deep learning workloads and explored resource utilization patterns and job failure impacts. Based on our analysis, we introduced two system efforts: a fault-tolerant pretraining system that enhances fault tolerance through LLM-involved failure diagnosis and automatic recovery, and a decoupled scheduling system for evaluation tasks that provides timely model performance feedback.
+In our implementation, we have incorporated an asynchronous saving mechanism that regularly archives model weights and optimizer states to distributed file and object storage at predefined intervals. Throughout the training process, each GPU first saves its model states in local storage and subsequently asynchronously uploads this data to the remote distributed storage system. This dual-step process ensures that, in the event of occasional hardware or network failures automatically detected by our system, only a minimal amount of training progress is lost. To optimize storage space, we systematically transfer these temporary model checkpoints from hot storage to cost-effective cold storage. Furthermore, our system is designed to seamlessly resume model training even when the parallelization configuration is altered, providing flexibility and continuity in the training pipeline. 
+
+Interactive Training 
+
+The efficiency of InternEvo has also been successfully demonstrated in the Reinforcement Learning from Human Feedback (RLHF) stage, where multiple LLMs are deployed for interactive training. For instance, in the Proximal Policy Optimization (PPO) process, we utilize four equally-sized models and train two of them; InternEvo enables each model to be executed at its optimal configuration. To enhance the coordination of multiple models, we have developed an innovative RLHF framework that builds upon InternEvo and Ray. This framework is characterized by its flexibility and scalability, allowing it to perform effectively at scale. It is capable of integrating with various LLM execution engines and supporting diverse algorithmic designs. For a comprehensive description of the ”Alignment” concept, please refer to Section 4 . 
+
+2.2 Model Structure 
+
+Transformer ( Vaswani et al., 2017 ) has been predominantly used as the backbone for past Large Language Models (LLMs) due to its excellent parallelization capabilities, which fully leverage the power of GPUs ( Brown et al., 2020 ; Chowdhery et al., 2023 ; Zeng et al., 2023 ) . LLaMA ( Touvron et al., 2023a ) builds on Transformer architecture by replacing LayerNorm ( Ba et al., 2016 ) with RMSNorm ( Zhang & Sennrich, 2019 ) and setting the activation function to SwiGLU ( Shazeer, 2020 ) , resulting in improved training efficiency and performance.
+Since the unveiling of LLaMA ( Touvron et al., 2023a ) , the community has vigorously engaged in augmenting the ecosystem built around the LLaMA architecture. This includes advancements in high-efficiency inference ( lla, 2023 ) and operator optimization ( Dao, 2023 ) , among others. To ensure our model, InternLM2, aligns seamlessly with this well-established ecosystem, alongside other renowned LLMs, such as Falcon ( Almazrouei et al., 2023 ) , Qwen ( Bai et al., 2023a ) , Baichuan ( Yang et al., 2023 ) , Mistral ( Jiang et al., 2023 ) , we opt to adhere to the structural design principles of LLaMA. In pursuit of enhancing efficiency, we consolidate the W k W_{k} , W q W_{q} , and W v W_{v} matrices, which has resulted in a training acceleration of over 5% during the pre-training phase. Moreover, to better support diverse tensor parallelism (tp) transformations, we have reconfigured the matrix layout. Rather than stacking the W k W_{k} , W q W_{q} , and W v W_{v} matrices in a straightforward manner, we adopt an interleaving approach for each head’s W k W_{k} , W q W_{q} , and W v W_{v} , as depicted in Figure 2 . This design modification facilitates the adjustment of the tensor parallel size through either splitting or concatenating the matrices along their last dimension, thereby enhancing the model’s flexibility in varying distributed computing environments. InternLM2 aims to infer beyond 32K context, therefore, InternLM2 series models all choose Grouped-Query Attention (GQA) ( Ainslie et al., 2023 ) , so that it can infer both in high speed and low GPU memory with very long contexts. 
+
+Figure 2: Different weight matrix layouts cause different complexity when changing the tensor parallelism (TP) size. 
+3 Pre-train 
+
+We introduce pre-training data, pre-training settings, and three pre-training phases in this part. 
+
+3.1 Pre-training data 
+
+The pre-training of LLMs is critically shaped by data, which presents a multifaceted challenge. It encompasses handling sensitive data, covering comprehensive knowledge, and balancing efficiency and quality. In this section, we will depict our data processing pipeline for preparing general domain textual data, programming language-related data, and long textual data. 
+
+3.1.1 Text Data 
+
+The text data in our pre-training dataset can be categorized by source into web pages, papers, patents, and books. To transform these sources into a pre-training dataset, we first standardize all data into a specified format, categorize them by type and language, and store them in JSON Lines (jsonl) format. Then, for all data, we apply several processing steps including rule-based filtering, data deduplication, safety filtering, and quality filtering. This results in a rich, safe, and high-quality text dataset. 
+
+Data Source Distribution 
+
+We have statistically analyzed the number of documents, data storage size, and data Bytes proportion in the pre-training dataset according to their sources, as shown in Table 1 . Among them, the Chinese and English data from web pages account for 86.46% of the total, making it the primary source. Although the data volume from other sources is relatively small, such as books and technical literature(abbreviated as techlit), the average document length is longer and the content quality is relatively higher, making them equally important. 
+
+Source Docs (M rows) Bytes (GB) Bytes-percent 
+
+en-books 0.50 220.14 1.63% 
+
+en-techlit 59.27 576.48 4.27% 
+
+en-webpages 3614.07 9129.39 67.51% 
+
+zh-books 0.71 366.82 2.71% 
+
+zh-techlit 89.59 668.19 4.94% 
+
+zh-webpages 928.94 2562.86 18.95% 
+Table 1: Summary of the pre-train data from different sources Data Process Pipeline 
+
+The data processing pipeline used in this work is shown in Figure 3 . The entire data processing pipeline first standardizes data from different sources to obtain Format data . Then, heuristic statistical rules are used for data filtering to get Clean data . Next, the Locality-Sensitive Hashing (LSH) method is used for data deduplication to obtain Dedup data . We then apply a composite safety strategy to filter the data, resulting in Safe data . We have adopted different quality filtering strategies for data from various sources, ultimately obtaining High-quality pre-training data . 
+
+Figure 3: Data Process Pipeline Data Formatting 
+
+We will detail the data processing pipeline using web page data as an example. Our web page data mainly comes from Common Crawl 1 1 1 https://commoncrawl.org/ . Firstly, we need to decompress the original Warc format files and use Trafilatura ( Barbaresi, 2021 ) for HTML parsing and main text extraction. Then, we use the pycld2 2 2 2 https://pypi.org/project/pycld2/ library for language detection and classification of the main text. Finally, we assign a unique identifier to the data and store it in jsonl (JSON lines) format and obtained Format data . 
+
+Rule-based Stage 
+
+Web page data randomly extracted from the internet often contains a large amount of low-quality data, such as parsing errors, formatting errors, and non-natural language text. A common practice is to design rule-based regularization and filtering methods to modify and filter the data, as seen in Gopher ( Rae et al., 2021 ) , C4 ( Dodge et al., 2021 ) , and RefinedWeb ( Penedo et al., 2023 ) . Based on our observations of the data, we have designed a series of heuristic filtering rules that focus on anomalies in separation and line breaks, frequency of abnormal characters, and distribution of punctuation marks. By applying these filters, we obtained Clean data . 
+
+Deduplication 
+
+A large amount of duplicate texts exist on the Internet, which can negatively impact model training. Therefore, we employed a method based on Locality-Sensitive Hashing (LSH) to perform fuzzy deduplication on the data. More specifically, we used the MinHash method ( Broder, 1997 ) , establishing signatures with 128 hash functions on the 5-gram of the documents, and using 0.7 as the threshold for deduplication. We aimed to retain the most recent data, that is, prioritizing data with larger CC dumps numbers. We obtained the Dedup data after LSH deduplication. 
+
+Safety Filtering 
+
+The internet is rife with toxic and pornographic content, the use of which for model training can negatively impact performance and increase the likelihood of unsafe content generation. Therefore, we employed a comprehensive safety strategy combining “domain blocking”, “word blocking”, “pornography classifier”, and “toxicity classifier” to filter the data. Specifically, we constructed a block domain list comprising approximately 13M unsafe domains and a block word list containing 36,289 unsafe words for preliminary data filtering. Given that word blocking might inadvertently exclude a large amount of data, we opted for a cautious approach in compiling the block word list. 
+
+To further improve the detection rate of unsafe content, we fine-tuned the BERT model using the “Toxic Comment Classification Challenge” dataset from Kaggle, resulting in a toxicity classifier. We sampled some data from Dedup data and annotated it using the Perspective API 3 3 3 https://perspectiveapi.com/ to create a pornography classification dataset. We then fine-tuned the BERT model with this dataset, yielding a pornography classifier. Finally, we used these two classifiers for secondary filtering of the data, filtering out data with scores below the threshold, resulting in Safe data . 
+
+Quality Filtering 
+
+Compared to sources such as books, papers, and patents, internet-sourced data contains a significant amount of low-quality content. Based on our observations, the primary causes for this low-quality content are twofold: 1. The internet is rife with marketing advertisements, which tend to be repetitive and carry little information. 2. Many web pages consist of lists of article abstracts or product descriptions, resulting in extracted text that is difficult to read and lacks logical coherence. 
+
+To filter out these low-quality contents, we first organized manual data annotation. For the advertisements classification task, annotators were asked to identify whether a piece of data contains advertising content (both overall and partial advertisements are marked as low quality). For the fluency classification task, annotators were asked to rate the data on four dimensions: consistency, noise, information content, and grammar, resulting in a comprehensive fluency score. We then fine-tuned the BERT model using the manually annotated data, obtaining an advertisements classifier and a fluency classifier. Finally, we used these two classifiers for secondary filtering of the data, filtering out data with scores below the threshold, resulting in High-quality pre-train data . 
+
+3.1.2 Code Data 
+
+Programming is a crucial skill for a LLM, offering support for a variety of downstream applications, such as coding assistance, software development, and building tool-use agents. Moreover, Groeneveld et al. (2024) indicate the possibility of enhancing reasoning capabilities by training on code data, as code is generally well-structured, rigorous, and predictable than natural language. 
+
+Data Source Distribution Figure 4: Statistics of code data in our pre-training corpus. 
+
+We collect data from various sources, including direct crawling from GitHub, public datasets, and online resources related to coding and programming, like Q&A forums, tutorial sites, and API documentation, the statistics is shown in Figure 4 . 
+
+Table 2 reflects the data quality assessment based on a scoring model we trained. High-quality data will have a higher sampling weight and can undergo multiple training iterations in the pre-training phase. Moderate-quality data has a normal sampling weight and is typically trained once. Low-quality data are excluded, as our empirical findings affirm that removing them is vital for optimizing model performance and ensuring training stability despite their proportion being relatively small. 
+
+High Moderate Low 
+
+Bytes (GB) Percentage Bytes (GB) Percentage Bytes (GB) Percentage 
+
+105.6 16.8% 440.1 69.9% 83.85 13.3% 
+Table 2: Statistics of code data quality based on a learnable classifier, where high-quality data will be trained multiple times, moderate-quality data will be trained once, and low-quality will be dropped. The data of low-resource programming languages will be preserved and not taken account in the statistics. Format Cleaning 
+
+All data is converted to a unified markdown format. Nevertheless, a very small fraction of the data still exhibited corrupted HTML or XML formats. We applied a set of heuristic rules to minimize these occurrences, though we did not invest too much effort in format purification. Markdown was selected for its simplicity—minimizing the token overhead for formatting—and its compatibility with interleaving code and natural language. The real format used for the pre-training is more complex, involving the concatenation of multiple code files based on their dependencies. The main idea is to utilize the interleaving data, which is pivotal for teaching the model about programming. This point is also mentioned in recent studies ( Guo et al., 2024 ) . 
+
+Data Deduplication 
+
+Deduplicating code data is similar to processing natural language except for tokenization, which impacts hyperparameter selection. For instance, Python examples use two spaces, four spaces, or a tab character to signify indentation. A conventional whitespace tokenizer, or one tailored for natural language, might mistakenly assess these samples as different data, which is inaccurate. Our insight is that an effective tokenizer is essential for applying a universal deduplication strategy. Although recent studies have explored fine-grained deduplication at the paragraph or line level, our approach remains at the file level to preserve context integrity. 
+
+Quality Filtering 
+
+Quality is a pivotal yet nebulous aspect of pre-training in LLM research, primarily due to the difficulty in quantifying its impact on model performance regarding the scale. We adopted a hybrid, multi-stage filtering process including rule- and model-based scorers. Rule-based scorers are heuristic and varied, though we discovered that code style is not a reliable quality metric and can misclassify too many codes as low-quality. For the model-based scoring, we evaluated several backbone models, training them with roughly 50,000 labeled samples. However, we observed that the correlation between scorer assessments and human judgments varied across languages, and enlarging the training set did not substantially enhance scorer accuracy. Consequently, we only employed model-based scoring for languages where the model predictions align well with human evaluations on a human-annotated validated set. 
+
+Figure 5: The pipeline of iterative refinement annotation process for a code quality classifier. 
+
+In order to obtain reliable annotations of our model-based scorer, we introduce an iterative annotation process (illustrated in Figure 5 ) to address the challenge that the definition of code quality data is vague. Identifying code that would be helpful for teaching an LLM is also non-trivial for human experts, for instance, a widely recognized code repository might be overly complex for a beginner. The proposed iterative workflow allows annotators to verify model predictions and refine the guidelines accordingly. To improve the annotation efficiency, we only ask the annotator to check the samples labeled by the scorer as high-quality and low-quality with high confidence. Besides, there is an automatic validation process in each iteration to ensure the previously annotated samples are correctly classified by the scorer, which is shown as yellow dot lines in the figure. In practice, we took three iterations to finalize our scoring model. 
+
+Dependency sorting 
+
+The training context window of InternLM2 has been expanded to 32,000 tokens, allowing the utilization of the entire context of a code repository. The structure of the repository may have been broken in previous data processing steps, such as the filtering of code files by their extensions and deduplication. So we first regroup code files originating from the same repository and perform dependency sorting to establish a sequence for concatenating these files. Therefore, a code repository will be viewed as a single long markdown file with code blocks, which allows the model to learn dependencies across files. 
+
+We employ regular expressions to detect the “import” relations across various programming languages, and we use topological sorting to determine the concatenation order of files. In practice, the arrangement of files may break folder boundaries, resulting in an interleaving sequence of files from multiple sub-folders. Non-code files, such as markdowns and other documentation, are positioned preceding the first code file located in the same sub-folder. 
+
+For the corner cases like multiple paths between an ascendant and descendant and loops within the “import” relation graph, we take the shorter path for the former and use the alphabet order to decide the start point for the latter. A trick in finding “import” relations is to resolve the batched import, such as “__init__.py” or “#include xx.h”. Those files may import a bunch of unused dependencies, so we apply heuristic rules to refine our detection of “import” relationships, ensuring that we accurately identify and process these relations at a finer level. 
+
+3.1.3 Long Context Data 
+
+The ability to handle very long contexts ( > 32 ​ K >32K tokens) is an increasingly popular topic in the study of LLMs, broadening and facilitating applications, such as book summarization, supporting long-term conversations, and enabling the handling of tasks involving complex reasoning steps. Pre-training data is one crucial factor for expanding the model’s context window. We follow the process of preparing long text pre-training data mentioned in Lv et al. (2024) , which includes additional experiments and discussions. The following text only outlines the data preparation employed for InternLM2. 
+
+Data Filtering Pipeline 
+
+Our data processing pipeline is designed to filter out low-quality long text data.
+It comprises three stages: a) Length selection, a rule-based filter that selects data samples exceeding 32K bytes; b) Statistical filters, which leverage statistical features to identify and remove anomalous data; c) Perplexity filters, which utilize the difference in perplexity to assess the coherence between text segments, filtering out samples with distracting context. Note that all data chosen for the long context training is a subset of the standard pre-training corpus, meaning that the long context data will be learned at least twice during the pre-training. 
+
+Statistical Filters 
+
+We employ a variety of lexical and linguistic features to construct our statistical filters. Data samples failing to comply with established rules are excluded from the pre-training corpus. The full list of these filters can be found in Lv et al. (2024) . A remarkable filter is the presence of conjunctions and other words that imply discourse structure, such as “Especially”, “Formally”, etc. The overall guidance of designing such filters is to filter out the meaningless data rather than selecting the most high-quality data. Statistical filters are particularly effective with long text data, as the statistical features are far more consistent than those in short text data. For instance, a 20-token text may not yield reliable statistics, but a 32K-token text will have a much clearer statistical feature distribution. 
+
+Perplexity filters 
+
+Perplexity is often treated as an estimator for the probability of a text sequence, P ⁡ ( X ) P(X) , and we slightly change its usage to estimate the conditional probability between two text segments P ⁡ ( S 2 | S 1 ) P(S_{2}|S_{1}) , where S 1 S_{1} is preceding of S 2 S_{2} . When the S 1 S_{1} and S 2 S_{2} are strongly correlated, the conditional probability should be higher than estimating the probability of S 2 S_{2} alone, which also means a negative perplexity difference. Conversely, if the probability changed in the reverse direction, meaning that the S 1 S_{1} is a distracting context, it should be removed from the pre-training corpus. Ideally, adding more context should not negatively impact the predictability of subsequent text. However, we’ve observed exceptions in cases of improperly joined texts, such as failed HTML parsing, random social media snippets, and other instances stemming from recognition errors in sources with complex layouts. Note that we only filter the data based on the perplexity difference rather than the perplexity itself, and this could largely mitigate the bias introduced by the estimator itself (using which model to compute the perplexity). The bias of the perplexity estimator has been discussed in Wettig et al. (2024) ; Sachdeva et al. (2024) . 
+
+Threshold Selection 
+
+Selecting appropriate thresholds is a challenging yet essential part of the data filtering process, and this challenge becomes more severe because we have built many filters. We have two lessons on setting thresholds: 
+
+Tailoring thresholds to each domain rather than seeking a universal solution. For example, the statistical filter for conjunction words would not apply to long code data, which typically does not have any conjunction. Similarly, textbooks, research papers, novels, and patents each exhibit unique characteristics. A universal threshold would likely misclassify a significant amount of data. The same logic applies to setting thresholds across different languages; thus, we adjust thresholds for each domain individually. 
+
+Employing a validation set to streamline the process, focusing only on borderline cases. Unlike learning-based feature extractors or scorers, our statistical and perplexity filters yield smooth results within the same domain. It allows us to focus on samples lying near the threshold, simplifying the adjustment of thresholds since we only need to determine whether to lower or raise them. Lv et al. (2024) illustrates the data clusters alongside scores from specific filters, demonstrating the interpretability of our proposed filters. 
+
+Figure 6 shows the data distribution before and after applying all proposed filters. The entire filtering process eliminates a large proportion of Web page data (Common Crawl) and Patent, while most Book and Paper data are persevered. 
+
+(a) 
+
+(b) 
+
+Figure 6: (a) The statistics of the long text data without filtering. (b) The statistics of the long text data with filtering. 
+3.2 Pre-training Settings 
+
+In this part, we present tokenization and pre-training hyper-parameters. 
+
+3.2.1 Tokenization 
+
+We have chosen to utilize the tokenization approach of GPT-4 due to its exceptional efficiency in compressing a wide array of textual content. Our primary reference is the cl100k vocabulary 4 4 4 https://github.com/openai/tiktoken , which mainly encompasses English and programming language tokens, totaling 100,256 entries, with a minor inclusion of fewer than 3,000 Chinese tokens. To optimize compression rates for InternLM when processing Chinese text, while maintaining the overall vocabulary size under 100,000, we carefully selected the top 60,004 tokens from the cl100k vocabulary and integrated them with 32,397 Chinese tokens. Additionally, we included 147 spare tokens to round out the selection, culminating in a vocabulary size that aligns with a multiple of 256, thereby facilitating efficient training. 
+
+3.2.2 Pre-training Hyper-parameters 
+Params n l ​ a ​ y ​ e ​ r ​ s n_{layers} n d ​ i ​ m n_{dim} n k ​ v ​ _ ​ h ​ e ​ a ​ d ​ s n_{kv\_heads} n q ​ _ ​ p ​ e ​ r ​ _ ​ h ​ e ​ a ​ d n_{q\_per\_head} Learning Rate Batch size 
+
+1.8B 24 2048 8 2 3e-4 4M 
+
+7B 32 4096 8 4 3e-4 4M 
+
+20B 48 6144 8 6 3e-4 5M 
+Table 3: Hyper-parameters for InternLM2 models. 
+
+The basic hyper-parameters are listed in Table 3 . During training, AdamW ( Loshchilov & Hutter, 2019 ) with β 1 = 0.9 , β 2 = 0.95 , ϵ = 1 ​ e − 8 \beta_{1}=0.9,\beta_{2}=0.95,\epsilon=1e-8 and w ​ e ​ i ​ g ​ h ​ t ​ _ ​ d ​ e ​ c ​ a ​ y = 0.1 weight\_decay=0.1 is used to optimize the model. We use the cosine learning rate decay and the learning rate decays to 10% of its maximum. 
+
+3.3 Pre-training Phases 
+
+The total number of tokens used for pre-training the 1.8B, 7B, and 20B models ranges from 2.0T to 2.6T, and the pre-training process consists of three distinct phases. In the first phase, we used pre-training corpora with lengths not exceeding 4k. In the second phase, we included 50% of pre-training corpora with lengths not exceeding 32k. In the third phase, we utilized capability-specific enhancement data. During each phase, we mixed data in English, Chinese, and code. 
+
+3.3.1 4k Context Training 
+
+For approximately 90% of the training steps, we trained using data with lengths of up to 4096 tokens. If the length of the data exceeded 4096, we would forcibly truncate it and use the remaining part for training as well. 
+
+3.3.2 Long Context Training 
+
+The utilization of extended context windows significantly enhances the performance of Large Language Models (LLMs) in a variety of applications, such as retrieval-augmented generation ( Gao et al., 2023 ) and intelligent agents ( Xi et al., 2023 ) . Motivated by cutting-edge advancements in training for long context ( Rozière et al., 2023 ; Xiong et al., 2023 ; Liu et al., 2023b ) , our training process for InternLM2 begins with a 4K context corpus and subsequently transitions to a corpus with 32K context. Instead of only using 32k corpus, 50% of the data is still shorter than 4096 tokens. This long context training phase accounts for about 9% of the total steps.
+When accommodated to these longer sequences, we adjusted the Rotary Positional Embedding (RoPE) base from 50,000 to 1,000,000, ensuring more effective positional encoding for long contexts ( Liu et al., 2023b ) . Owing to the good scalability of InternEvo ( Chen et al., 2024a ) and flash attention ( Dao, 2023 ) , the training speed only decrease 40% when changing context window from 4K to 32K. 
+
+3.3.3 Capability Specific Enhancement Training 
+
+Capabilities such as reasoning, mathematical problem-solving, and knowledge memorizing are key abilities expected from large language models.
+However, in the pre-training process, high-quality capability-related data is sparsely distributed in the entire corpus, which makes it hard for models to be proficient at these mentioned capabilities. Previous works, such as Qwen ( Bai et al., 2023a ) , GLM-130B ( Zeng et al., 2023 ) , Nemotron-4 ( Parmar et al., 2024 ) , have tried to incorporate instruction-based or high quality data during the pre-training stage to enhance these abilities.
+In InternLM2, we collect an enriched dataset with a meticulously curated mix of high-quality retrieved data and various types of open-source data from the huggingface
+datasets platform 5 5 5 https://huggingface.co/datasets .
+In total, we collect 24 Billion tokens in this dataset, and details of this corpus are shown in Table 4 .
+We filter out test set related data and run a contamination test as illustrated in Section 5.4 . To make the model fit these data well, we employed a smaller learning rate and batch size. 
+
+After this enhancement training phase, the InternLM2 model exhibited substantial performance improvements in coding, reasoning, question answering, and examinations, with detailed evaluations results shown in the following evaluation section.
+To aid the research community, we have released checkpoints before and after the enhancement training, naming them InternLM2-{size}-Base and InternLM2-{size}, respectively. 
+
+Category Tokens(B) Ratio(%) 
+
+Retrieved Stem Data 15.97 65 
+
+Retrieved Special Domain Data 2.17 8 
+
+Selected High Quality Data 6.26 26 
+
+Total 24.40 100 
+Table 4: Data details of capability specific enhancement training 
+4 Alignment 
+
+The pre-training stage empowers LLMs with the foundation abilities and knowledge that are necessary for solving various tasks.
+We further fine-tune the LLMs to fully elicit their capabilities and guide LLMs to serve as helpful and harmless AI assistants.
+This stage, also commonly referred to as ‘Alignment’, typically contains two phases: supervised fine-tuning (SFT) and reinforcement learning from human feedback (RLHF).
+During SFT, we fine-tune the model to follow diverse human instructions by high-quality instruction data (Sec. 4.1 ).
+Then we propose CO nditional O n L ine RLHF, which applies a novel conditional reward model that can reconcile different kinds of human preferences ( e.g. , multi-step reasoning accuracy, helpfulness, harmlessness), and conducts three-round online RLHF to reduce reward hacking (Sec. 4.2 .
+In the alignment stage, we keep the long-context capability of LLMs by utilizing long-context pre-training data during SFT and RLHF 4.3 .
+We also introduce our practices of improving the tool utilization capability of LLMs 4.4 . 
+
+4.1 Supervised Fine-Tuning 
+
+In the supervised fine-tuning (SFT) stage, we use a dataset of 10 million instruction data instances, which have been screened to ensure their helpfulness and harmlessness. The dataset encompasses a diverse range of topics, including general conversation, NLP tasks, mathematical problems, code generation and function calls, etc. Figure 7 shows the detailed distribution of SFT data topics. To facilitate a versatile representation of such various tasks, we transform the data samples into the ChatML ( Cha, ) format. Both the 7B and 20B models undergo training for one epoch using the AdamW optimizer with an initial learning rate of 4e-5. 
+
+Figure 7: The distribution of SFT data instances. 
+4.2 COOL Reinforcement Learning from Human Feedback 
+
+Reinforcement Learning from Human Feedback (RLHF) ( Christiano et al., 2017 ; Ouyang et al., 2022 ) is an innovative approach within the realm of large language models. By incorporating human feedback, RLHF creates reward models that serve as proxies for human preferences, thereby providing reward signals for LLMs to learn through the use of Proximal Policy Optimization (PPO) ( Schulman et al., 2017 ) . This methodology enables models to better understand and execute tasks that are difficult to define through traditional methods. 
+
+Despite the achievements of RLHF, there are still some issues in its practical application. The first is the preference conflicts. For example, in developing a dialogue system, we expect it to provide useful information (helpful) while not producing harmful or inappropriate content (harmless). However, these two preferences often cannot be satisfied simultaneously in practice, as providing useful information might involve sensitive or high-risk content in some cases. Existing RLHF methods ( Touvron et al., 2023b ; Dai et al., 2023 ; Wu et al., 2023 ) usually rely on multiple preference models for scoring, which also introduces more models in the training pipeline thus increases computational cost and slows down training speed.
+Second, RLHF faces the issue of reward hacking, especially when the policy becomes more powerful with the scale increasing ( Manheim & Garrabrant, 2018 ; Gao et al., 2022 ) , where the model might learn to “cheat” the reward system by shortcuts to obtain high scores, rather than truly learning the expected behavior. This leads the model to maximize rewards in unintended ways, significantly affecting the effectiveness and reliability of LLMs. 
+
+To address these issues, we propose Co nditional O n L ine RLHF (COOL RLHF). COOL RLHF first introduces a Conditional Reward mechanism to reconcile diverse preferences, which allows the reward model to dynamically allocate its attention to various preferences based on specific conditions, thereby optimally integrating multiple preferences. Furthermore, COOL RLHF adopts a multi-round Online RLHF strategy to enable the LLM to promptly adapt to new human feedback, mitigating the occurrence of reward hacking. 
+
+4.2.1 Conditional Reward Model 
+
+The Conditional Reward Model represents an innovative solution to the challenges inherent in the previous preference modeling of RLHF methods. Unlike conventional approaches that typically rely on multiple preference models to address preference conflicts across different domains (Figure 8 (a)), the Conditional Reward Model incorporates different system prompts for different kinds of preferences to effectively model a variety of preferences within a singular reward model. 
+
+Figure 8: Architecture of the Conditional Reward Model. (a) LLaMA2 employs distinct reward models to address the issue of preference conflicts. (b) The proposed conditional reward model (ours) utilizes conditional system prompts to reconcile preference data across various domains, enabling the modeling of multiple preferences using a single reward model. 
+
+Specifically, as depicted in Figure 8 (b), the Conditional Reward Model employs different system prompts to seamlessly blend data from various fields. Since the reward model is initialized from a SFT model, which already learned to follow diverse human instructions, we also let the reward model follow different system prompts to adapt to diverse preferences of different scenarios. In the Conditional Reward Model, system prompts are not simply a component of its input; they are also a crucial tool for directing the reward score in alignment with specific preferences in varied scenarios.
+Such an integration facilitates the management of contradictory and complex human preferences within a unified reward model without sacrificing accuracy. 
+
+Data Composition 
+
+The training process of the Conditional Reward Model involves an extensive dataset, encompassing various fields such as dialogue, article writing, poetry, summarization, coding, mathematics, and formatted output, with up to 2.4 million binarized preference pairs. This comprehensive dataset ensures the model’s broad adaptability and enhances its capability to undertake reinforcement learning in a broader and more complex array of situations. Thus, by employing the conditional system prompt method, the reward model can respond to complex human requirements, providing a more nuanced control over the reward scores during the PPO phase. 
+
+Loss Function 
+
+Furthermore, to reduce the influence of the imbalance between easy and difficult samples in the dataset, we modify the original ranking loss function ( Burges et al., 2005 ) inspired by Focal Loss ( Lin et al., 2017 ) .
+We add a difficulty decay coefficient to the ranking loss, making the loss value larger for difficult samples and smaller for easy ones, preventing overfitting on a large number of easy samples. The focal ranking loss is formulated as 
+
+OPEN L r ​ a ​ n ​ k ​ i ​ n ​ g = − ( 1 − 2 × max ⁡ ( 0 , P i , j − 1 2 ) ) γ ​ log ⁡ ( P i , j ) ) , L_{ranking}=-(1-2\times\max(0,P_{i,j}-\frac{1}{2}))^{\gamma}\log(P_{i,j})), (1) 
+
+where P i , j = σ ⁡ ( r i − r j ) P_{i,j}=\sigma(r_{i}-r_{j}) represents the probability that r ​ e ​ w ​ a ​ r ​ d i reward_{i} is greater than r ​ e ​ w ​ a ​ r ​ d j reward_{j} . The difficulty decay coefficient only takes effect when the model correctly predicts the preference of the training sample, i.e., P i , j > 0.5 P_{i,j}>0.5 , otherwise it equals to 1. The term γ \gamma represents a hyper-parameter that is instrumental in modulating the difficulty decay ratio. Here we set it to 2 by default. Concurrently, to ensure the stability and consistency of the output scores from the reward model across different training, we introduce a logarithmic barrier penalty to the reward scores to confine the score distribution within a range of -5 to 5, defined as 
+
+L p ​ e ​ n ​ a ​ l ​ t ​ y = − ( log ⁡ ( x + 5 ) + log ⁡ ( 5 − x ) ) . L_{penalty}=-(\log(x+5)+\log(5-x)). (2) 
+
+This constraint is critical as it obviates the need to modify additional reward-related hyper-parameters in the PPO stage, which could potentially arise due to variations of the reward score distribution in different reward models.
+Overall, the loss function of the reward model is 
+
+L = L r ​ a ​ n ​ k ​ i ​ n ​ g + λ ​ L p ​ e ​ n ​ a ​ l ​ t ​ y . L=L_{ranking}+\lambda L_{penalty}. (3) 
+
+The parameter λ \lambda is a weighting coefficient that balances the contribution of L r ​ a ​ n ​ k ​ i ​ n ​ g L_{ranking} and L p ​ e ​ n ​ a ​ l ​ t ​ y L_{penalty} . We set it to a default value of 0.02 based on our observation in the preliminary experimental results. These enhancements improve the robustness and consistency of the reward model, particularly in the context of datasets characterized by an imbalance between easy and difficult samples. 
+
+Training Details 
+
+In our experiment, we align the sizes of the reward models with those of the actor models used in PPO. Following the methods described in InstructGPT ( Ouyang et al., 2022 ) , we initialize the reward models using the SFT model weights, modifying the output layer to a one-dimensional linear mapping layer, which was randomly initialized. Our batch construction strategy focuses on fixing the total length of preference data at 16384 tokens per batch, rather than limiting the number of preference pairs, to avoid training inefficiencies due to data padding. The maximum context length is set at 8192. A special token is appended to each sequence’s end, with its output value used as the reward score. We adapt AdamW as the optimizer. The learning rate follows a cosine annealing schedule, decreasing from 1e-5 to 5e-6 and weight decay is set to 0.01. To prevent overfitting, the models are trained for one epoch. 
+
+4.2.2 Online RLHF 
+
+After obtaining a conditional reward model, we conduct Proximal Policy Optimization (PPO) to align the LLMs to the human preferences modeled by the reward model Ouyang et al. (2022) .
+To address the challenge of reward hacking in the PPO stage, we introduce an Online RLHF approach, divided into two distinct pathways: a Fast Path for immediate, targeted improvements and a Slow Path for long-term, comprehensive refinement of the reward model. The Fast and Slow Paths are complementary to provide an adaptive framework for mitigating reward hacking and enhancing the performance and reliability of LLMs trained with human feedback. 
+
+Fast Path 
+
+The fast path in Online RLHF focuses on quickly identifying and rectifying reward hacking incidents through targeted patches to improve the reliability of the reward model. As the PPO training goes by, the LLMs are encouraged to gravitate towards high-reward regions, which usually expose more reward hacking scenarios that can be easily detected.
+After identifying the hacking pattern after each round of RLHF, we construct preference pairs that highlight these patterns by comparing responses generated by early and late-stage PPO models in the current round. Incorporating 20 to 100 such preference pairs into the training process is sufficient to prevent the reward model from the corresponding hacking pattern significantly. This process allows for a swift fix of the reward model to the emerging hacking behaviors, enhancing the reward model’s reliability and adherence to desired outcomes. 
+
+Slow Path 
+
+In comparison to the fast path that focuses on fixing reward hacking, the slow path aims at a general improvement of the reward model’s upper bound, especially the reliability and robustness of the reward model at the high-reward regions, by covering the LLMs responses from the most recent and capable models, following previous work ( Bai et al., 2022 ) . To achieve this, responses generated by models at various stages of training (including the SFT model, early-stage PPO model, and late-stage PPO model) are used to form pairwise comparisons. These pairs are then presented to professional human annotators to label their preferences. 
+
+Such a process provides a more nuanced and thorough refinement of the reward model but requires extensive human annotation time. To improve the efficiency of online RLHF, we only use the accumulated human preferences of all previous models at the launch time of our experiments ( i.e. , which may not include the preferences of responses produced by models at the current round due to the time cost of human labeling). By continuously updating the model based on human feedback, the Slow Path ensures that the reward model evolves in tandem with the complexities and subtleties of human preferences. 
+
+Implementation 
+
+In our implementation of Online RLHF, we conducted three rounds of refinement. In these cycles, we gathered thousands of preference patches and online preference data in the Fast Path to update the reward model, and use all the existing human preference data of responses from previous models.
+Each round of Online RLHF provided valuable insights, allowing us to dynamically adjust and refine the reward model, thereby enhancing the overall performance and reliability of language models trained with human feedback. 
+
+4.2.3 PPO Training Details 
+
+During the RL alignment phase, we adopted the standard PPO (Proximal Policy Optimization) algorithm and made several adaptions to it, ensuring a more stable training process. The framework involves four models: the actor model, critic model, reference model, and reward model. During training, the latter 2 models are frozen, and only the former 2 models are actively trained. Notably, all these models are of the same size, ensuring consistency in their capacity to process and generate data. We iterate through about 200k diverse queries in about 400 iterations and choose the best checkpoints on the validation sets for release. 
+
+Model Initialization Figure 9: Ablation study on critic model initialization. Note that we used logarithmic coordinates in critic loss due to its large dynamic range. 
+
+As is common practice, we initialize the reference model and the actor model from the SFT model weights. The critic model is initialized from the reward model (excluding the linear head) and undergoes a 50-iteration pre-training phase, during which the actor model is frozen. This phase is critical for stabilizing the value estimation in early training, thus preventing the potentially detrimental effects of unstable values. We conducted ablation studies comparing the initialization of the critic model from the reward model versus the SFT model, as show in Figure 9 . Our results show that the critic model initialized from the reward model experiences larger losses during the first few iterations of PPO training, but after approximately 20 iterations, it consistently exhibits lower losses and leads to higher rewards for the actor model. We hypothesize that the higher loss observed during the initial stage may reveal fundamental differences between the tasks of reward modeling and critic modeling. The subsequent lower loss could be attributed to a more consistent internal understanding of the world knowledge and a better grasp of the assessment principles. 
+
+Conditional Reward Figure 10: Illustration of conditional PPO training. An appropriate conditional system prompt is added to query & response before reward model assesment. Note that this system prompt is agnostic to the other three models. 
+
+As discussed earlier, our reward models are trained to adapt to various conditions. Consequently, for queries from different domains, we prepend appropriate conditional system prompts to every sampled response before calculating reward scores, as illustrated in Figure 10 . This practice ensures that the model’s responses are contextually aligned with the varied demands of different domains. 
+
+Pre-train Gradients 
+
+To mitigate the risk of catastrophic forgetting during the PPO phase, we incorporate a pre-train loss, following the InstructGPT methodology. The coefficient for the pre-train loss is set at 0.5, and the volume of the pre-train data is approximately 50% of that for PPO training. This addition helps to preserve the knowledge acquired during the initial training stages, ensuring that the model retains its foundational abilities and knowledge base while adapting to new feedback and learning through PPO. 
+
+Hyperparameters 
+
+We set the KL divergence coefficient to 0.01. The learning rates for the actor model and the critic model are set to 1e-6 and 5e-6, respectively. We found that a larger λ \lambda value for PPO leads to higher rewards in our case, so we set it to 0.99. We adopted a slightly conservative sampling strategy, with t ​ o ​ p ​ _ ​ p = 0.9 top\_p=0.9 , to strike a balance between sampling diversity and convergence speed. Unlike some conventional approaches, we do not apply value loss clipping or advantage normalization. Despite extensive RL tricks, the training remains remarkably stable, partially due to our meticulous Online RLHF efforts. 
+
+4.3 Long-Context Finetuning 
+
+To preserve the long-context capability of LLMs after fine-tuning, we keep using the long-context pre-training data in SFT and RLHF, inspired by previous work that adopts long-context pre-training corpus in SFT ( Xiong et al., 2023 ) . Specifically, we utilize two types of data: one comprises long-context data from books, while the other is long-context data obtained from GitHub repositories and concatenated through specific paradigms, described below. 
+
+To enhance the data analysis capabilities of InternLM2, we choose the code repositories used in DS-1000 ( Lai et al., 2023 ) as the core repositories, which include Pandas, Numpy, Tensorflow, Scipy, Scikit-learn, PyTorch, and Matplotlib. We then search for repositories on GitHub with over 10,000 stars that referenced these core repositories and conducted the same filtering and data cleaning process as pre-training.
+For each repository, we initially sort the acquired raw data using a depth-first approach, while simultaneously generating the required prompts that briefly describe the file content, as shown in Figure 11 . Subsequently, we concatenate the processed data in sequence until reaching a length of 32k.
+The experimental results show that long-context code data improves not only the long-context capability of LLMs but also the code capabilities. 
+
+Figure 11: Illustration of the process to obtain long-context code data. 
+4.4 Tool-Augmented LLMs 
+General Tool Calling 
+
+We adopt a modified version of the ChatML format to enable general tool calling by introducing the “environment” role. Such a modification shares the same format in chat scenarios but provides more clear signal to the model when adopting agents. Additionally, we define two specific keywords to support the diverse purpose of AI agents, i.e., code interpreter ( <|interpreter|> ) and external plugins ( <|plugin|> ). This enables us to adopt a unified streaming format that can handle various types of plugin extensions and AI environments while being compatible with general chat. Figure 17 shows a concrete example of streaming chat format. To fully elicit the agent ability of InternLM2, we align the agent corpus to the chat domain and disentangle it along the basic capabilities of the language model for fine-grained training, as described in Agent-FLAN ( Chen et al., 2024c ) . 
+
+Code Interpreter 
+
+We also enhance the ability of InternLM2-Chat to solve the math problems by code interpreters, by treating the Python code interpreter as a special tool using the same schema described in Tool Learning. We adopt the reasoning interleaved with coding (RICO) strategy and construct the data in an iterative hard example mining manner, described in InternLM-Math ( Ying et al., 2024 ) . 
+
+5 Evaluation and Analysis 
+
+5.1 Overview 
+
+In this section, we provide a comprehensive evaluation and analysis of the language model’s performance across various domains and tasks. The evaluation is structured into two main categories: (a) downstream tasks and (b) alignment . For each category, we further break down the evaluation into specific subtasks to provide a detailed understanding of the model’s strengths and weaknesses. Lastly, we discuss the potential issue of data contamination in language models and its impact on model performance and reliability. All evaluations are performed using OpenCompass ( Contributors, 2023b ) unless explicitly specified otherwise 6 6 6 https://github.com/open-compass/opencompass . 
+
+5.2 Performance on Downstream Tasks 
+
+We start by detailing evaluation protocols and performance metrics for multiple NLP tasks. We introduce datasets, explain our experimental setup, and then present results with in-depth analysis, comparing to state-of-the-art methods to showcase the effectiveness of our model. The performance assessment will be dissected through six key dimensions: (1) comprehensive examinations, (2) language and knowledge, (3) reasoning and mathematics, (4) multiple programming language
+coding, (5) long-context modeling, (6) tool utilization . 
+
+5.2.1 Comprehensive Examination 
+
+We conducted benchmarks on a series of exam-related datasets, which include: 
+
+MMLU ( Hendrycks et al., 2020 ) : A multiple-choice question dataset containing 57 subtasks, covering topics in humanities, social science, STEM, and others. We report 5-shot results. 
+
+CMMLU ( Li et al., 2023a ) : A multiple-choice question dataset specific to China, containing 67 subtasks. In addition to humanities, social science, STEM, and others, it includes many Chinese-specific tasks. We report 5-shot results. 
+
+C-Eval ( Huang et al., 2023 ) : A multiple-choice question dataset containing 52 subtasks and 4 difficulty levels, covering topics in humanities, social science, STEM, and others. We report 5-shot results. 
+
+AGIEval ( Zhong et al., 2023 ) : A human-centric benchmark that includes both multiple-choice and open-ended questions. The questions are from 20 official, public, and high-standard admission and qualification exams intended for general human test-takers and report 0-shot results. 
+
+GAOKAO-Bench ( Zhang et al., 2023 ) : A dataset containing the Chinese college entrance examination (Gaokao) from 2010 to 2022, including both subjective and objective questions. We only evaluated the dataset of objective questions and report 0-shot results. 
+
+Models MMLU CMMLU C-Eval AGIEval GAOKAO 
+
+5-shot 5-shot 5-shot 0-shot 0-shot 
+
+≤ 7 \leq 7 B Models 
+
+Llama2-7B 46.8 31.9 32.4 21.3 19.0 
+
+Mistral-7B-v0.1 64.0 44.6 47.5 32.9 28.7 
+
+Baichuan2-7B-Base 54.7 57.0 56.2 34.5 34.7 
+
+ChatGLM3-6B-Base 62.7 66.5 67.2 47.5 59.4 
+
+Qwen-7B 59.7 62.5 63.1 45.6 52.8 
+
+InternLM2-7B-Base 64.0 63.0 60.7 38.7 40.7 
+
+InternLM2-7B 65.8 66.3 65.8 49.9 58.6 
+
+13 ∼ 20 13\sim 20 B Models 
+
+Llama2-13B 55.8 38.8 40.1 27.9 18.4 
+
+Mixtral-8x7B-v0.1 71.8 53.3 55.4 40.9 32.3 
+
+Baichuan2-13B-Base 59.6 61.3 59.2 37.4 45.6 
+
+Qwen-14B 67.9 70.1 71.8 52.0 62.5 
+
+InternLM2-20B-Base 64.0 63.0 60.7 38.7 40.7 
+
+InternLM2-20B 67.7 68.7 68.5 53.0 57.1 
+
+Table 5: Comparison of Base Models on Comprehensive Examination . The model name in bold indicates the top performer, while an underline signifies the leading model within a similar parameter size group. 
+
+Models MMLU CMMLU C-Eval AGIEval GAOKAO 
+
+5-shot 5-shot 5-shot 0-shot 0-shot 
+
+API Models 
+
+GPT-3.5 69.1 53.9 52.5 39.9 51.1 
+
+≤ 7 \leq 7 B Models 
+
+Llama2-7B-Chat 48.2 30.7 34.9 28.5 19.8 
+
+Mistral-7B-Instruct-v0.2 59.2 42.0 42.4 34.5 28.6 
+
+Baichuan2-7B-Chat 50.1 53.4 53.9 35.3 37.5 
+
+ChatGLM3-6B 58.0 57.8 59.1 44.2 56.3 
+
+Qwen-7B-Chat 57.1 57.9 59.8 39.7 62.1 
+
+InternLM2-Chat-7B-SFT 63.8 63.2 60.9 49.0 57.3 
+
+InternLM2-Chat-7B 63.7 63.0 60.8 47.2 58.0 
+
+13 ∼ 20 13\sim 20 B Models 
+
+Llama2-13B-Chat 54.1 33.8 35.0 30.9 23.2 
+
+Mixtral-8x7B-Instruct-v0.1 70.3 50.6 54.0 41.7 42.6 
+
+Baichuan2-13B-Chat 56.6 54.8 56.3 40.0 45.8 
+
+Qwen-14B-Chat 66.7 68.1 71.5 46.5 76.3 
+
+InternLM2-Chat-20B-SFT 66.5 65.3 63.7 51.2 58.6 
+
+InternLM2-Chat-20B 66.5 65.1 63.0 50.3 58.3 
+
+Table 6: Comparison of Chat Models on Comprehensive Examination . The model name in bold indicates the top performer, while an underline signifies the leading model within a similar parameter size group. Evaluation Results 
+
+We report the result of base models in Table 5 and chat models in Table 6 . 
+
+For the base model, the InternLM2 series performs well among models with similar number of parameters. On 7B and 20B, InternLM2 shows a significant increase compared to InternLM2-Base, which proves that pre-training on general domain data and domain-enhanced corpus has advantages for comprehensive examination. For the AGIEval and GAOKAO tasks, which are collected from exams designed specifically for human, InternLM2 shows a greater increase compared to InternLM2-Base relative to other datasets. 
+
+For the chat model, the InternLM2 series also excels among models with similar number of parameters. By comparing the InternLM2-Chat-7B-SFT and InternLM2-Chat-7B models, it can be seen that COOL RLHF has little impact on comprehensive examination performance. 
+
+5.2.2 Language and Knowledge 
+
+Models TriviaQA NaturalQuestions C3 RACE-High FLORES 
+
+4-shot 5-shot 5-shot 0-shot 0-shot 
+
+≤ 7 \leq 7 B Models 
+
+Llama2-7B 55.9 28.8 43.8 37.6 6.0 
+
+Mistral-7B-v0.1 68.9 31.1 54.6 69.1 6.9 
+
+Baichuan2-7B-Base 51.0 24.0 64.6 63.2 5.8 
+
+Qwen-7B 54.2 22.7 71.4 83.9 3.3 
+
+ChatGLM3-6B-Base 63.9 38.7 78.9 84.8 0.9 
+
+InternLM2-7B-Base 57.0 28.4 61.9 74.2 5.5 
+
+InternLM2-7B 58.9 42.2 74.1 81.4 5.9 
+
+13 ∼ 20 13\sim 20 B Models 
+
+Llama2-13B 60.7 34.5 47.5 59.1 7.2 
+
+Mixtral-8x7B-v0.1 77.6 39.6 59.1 80.2 8.8 
+
+Baichuan2-13B-Base 54.7 27.5 65.6 75.6 6.4 
+
+Qwen-14B 62.5 37.1 80.6 90.3 5.9 
+
+InternLM2-20B-Base 63.7 30.3 67.6 75.6 6.0 
+
+InternLM2-20B 60.1 44.6 79.1 72.9 6.5 
+
+Table 7: Comparison of Base Models on Language & Knowledge . The model name in bold indicates the top performer, while an underline signifies the leading model within a similar parameter size group. 
+
+Models TriviaQA NaturalQuestions C3 RACE-High FLORES 
+
+4-shot 5-shot 5-shot 0-shot 0-shot 
+
+API Models 
+
+GPT-3.5 69.1 53.9 52.5 39.9 51.1 
+
+≤ 7 \leq 7 B Models 
+
+Llama2-7B-Chat 46.8 19.6 51.7 3.0 5.3 
+
+Mistral-7B-Instruct-v0.2 35.0 8.1 66.9 71.2 12.8 
+
+Baichuan2-7B-Chat 37.6 12.8 78.5 67.5 11.0 
+
+Qwen-7B-Chat 46.1 18.6 84.4 74.8 12.9 
+
+ChatGLM3-6B 38.1 14.0 79.3 79.1 9.7 
+
+InternLM2-Chat-7B-SFT 51.4 24.5 91.7 85.2 15.5 
+
+InternLM2-Chat-7B 50.8 24.1 91.5 85.1 15.2 
+
+13 ∼ 20 13\sim 20 B Models 
+
+Llama2-13B-Chat 54.4 25.2 56.9 19.2 6.6 
+
+Mixtral-8x7B-Instruct-v0.1 57.7 22.5 82.1 81.4 17.2 
+
+Baichuan2-13B-Chat 40.3 12.7 84.4 73.2 12.4 
+
+Qwen-14B-Chat 54.5 22.9 91.5 84.7 17.3 
+
+InternLM2-Chat-20B-SFT 55.5 27.8 93.5 87.3 17.0 
+
+InternLM2-Chat-20B 53.9 25.9 93.5 87.1 16.9 
+
+Table 8: Comparison of Chat Models on Language & Knowledge . The model name in bold indicates the top performer, while an underline signifies the leading model within a similar parameter size group. 
+
+TriviaQA ( Joshi et al., 2017 ) : A dataset containing both reading comprehension and open-domain QA. On average, each question has 6 possible answers. We utilized the open-domain QA subset of the data and report 0-shot results. 
+
+NaturalQuestions ( Kwiatkowski et al., 2019 ) : A dataset of QA where the questions come from users and the answers are verified by experts. We report 0-shot results. 
+
+C3 ( Sun et al., 2020 ) : A free-form multiple-choice Chinese machine reading comprehension dataset. We report 0-shot results. 
+
+RACE ( Lai et al., 2017 ) : A reading comprehension dataset that includes English reading comprehension exam questions for Chinese middle and high school students aged 12 to 18. We use the subset for high school students and report 0-shot results. 
+
+FLORES ( Team et al., 2022 ) : A translation dataset extracted from Wikipedia, covering 101 languages. We evaluated the translation results from English to the other 100 languages and vice versa. For each pair of translation tasks, we selecte 100 samples and evaluate with BLEU. We report 8-shot results. 
+
+Evaluation Results 
+
+We report the result of base models in Table 7 and chat models in Table 8 . Thanks to its rigorous and high-quality training corpus, InternLM2 has demonstrated a remarkable competitive edge in tasks that involve language understanding and knowledge application. Consequently, it emerges as an excellent choice for a multitude of real-world applications where the reliance on robust language comprehension and extensive knowledge is paramount. 
+
+5.2.3 Reasoning and Mathematics 
+
+In this section, we will primarily validate the performance of InternLM2 in reasoning and mathematics, focusing on the following two parts of the test sets: 
+
+Reasoning Datasets: 
+
+∙ \bullet WinoGrande ( Sakaguchi et al., 2020 ) : A commonsense reasoning dataset containing 44,000 multiple-choice questions with two options each. It requires the model to choose the appropriate entity word for the pronoun in the descriptive text based on the scenario. 
+
+∙ \bullet HellaSwag ( Zellers et al., 2019 ) : A challenging dataset for evaluating commonsense natural language inference, consisting of 70,000 multiple-choice questions. Each question presents a scenario and four possible outcomes, asking to select the most reasonable conclusion. 
+
+∙ \bullet BigBench Hard (BBH) ( Suzgun et al., 2023 ) : A test collection for large language models, BBH extracts 23 challenging tasks from BIG-Bench, where contemporary language models had not surpassed human performance at the time. 
+
+Mathematics Datasets: 
+
+∙ \bullet GSM8K-Test ( Cobbe et al., 2021 ) : A dataset containing approximately 1,300 elementary-level situational math problems. The solution to these problems involves 2 to 8 steps, primarily using basic arithmetic operations (addition, subtraction, multiplication, and division) to perform a series of basic calculations to reach the final answer. 
+
+∙ \bullet MATH ( Hendrycks et al., 2021 ) : A dataset of 12,500 challenging high school-level competition math problems, covering multiple areas from algebra to calculus. Each problem includes a complete step-by-step solution. 
+
+∙ \bullet TheoremQA ( Chen et al., 2023a ) : A STEM theorem-driven question and answer dataset containing 800 QA pairs, covering over 350 theorems in mathematics, EE&CS, physics, and finance. It tests the limitations of large language models in applying theorems to solve challenging university-level problems. 
+
+∙ \bullet MathBench ( Anonymous, 2024b ) : MathBench comprises 3709 questions with multiple stages of progressively increasing challenges. Each stage encompasses bilingual theoretical and application-oriented questions, with each question precisely tagged with a three-level label to indicate its fine-grained knowledge point. 
+
+Models WinoGrande HellaSwag BBH 
+
+0-shot 0-shot 0-shot 
+
+△ \triangle ∼ 7 ​ B ​ M ​ o ​ d ​ e ​ l ​ s \sim 7BModels 
+
+ChatGLM3-6B-Base 51.4 76.5 66.2 
+
+Baichuan2-7B-Base 68.7 70.2 41.9 
+
+Llama2-7B 69.5 74.0 39.3 
+
+Mistral-7B-v0.1 75.3 78.9 56.7 
+
+Qwen-7B 68.6 75.0 45.2 
+
+InternLM2-7B-Base 74.6 76.3 55.5 
+
+InternLM2-7B 84.7 79.3 65.0 
+
+♡ \heartsuit ∼ 20 ​ B ​ M ​ o ​ d ​ e ​ l ​ s \sim 20BModels 
+
+Llama2-13B 72.3 77.5 47.2 
+
+Baichuan2-13B-Base 70.0 73.7 48.9 
+
+Qwen-14B 67.5 80.3 53.7 
+
+Mixtral-8x7B-v0.1 77.3 81.9 68.8 
+
+InternLM2-20B 85.2 81.6 72.1 
+
+InternLM2-20B-Base 76.2 78.1 62.0 
+
+Base Model Results. 
+
+Models WinoGrande HellaSwag BBH 
+
+0-shot 0-shot 0-shot 
+
+★API Models 
+
+GPT-3.5 68.7 70.2 41.9 
+
+△ \triangle ∼ 7 ​ B ​ M ​ o ​ d ​ e ​ l ​ s \sim 7BModels 
+
+ChatGLM3-6B 61.7 73.1 56.0 
+
+Llama2-7B-Chat 51.5 49.5 41.4 
+
+Baichuan2-7B-Chat 49.9 36.4 35.9 
+
+Mistral-7B-Instruct-v0.2 50.8 64.1 46.4 
+
+Qwen-7B-Chat 54.2 61.9 45.5 
+
+InternLM2-Chat-7B-SFT 65.8 83.5 60.9 
+
+InternLM2-Chat-7B 65.8 83.0 61.2 
+
+♡ \heartsuit ∼ 20 ​ B ​ M ​ o ​ d ​ e ​ l ​ s \sim 20BModels 
+
+Llama2-13B-Chat 50.8 57.0 49.7 
+
+Baichuan2-13B-Chat 50.9 34.4 42.5 
+
+Mixtral-8x7B-Instruct-v0.1 60.9 80.3 57.3 
+
+Qwen-14B-Chat 55.7 79.2 55.8 
+
+InternLM2-Chat-20B-SFT 75.0 85.9 66.9 
+
+InternLM2-Chat-20B 74.8 85.8 68.3 
+
+Chat Model Results. 
+
+Table 9: Comparison of Reasoning Tasks 
+
+In the evaluation of reasoning and mathematics problems, for multiple-choice questions, we predominantly use the zero-shot approach. For open-ended questions, such as those in GSM8k, MATH, and the open-ended section of MathBench, we primarily employ a few-shot methodology to enhance the model’s ability to follow instructions, which facilitates the extraction of answers. To ensure consistency in evaluation results, for the base models, we utilize perplexity (PPL) evaluation as the main method for assessing multiple-choice questions. 
+
+Reasoning 
+
+Reasoning ability reflects a model’s capacity to understand, process, and manipulate abstract concepts, which is essential for tasks involving complex problem-solving and decision-making. We separately compare and demonstrate the performance of InternLM2 in Table 9 from two aspects: Base and Chat. 
+
+Evaluation Results 
+
+Base Model: For models around 7B, InternLM2-7B demonstrates superior performance on most datasets outside of BBH. Notably, its performance on WinoGrande (84.7) significantly surpasses that of Mistral-7B-v0.1 (75.3) by 9.4 points, ranking second only to its series counterpart InternLM2-20B (85.2) by less than one point. This showcases the strong commonsense reasoning capabilities of InternLM2-7B. Among all tested base models, InternLM2-20B achieves the best overall performance. Compared to InternLM2-20B-Base, the inclusion of domain-enhanced knowledge has led to noticeable improvements in commonsense reasoning, with InternLM2-20B showing an average increase of 10.4% across the tested reasoning datasets. 
+
+Chat Model: In terms of reasoning within chat models, InternLM2 continues to lead, both in the 7B phase and the 13 ∼ \sim 20B phase. RL models and SFT models exhibit similar effects on a significantly advanced basis of reasoning capabilities. Among these, the 7B parameter models even outperform most of the 13 ∼ \sim 20B models on three test sets, such as Mixtral-8x7B-Instruct-v0.1 and Qwen-14B-Chat, and InternLM2-Chat-20B significantly outperforms GPT-3.5 across various aspects of reasoning test sets, such as in situational reasoning on HellaSwag ( ↑ 15.6 \uparrow 15.6 ) and challenging comprehensive reasoning on BBH ( ↑ 26.4 \uparrow 26.4 ), demonstrating InternLM2’s exceptional reasoning abilities in smaller-scale models. 
+
+Mathematics 
+
+Models GSM8K MATH TheoremQA MathBench-CN MathBench-EN 
+
+4-shot 4-shot 0-shot 0-shot&4-shot 0-shot&4-shot 
+
+△ \triangle ∼ 7 ​ B ​ M ​ o ​ d ​ e ​ l ​ s \sim 7BModels 
+
+ChatGLM3-6B-Base 60.7 19.2 6.5 32.5 29.0 
+
+Baichuan2-7B-Base 24.6 5.5 1.6 21.3 15.2 
+
+Llama2-7B 16.2 3.3 1.0 4.1 7.6 
+
+Mistral-7B-v0.1 47.5 11.3 1.8 19.3 27.6 
+
+Qwen-7B 54.0 13.4 5.0 26.0 21.8 
+
+InternLM2-7B-Base 36.0 8.9 2.6 14.2 18.5 
+
+InternLM2-7B 70.8 20.2 10.5 37.4 33.9 
+
+♡ \heartsuit ∼ 20 ​ B ​ M ​ o ​ d ​ e ​ l ​ s \sim 20BModels 
+
+Llama2-13B 28.7 4.9 2.6 10.6 18.8 
+
+Baichuan2-13B-Base 52.6 10.1 4.6 28.4 24.4 
+
+Qwen-14B 60.1 25.1 10.4 46.2 39.7 
+
+Mixtral-8x7B-v0.1 66.0 22.7 2.5 31.6 40.1 
+
+InternLM2-20B-Base 54.3 13.6 3.3 27.0 26.8 
+
+InternLM2-20B 76.1 25.5 13.5 38.7 36.9 
+
+Table 10: Comparison of Base Models on Math Tasks. The model name in bold indicates the top performer among Open-Source or API models, while an underline signifies the leading model within a similar parameter size group. 
+
+Models/Datasets GSM8K MATH TheoremQA MathBench-CN MathBench-EN 
+
+4-shot 4-shot 0-shot 0-shot&8-shot 0-shot&8-shot 
+
+★API Models 
+
+GPT-3.5 78.2 28.0 9.1 26.4 42.5 
+
+△ \triangle ∼ 7 ​ B ​ M ​ o ​ d ​ e ​ l ​ s \sim 7BModels 
+
+ChatGLM3-6B 53.8 20.4 9.3 18.2 21.7 
+
+Llama2-7B-Chat 28.4 4.1 0.3 3.3 7.7 
+
+Baichuan2-7B-Chat 32.4 5.7 2.4 16.9 17.8 
+
+Mistral-7B-Instruct-v0.2 48.3 8.6 2.3 14.5 28.3 
+
+Qwen-7B-Chat 44.1 12.0 5.8 31.2 29.0 
+
+InternLM2-Chat-7B-SFT 68.8 23.2 11.3 43.1 40.1 
+
+InternLM2-Chat-7B 70.7 23.6 9.5 38.0 42.3 
+
+♡ \heartsuit ∼ 20 ​ B ​ M ​ o ​ d ​ e ​ l ​ s \sim 20BModels 
+
+Llama2-13B-Chat 43.1 5.2 1.1 6.7 15.7 
+
+Baichuan2-13B-Chat 56.0 4.3 3.4 28.3 29.1 
+
+Mixtral-8x7B-Instruct-v0.1 71.7 22.5 9.6 27.2 44.3 
+
+Qwen-14B-Chat 57.7 27.6 8.1 47.1 40.6 
+
+InternLM2-Chat-20B-SFT 77.1 31.9 13.6 47.5 50.6 
+
+InternLM2-Chat-20B 79.6 32.4 14.1 48.0 48.5 
+
+Table 11: Comparison of Chat Models on Math Tasks . Models are categorized by their parameter size and type, highlighting top performers in each category with bold for overall leaders and underline for leaders within their parameter group. 
+
+Mathematical proficiency is an integral element of a model’s cognitive and computational faculties. In Table 10 , we present the performance of the Base model across multiple math assessment sets of varying difficulty. At the 7B parameter scale, InternLM2-7B takes the leading positions. Specifically, in the basic arithmetic GSM8k set, InternLM2-7B (70.8) significantly outperforms other models, surpassing ChatGLM3-6B-Base (60.7) by 10.1 percentage points and nearly doubling the performance relative to InternLM2-7B-Base (36.0), demonstrating the powerful basic arithmetic capability of InternLM2-7B after incorporating domain-enhanced data. For more complex problem-solving tasks such as MATH and theorem proving in TheoremQA, InternLM2-7B, despite being slightly behind in MATH, achieves a score (10.5) that even surpassed the larger Qwen-14B-Base (10.4), indicating that InternLM2-7B excels not only in computational tasks but also in complex theorem proving. In the Bilingual math dataset MathBench, InternLM2 shows excellent performance both in English and Chinese. 
+
+In the 13 ∼ \sim 20B parameter scale phase, InternLM2-20B outperforms all tested Base models in basic arithmetic and theorem proving, while Qwen-14B-Base demonstrates outstanding results in problem-solving tasks and both English and Chinese tests of MathBench. 
+
+Chat For Chat models in Table 11 , InternLM2-Chat demonstrates the best performance in basic arithmetic GSM8K, complex applied mathematics MATH, and theoretical problems TheoremQA at both the 7B and 20B parameter scales. Notably, InternLM2-Chat-20B, which underwent COOL RLHF training, leads comprehensively across all metrics, outperforming the API model GPT-3.5 and the MoE model Mixtral-8x7B-Instruct-v0.1. In the bilingual tests of MathBench, InternLM2-Chat-20B also shows excellent performance. 
+
+5.2.4 Coding Python Coding Tasks 
+
+∙ \bullet HumanEval HumanEval ( Chen et al., 2021 ) is a widely recognized dataset that serves as a benchmark for evaluating the performance of code generation models. It consists of 164 carefully crafted programming tasks, each composed of a Python function and an accompanying docstring to provide context and specifications. This dataset, featuring human-written code, plays a pivotal role in assessing the capabilities of Large Language Models (LLMs) when generating or completing programs. 
+
+∙ \bullet MBPP MBPP ( Austin et al., 2021 ) consists of 974 programming tasks that are solvable by entry-level programmers. These tasks range from simple numeric manipulations to more complex problems requiring external knowledge, such as defining specific integer sequences. We use the santinized version of MBPP, which only includes a subset of the data has been hand-verified by the authors. 
+
+Multiple Programming Language Coding Tasks 
+
+∙ \bullet HumanEval-X HumanEval-X ( Zheng et al., 2023b ) dataset is a multilingual extension of the original HumanEval benchmark, designed to evaluate the capabilities of code generation models across multiple programming languages. It consists of 164 handcrafted programming problems, each translated into five major languages: C++, Java, JavaScript, Go, and Python. This results in a total of 820 problem-solution pairs, supporting both code generation and code translation tasks. HumanEval-X allows for the assessment of a model’s ability to generate functionally correct code and to translate code between different languages, using test cases to verify the correctness of the generated code. This benchmark facilitates a more comprehensive understanding of pre-trained multilingual code generation models and their potential applications in real-world programming tasks. 
+
+To assess the coding prowess of InternLM2, we conduct a series of experiments utilizing the widely recognized benchmarks MBPP ( Austin et al., 2021 ) and HumanEval ( Chen et al., 2021 ) . Furthermore, to gauge the aptitude of code generation models for multiple programming languages, we extend our evaluation to include MBPP-CN, a Chinese adaptation of MBPP, and HumanEval-X, a multilingual expansion of the original HumanEval benchmark. 
+
+As depicted in Figure 13 , the InternLM2 model series achieve leading performance, especially on HumanEval, MBPP, and MBPP-CN, where the InternLM2-Chat-20B model surpasses the previous state-of-the-art by more than 10%, underscoring the InternLM2 series’ exceptional proficiency in code generation tasks. Additionally, the InternLM2-Chat-20B model exhibits substantial improvement over the InternLM2-Chat-7B model in MBPP-CN benchmarks, yet it shows a slight decline in performance on HumanEval-X. This phenomenon might stem from the InternLM2-Chat-20B model being finely tuned for Chinese at the expense of its effectiveness in other languages. 
+
+Models HumanEval HumanEval-X MBPP MBPP-CN 
+
+4-shot 5-shot 5-shot 0-shot 
+
+≤ 7 \leq 7 B Models 
+
+Llama2-7B 14.6 11.2 28.8 16.0 
+
+Mistral-7B-v0.1 27.4 28.5 47.5 35.0 
+
+Baichuan2-7B-Base 22.0 16.1 35.0 23.2 
+
+Qwen-7B-Chat 36.0 24.4 33.9 27.0 
+
+ChatGLM3-6B-Base 45.1 38.3 68.9 50.0 
+
+InternLM2-7B 56.1 39.6 51.8 45.4 
+
+InternLM2-7B-Base 31.1 28.8 54.1 40.6 
+
+13 ∼ 20 13\sim 20 B Models 
+
+Llama2-13B 18.9 17.2 38.9 25.2 
+
+Mixtral-8x7B-v0.1 32.3 38.3 59.5 43.8 
+
+Baichuan2-13B-Base 23.2 19.5 44.0 30.6 
+
+Qwen-14B 30.5 31.0 52.9 41.0 
+
+InternLM2-20B 48.8 48.2 63.0 53.2 
+
+InternLM2-20B-Base 32.3 31.5 59.9 44.4 
+
+Table 12: Comparison of Base Models on Python Coding . The model name in bold indicates the top performer, while an underline signifies the leading model within a similar parameter size group. 
+
+Models HumanEval HumanEval-X MBPP MBPP-CN 
+
+4-shot 5-shot 5-shot 0-shot 
+
+≤ 7 \leq 7 B Models 
+
+Llama2-7B-Chat 15.2 10.6 30.4 17.8 
+
+Mistral-7B-Instruct-v0.2 35.4 27.1 23.7 17.6 
+
+Baichuan2-7B-Chat 17.7 15.4 37.7 20.8 
+
+Qwen-7B-Chat 36.0 24.4 33.9 27.0 
+
+ChatGLM3-6B 53.1 17.6 54.9 38.2 
+
+InternLM2-Chat-7B-SFT 61.6 43.9 47.5 44.4 
+
+InternLM2-Chat-7B 59.2 41.7 52.5 46.4 
+
+13 ∼ 20 13\sim 20 B Models 
+
+Llama2-13B-Chat 8.5 12.9 19.8 22.2 
+
+Mixtral-8x7B-Instruct-v0.1 32.3 38.3 59.5 43.8 
+
+Baichuan2-13B-Chat 19.5 18.3 40.9 27.8 
+
+Qwen-14B-Chat 41.5 29.9 29.2 27.6 
+
+InternLM2-Chat-20B-SFT 67.1 42.0 63.4 52.2 
+
+InternLM2-Chat-20B 67.7 39.8 65.8 54.0 
+
+Table 13: Comparison of Chat Models on Python Coding . The model name in bold indicates the top performer, while an underline signifies the leading model within a similar parameter size group. 
+5.2.5 Performance Before and After Enhancement Training 
+
+Through results in previous parts, we can clearly see that InternLM2 with capability-specific enhancement training consistently outperforms its counterpart. The overall comparison of model performance before and after this phase is presented in Figure 12 , where the scores for various capabilities are derived from the average of multiple evaluation sets. 
+
+Coding: HumanEval and MBPP. 
+
+Reasoning: MATH, GSM8k, SummEdits ( Laban et al., 2023 ) and BBH. 
+
+QA: HellaSwag, PIQA ( Bisk et al., 2020 ) , WinoGrande, OpenBookQA ( Mihaylov et al., 2018 ) , NaturalQuestions and TriviaQA. 
+
+Examination: MMLU, AGIEval and C-Eval. 
+
+Figure 12: The performance before and after the capability specific enhancement training phase, the darker areas mean the performance before the training. 
+
+It is evident that there has been a significant improvement in these capabilities. Furthermore, we also compared the performance of the base models before and after undergoing enhancement training when subjected to Supervised Fine-Tuning (SFT) in Table 14 . The capability dimensions are aligned with the categorization adopted in OpenCompass 7 7 7 https://rank.opencompass.org.cn/leaderboard-llm-v2 . It can be observed that SFT models trained with capability-specific enhancement achieve better performance across various capability dimensions. The SFT performance in other parts of this report is based on the base model before the enhancement training. 
+
+Model Language Knowledge Reason Code 
+
+SFT from InternLM2-7B-Base 66.64 58.35 69.30 38.79 
+
+SFT from InternLM2-7B 69.28 62.11 75.18 41.40 
+Table 14: Comparative performance of a 7B SFT model trained from InternLM2-7B-Base and from InternLM2-7B. 
+5.2.6 Long-context Modeling Long-context Understanding and Reasoning. 
+
+We mainly evaluate the long-context modeling capability of InternLM2 on the following two benchmarks: L-Eval ( An et al., 2023 ) and LongBench ( Bai et al., 2023b ) . 
+
+L-Eval. L-Eval is a long-context benchmark consisting of 18 subtasks 8 8 8 We adopt the first version of L-Eval, corresponding to https://arxiv.org/abs/2307.11088v1 ,
+including texts from various fields such as law, economy, and technology.
+L-Eval consists of 411 documents and over 2000 test cases, with an average document length of 7217 words.
+Subtasks in this dataset can be categorized into two major classes:
+5 close-ended tasks and 13 open-ended categories.
+Closed-ended tasks are evaluated using exact matching based accuracies,
+while open-ended tasks adopt the Rouge score as the metric. 
+
+LongBench. LongBench is a long-context benchmark consisting of 21 subtasks with a total of 4750 test cases.
+It is the first bilingual long-context benchmark, with an average English text length of 6711 words and an average Chinese text length of 13386 characters.
+The 21 subtasks are divided into 6 types, providing a more comprehensive evaluation of the model’s capabilities in various aspects. 
+
+Evaluation Results. We report the evaluation results of InternLM2 on long-context benchmarks in Table 15 .
+All variants of InternLM2 have demonstrated strong long-context modeling performance across two benchmarks.
+InternLM2-Chat-20B-SFT achieves the best performance on L-Eval and outperforms its counterparts by a considerable margin.
+On LongBench, InternLM2-Chat-7B-SFT outperforms other ≤ 7 \leq 7 B Models models across 4 out of 6 subtask categories.
+It obtains a 48.1 overall score, which is only slightly inferior to the 48.4 overall score of ChatGLM3-6B.
+Meanwhile, we noticed that for InternLM2, different parameter sizes do not lead to significant difference in long-context performance, which will be further investigated. 
+
+L-Eval LongBench 
+
+Model Close Open Avg. Single Multi Summ FSL Syn Code Avg. 
+
+≤ 7 \leq 7 B Models 
+
+Llama2-7B-Chat 20.0 33.1 29.4 23.1 17.0 18.5 7.0 5.0 15.4 14.3 
+
+Mistral-7B-Instruct-v0.2 54.3 34.0 39.7 31.3 26.4 21.8 46.6 59.2 44.8 38.3 
+
+Baichuan2-7B-Chat 36.1 32.4 33.4 30.3 18.4 21.8 42.5 6.6 36.0 25.9 
+
+Qwen-7B-Chat 13.6 32.6 27.3 27.9 14.2 21.0 21.8 8.3 28.9 20.4 
+
+ChatGLM3-6B 59.1 35.0 41.7 40.9 45.0 26.0 56.5 65.0 57.1 48.4 
+
+InternLM2-Chat-7B 68.6 40.8 48.5 45.7 43.1 26.5 58.3 66.3 36.4 46.1 
+
+InternLM2-Chat-7B-SFT 68.7 40.8 48.6 47.3 45.2 25.3 59.9 67.2 43.5 48.1 
+
+13 ∼ 20 13\sim 20 B Models 
+
+Llama2-13B-Chat 27.3 34.4 32.5 18.2 9.9 18.5 6.7 10.0 18.1 13.6 
+
+Mixtral-8x7B-Instruct-v0.1 65.3 35.6 43.9 35.0 25.6 17.1 35.9 68.2 40.0 37.0 
+
+Baichuan2-13B-Chat 40.6 32.3 34.6 34.3 29.1 21.3 45.5 4.0 51.4 30.9 
+
+Qwen-14B-Chat 35.3 33.5 34.0 32.6 19.4 22.5 36.9 23.7 42.9 29.7 
+
+InternLM2-Chat-20B 68.6 40.6 48.4 46.9 46.7 26.0 49.1 67.3 32.6 44.8 
+
+InternLM2-Chat-20B-SFT 68.8 42.0 49.4 46.8 48.7 25.6 51.2 67.9 40.4 46.8 
+
+Table 15: Comparison of Chat Models on Long-Context Benchmarks . Bold indicates the top performer;
+an underline signifies the leading model within the same parameter size group.
+For each benchmark and task group, we report the average accuracies of intra-group subtasks. L-Eval abbrs : Close → \rightarrow close-ended; Open → \rightarrow open-ended. LongBench abbrs : Single → \rightarrow single-document; Multi → \rightarrow multi-document; Summ → \rightarrow summarization; FSL → \rightarrow few shot learning; Syn → \rightarrow synthetic.
+All results are obtained with the OpenCompass ( Contributors, 2023b ) evaluation toolkit. Figure 13: Results on Needle in the Haystack(Chinese). Needle-in-the-Haystack 
+
+‘‘Needle-in-the-Haystack” is a single-needle retrieval task, which is designed to test the Large Language Models’ (LLMs) ability to recall a single piece of key information. This is done by inserting a crucial piece of information into a Haystack text of a target length 9 9 9 Text token length calculations use the GPT-4 tokenizer at various positions and then querying the model about this key information at the end of the prompt. This method precisely visualizes LLMs’ recall capabilities at different positions within long texts of varying lengths. We design a Chinese Haystack following the original idea, and utilize the Skywork/ChineseDomainModelingEval dataset released by Wei et al. (2023) , ensuring diversity and quality in the sources of Chinese texts. This dataset covers a wide range of fields from finance to technology, offering high-quality, up-to-date Chinese articles and providing a stable benchmark for assessing different models’ abilities to handle domain-specific long texts. For this experiment, we leverage the LMDeploy 10 10 10 https://github.com/InternLM/lmdeploy Contributors (2023a) inference engine to accelerate the inference process. The results presented in Figure 13 effectively demonstrate InternLM2’s capability for long-context modeling. 
+
+5.2.7 Tool Utilization 
+
+It is widely acknowledged that external tools and APIs can significantly enhance the capabilities of LLMs to tackle complex, real-world problems ( Qin et al., 2023a ; Qin et al., 2023b ; Schick et al., 2023 ) . To analyze InternLM2’s proficiency in tool utilization,
+we conduct experiments across several benchmark datasets: GSM8K ( Cobbe et al., 2021 ) , Math ( Hendrycks et al., 2021 ) , the recently introduced MathBench ( Anonymous, 2024b ) , T-Eval ( Chen et al., 2023b ) , and the template subset of CIBench ( Anonymous, 2024a ) , all employing the ReAct protocol ( Yao et al., 2023 ) where LLMs alternate between generating thought processes and executing actions.
+Notably, MathBench consists of 3709 questions that span mathematical concepts from primary to high school levels. This dataset enables a comprehensive evaluation of an LLM’s ability to solve math problems. T-Eval ( Chen et al., 2023b ) features human-verified, high-quality question instructions with corresponding step-by-step solutions. It measures an LLM’s proficiency with everyday tools such as Google Search and Gaode Map across six different dimensions. CIBench, developed by our team, simulates genuine data analysis scenarios using interactive Jupyter notebooks. It encompasses multiple, consecutive tasks and covers the most commonly used Python modules in data analysis, including Pandas, Numpy, and Pytorch. This custom-made benchmark allows for a thorough assessment of an LLM’s comprehensive ability in data analysis. 
+
+GSM8K, MATH, and MathBench 
+
+We utilize the external code interpreter and follow the ReAct protocol to evaluate LLM’s ability to solve coding and mathematic problems. The results, as depicted in Figure 14 , demonstrate a substantial improvement even when using the code interpreter, particularly on the MATH dataset where the enhancement is notably significant. 
+
+As depicted in Figure 15 , regarding the recently introduced MathBench dataset, the utilization of a code interpreter results in improved performance for InternLM2’s performance in most cases, and a minor decrease may be attributed to the incorrect usage of such interpreters. Moreover, notable improvements are observed within the Knowledge domain for InternLM2-20B-Chat and in the Application section for InternLM2-7B-Chat. These disparities can stem from a multitude of factors, including differences in the constitution of their respective training datasets. 
+
+T-Eval and CIBench 
+
+As depicted in Figure 16 , the InternLM2 models consistently demonstrate superior or comparable performance compared to existing models across various benchmarks. Specifically, when comparing models of identical scale, InternLM2-Chat-7B emerges as the top performer on T-Eval and CIBench. Meanwhile, InternLM2-Chat-20B achieves competitive results on T-Eval while obtaining the highest scores on CIBench. Additionally, the InternLM2 series models achieve impressive results in Chinese, showcasing their proficiency in multiple languages. 
+
+Figure 14: Results on GSM8K (4-shot) and MATH (4-shot) with and w/o Code Interpreter. Figure 15: Results on MathBench with and without ReAct. 
+
+Model T-Eval CIBench 
+
+English Chinese Avg English Chinese Avg 
+
+≤ 7 \leq 7 B Models 
+
+Llama2-7B-Chat 37.5 37.0 37.2 12.2 10.6 11.4 
+
+ChatGLM3-6B 62.3 63.6 63.0 29.4 17.1 23.2 
+
+Qwen-7B-Chat 57.5 61.1 59.3 47.8 29.2 38.5 
+
+Qwen1.5-7B-Chat 54.5 50.4 52.5 44.7 26.9 35.8 
+
+Mistral-7B-Instruct-v0.2 39.3 38.7 39.0 47.6 38.0 42.8 
+
+InternLM2-Chat-7B-SFT 64.1 66.8 65.5 52.1 27.8 39.9 
+
+InternLM2-Chat-7B 66.1 65.4 65.8 57.1 40.7 48.9 
+
+13 ∼ 20 13\sim 20 B Models 
+
+Llama2-13B-Chat 48.7 44.9 46.8 20.0 12.3 16.1 
+
+Qwen-14B-Chat 63.6 68.7 66.2 54.8 40.8 47.8 
+
+Qwen1.5-14B-Chat 67.6 63.3 65.4 57.9 49.7 53.8 
+
+Mistral-8x7B-Instruct-v0.1 58.6 58.0 58.3 42.6 40.3 41.5 
+
+InternLM2-Chat-20B-SFT 64.7 64.1 64.4 49.0 43.7 46.4 
+
+InternLM2-Chat-20B 65.6 62.9 64.3 56.0 54.7 55.4 
+
+Table 16: Results on T-Eval and CIBench. Bold indicates the top performer;
+an underline signifies the leading model within the same parameter size group. 
+5.3 Performance on Alignment 
+
+Although LLMs’ objective capabilities improve through pretraining and SFT, their answer styles may not align with human preferences, necessitating further enhancement with RLHF to improve alignment. Therefore, assessing the alignment capabilities is crucial to determine whether LLMs truly meet human needs. 
+
+In this section, we evaluate InternLM2’s performance on several popular subjective alignment datasets, comparing the performance of SFT and RLHF models. As we can see in Table 17 , InternLM2’s overall performance in alignment tasks achieved SOTA or near-SOTA results on multiple benchmarks, demonstrating a high level of consistency between the subjective outputs of InternLM2 series models and human preferences. We detail the model performance on each dataset separately below. Additionally, the prompt templates used for subjective alignment tasks on each dataset are presented in the Appendix. 
+
+AlpacaEval MTBench CompassArena AlignBench IFEval 
+
+WinRate 0-10 Score WinRate 0-10 Score 0-100 Acc 
+
+★API Models 
+
+GPT-3.5 9.6 8.4 24.7 5.7 - 
+
+△ \triangle ∼ 7 ​ B ​ M ​ o ​ d ​ e ​ l ​ s \sim 7BModels 
+
+ChatGLM3-6B - - 17.2 5.0 33.7 
+
+Llama2-7B-Chat 5 6.3 6.5 - 44.6 
+
+Baichuan2-7B-Chat - - 16.1 5.1 42.1 
+
+Mistral-7B-Instruct-v0.2 14.7 - 14.2 - 57.9 
+
+Qwen-7B-Chat - - 15.8 4.7 37.3 
+
+InternLM2-Chat-7B-SFT 6.9 7.1 14.1 4.9 48.5 
+
+InternLM2-Chat-7B 11.3 7.7 28.7 6.1 45.9 
+
+♡ \heartsuit ∼ 20 ​ B ​ M ​ o ​ d ​ e ​ l ​ s \sim 20BModels 
+
+Llama2-13B-Chat 7.7 6.7 9.8 - 46.1 
+
+Baichuan2-13B-Chat - - 20.5 5.3 42.5 
+
+Mixtral-8x7B-Instruct-v0.1 - 8.3 18.9 - 56.5 
+
+Qwen-14B-Chat 7.5 7.0 24.8 5.4 43.8 
+
+InternLM2-Chat-20B-SFT 8.0 7.3 15.2 5.3 48.7 
+
+InternLM2-Chat-20B 21.8 7.9 31.4 6.8 42.2 
+
+Table 17: Comparison of Models on Alignment Benchmarks . Models are categorized by their parameter size and type, highlighting top performers in each category with bold for overall leaders and underline for leaders within their parameter group. 
+5.3.1 English Subjective Evaluation AlpacaEval 
+
+AlpacaEval ( Li et al., 2023b ) is a single-turn question-answer dataset with 805 questions. Its main purpose is to assess the helpfulness of model responses to humans, reflecting the alignment with human intentions through adversarial evaluation. AlpacaEval(v2) establishes a baseline model and uses GPT4-Turbo as the judge model to compare the baseline’s answers with those of the model under evaluation. It selects the model that better aligns with human preferences and calculates the win rate.
+Instead of directly collecting the judge model’s responses, AlpacaEval(v2) employs logit probabilities to analyze the judge model’s preferences statistically. These preferences are then used as a weighting factor in the calculation of the weighted win rate.
+As shown in Table 17 , InternLM2-20B achieved a win rate of 21.8, marking the highest SOTA result among the compared models and demonstrating its superior alignment performance. Moreover, the table indicates that the RLHF model outperforms the SFT model in terms of win rate, which underscores the effectiveness of the alignment strategy. 
+
+MTBench 
+
+MTBench ( Zheng et al., 2023a ) is a two-round conversation dataset consisting of 80 questions that span eight dimensions: reasoning, roleplay, math, coding, writing, humanities, STEM, and information extraction. Each dimension contains 10 questions, which are subjected to two rounds of questioning. Initially, the model’s ability to answer basic questions is tested; subsequently, it must follow additional, specific instructions to refine its previous response. Scores are assigned on a 1-10 scale by a judge model.
+As we can see in Table 17 , InternLM2 achieves leading scores in both the 7B and 20B versions, with 7.7 and 7.9 respectively, demonstrating its reliable multi-turn conversational ability. 
+
+Figure 16: Detail Results on CompassArena of InternLM2 Series. 
+5.3.2 Chinese Subjective Evaluation CompassArena 
+
+CompassArena comprises 520 Chinese questions, encompassing knowledge, language, mathematics, reasoning, and creativity. Like AlpacaEval, it calculates the win rate of two models judged by GPT4-Turbo and employs double-blind testing by swapping the model order to mitigate position bias. As indicated in Table 17 , InternLM2 secures the highest win rate in the 7B version (28.7) and the 20B version (31.4).
+Note that the performance gap between InternLM2’s 7B and 20B versions is relatively small. However, when compared to SFT models, InternLM2’s RLHF model shows a significant improvement in performance. This suggests that the RLHF strategy substantially enhances InternLM2’s alignment with human preferences, rather than just increasing the model size. Furthermore, the results broken down by category in Figure 16 reveal that the InternLM2 series possesses exceptionally strong Chinese creativity and language abilities, with a win rate that rivals that of GPT4-Turbo. 
+
+AlignBench 
+
+AlignBench ( Liu et al., 2023a ) is a Chinese subjective dataset comprising 683 question-answer pairs, categorized into eight areas, including Fundamental Language Ability, Advanced Chinese Understanding, Task-oriented Role Play, among others, covering various scenarios such as physics, history, music, and law. The dataset utilizes an in-house Judge Model called CritiqueLLM ( Ke et al., 2023 ) for evaluation. CritiqueLLM provides scores from 1 to 10 across various dimensions for each question and issues a final score. We present these final scores, as provided by CritiqueLLM, in Table 17 and detailed scores across different categories in Table 18 . As shown in Table 17 , InternLM2 achieves SOTA scores in both the 7B and 20B versions, with 6.1 and 6.8 respectively, outperforming GPT-3.5’s score of 5.7.
+Moreover, both the 7B and 20B versions of InternLM2 exhibit significant performance enhancements post-RLHF compared to SFT models, underscoring the effectiveness of our RLHF strategy in improving the model’s alignment with human preferences. An analysis of the detailed scores reveals areas for improvement in mathematical and reasoning abilities; however, InternLM2 excels in question-answering and role-playing tasks, offering strong subjective performance. 
+
+Models K U L M W QA RP RE 
+
+InternLM2-Chat-7B 7.12 7.26 6.34 4.55 7.73 8.00 7.83 5.22 
+
+InternLM2-Chat-7B-SFT 5.83 5.81 5.63 3.82 6.25 6.89 6.46 3.51 
+
+InternLM2-Chat-20B 8.02 7.88 7.65 5.38 7.93 8.26 8.09 5.76 
+
+InternLM2-Chat-20B-SFT 6.41 6.10 5.34 4.28 6.69 6.47 6.66 4.35 
+
+Table 18: Detail Scores of InternLM2 Series on AlignBench. K: Knowledge, U: Understadning, L: Language, M: Mathematics, W: Writing, RP: Role Play, RE: Reasoning. 
+5.3.3 Instruct Following Evaluation IFEval 
+
+IFEval ( Zhou et al., 2023 ) is designed to test models’ instruction following ability, requiring responses to adhere to specific patterns, such as letter case restrictions and keyword limitations. IFEval encompasses 25 distinct types of instructions, constructing 541 questions that follow instructions, and employs rule-based evaluation to assess the correctness of models’ responses for each question. Utilizing various statistical methods, IFEval offers four types of accuracy scores: prompt-level strict, prompt-level loose, instance-level strict, and instance-level loose. We present the average results of these four scores in Table 17 .
+Although English-based models like Llama2 and Mistral generally outperform Chinese-based models on IFEval, InternLM2 ranks second and third in the 7B phase (48.5) and the 13-20B phase (48.7), respectively. This indicates that, despite the challenges of instruction following tasks, InternLM2 maintains a leading position among models of similar size. 
+
+5.3.4 Ablation Study of Conditional Reward Model 
+
+To verify the impact of conditional system prompts, we compare the performance of the reward model trained on a heterogeneous mix of data from different domains, with and without using conditional system prompts. As illustrated in Table 19 , the absence of system prompts results in a significant decrease in precision across several public datasets, including scenarios such as helpful and harmless conversations ( Bai et al., 2022 ) , content summaries ( Stiennon et al., 2020 ) , math problems ( Lightman et al., 2023 ) , and Reddit replies ( Ethayarajh et al., 2022 ) . Conversely, including system prompts leads to markedly higher precision in these areas. 
+
+Anthropic Helpful-base Anthropic Helpful-online Anthropic Harmless-base OpenAI Summ. Stanford SHP PRM 800k 
+
+UltraRM 75.02 65.34 37.02 74.48 74.36 48.77 
+
+QwenRM 73.98 64.57 - 69.99 60.10 70.52 
+
+Ours w/o cond. 73.26 64.45 72.48 68.25 69.24 72.11 
+
+Ours w/ cond. 75.10 66.98 73.19 75.37 75.76 77.18 
+Table 19: Comparative performance of UltraRM-13B ( Cui et al., 2023 ) , QwenRM ( Bai et al., 2023a ) , and ours 7B reward model trained with and without conditional system prompts. The table demonstrates a marked improvement in precision when conditional prompts are used. 
+5.4 Discussion on Data Contamination 
+
+Model L t ​ e ​ s ​ t L_{test} L t ​ r ​ a ​ i ​ n L_{train} L r ​ e ​ f L_{ref} Δ 1 \Delta_{1} Δ 2 \Delta_{2} 
+
+≤ 7 \leq 7 B Models 
+
+Llama2-7B 1.49 1.5 1.49 0 -0.01 
+
+Mistral-7B-v0.1 1.43 1.44 1.41 0.02 -0.01 
+
+Baichuan2-7B-Base 1.47 1.48 1.45 0.02 -0.01 
+
+Qwen-7B 1.33 0.78 1.2 0.13 0.55 
+
+ChatGLM3-6B-Base 1.3 1.16 1.35 -0.05 0.14 
+
+InternLM2-7B-Base 1.73 1.75 1.64 0.09 -0.02 
+
+InternLM2-7B 1.48 1.14 1.46 0.02 0.34 
+
+13 ∼ 20 13\sim 20 B Models 
+
+Llama2-13B 1.42 1.42 1.45 -0.03 0 
+
+Mixtral-8x7B-v0.1 1.34 1.35 1.35 -0.01 -0.01 
+
+Baichuan2-13B-Base 1.13 0.76 1.19 -0.06 0.37 
+
+Qwen-14B 1.15 0.5 1.27 -0.12 0.65 
+
+InternLM2-20B-Base 1.66 1.67 1.58 0.08 -0.01 
+
+InternLM2-20B 1.52 1.17 1.48 0.04 0.35 
+
+Table 20: Evaluation of Base Models on GSM8K Contamination . 
+
+We evaluate the language modeling (LM) loss on samples (a sample is a concatenation of question and answer) from GSM8K dataset for several foundation models, results are shown in Table 20 . For each LLM, we compare LM loss on the training split ( L t ​ r ​ a ​ i ​ n L_{train} ), the test split ( L t ​ e ​ s ​ t L_{test} ), and a specially curated reference set ( L r ​ e ​ f L_{ref} ), generated by GPT-4, designed to mimic the GSM8K dataset. We also report two key metrics: Δ 1 = L t ​ e ​ s ​ t − L r ​ e ​ f \Delta_{1}=L_{test}-L_{ref} , serving as an indicator of potential test data leakage during the training of the LLM, i.e., a lower value suggests possible leakage; and Δ 2 = L t ​ e ​ s ​ t − L t ​ r ​ a ​ i ​ n \Delta_{2}=L_{test}-L_{train} , which measures the degree of overfitting on the training split of the dataset. A higher value of Δ 2 \Delta_{2} implies excessive overfitting. Outliers for both Δ 1 \Delta_{1} and Δ 2 \Delta_{2} are highlighted in gray. 
+
+6 Conclusion 
+
+In this report, we present the InternLM2 large language model, which demonstrates exceptional performance in both subjective and objective evaluations. InternLM2 has been trained on over 2T of high-quality pre-training corpora, covering model sizes of 1.8B, 7B, and 20B, making it suitable for a variety of scenarios. To better support long contexts, InternLM2 employs GQA to reduce inference costs, and has been additionally trained on up to 32k contexts. Besides open-sourcing the model itself, we also make available the checkpoints from various phases of the training process, facilitating studies by future researches. 
+
+In addition to open-sourcing the model, we provide a detailed description of how we trained InternLM2, including the training framework, pre-training text data, pre-training code data, pre-training long text data, and alignment data. Furthermore, to address preference conflicts encountered during the RLHF process, we propose Conditional Online RLHF to harmonize various preferences. This information can offer insights into how to prepare pre-training data and how to train larger models more effectively. 
+
+References 
+
+(1) chat markup language. https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/ai-services/openai/includes/chat-markup-language.md . Accessed: 2024-02-06. 
+
+lla (2023) llama.cpp: Port of facebook’s llama model in c/c++. https://github.com/ggerganov/llama.cpp , 2023. 
+
+Ainslie et al. (2023) Joshua Ainslie, James Lee-Thorp, Michiel de Jong, Yury Zemlyanskiy, Federico
+Lebrón, and Sumit Sanghai. GQA: training generalized multi-query transformer models from
+multi-head checkpoints. In Houda Bouamor, Juan Pino, and Kalika Bali (eds.), Proceedings of the 2023 Conference on Empirical Methods in Natural
+Language Processing, EMNLP 2023, Singapore, December 6-10, 2023 , pp. 4895–4901. Association for Computational Linguistics, 2023. URL https://aclanthology.org/2023.emnlp-main.298 . 
+
+Almazrouei et al. (2023) Ebtesam Almazrouei, Hamza Alobeidli, Abdulaziz Alshamsi, Alessandro Cappelli,
+Ruxandra Cojocaru, Mérouane Debbah, Étienne Goffinet, Daniel
+Hesslow, Julien Launay, Quentin Malartic, Daniele Mazzotta, Badreddine Noune,
+Baptiste Pannier, and Guilherme Penedo. The falcon series of open language models. CoRR , abs/2311.16867, 2023. doi: 10.48550/ARXIV.2311.16867 . URL https://doi.org/10.48550/arXiv.2311.16867 . 
+
+An et al. (2023) Chenxin An, Shansan Gong, Ming Zhong, Mukai Li, Jun Zhang, Lingpeng Kong, and
+Xipeng Qiu. L-eval: Instituting standardized evaluation for long context language
+models. CoRR , abs/2307.11088, 2023. doi: 10.48550/ARXIV.2307.11088 . URL https://doi.org/10.48550/arXiv.2307.11088 . 
+
+Anonymous (2024a) Anonymous. Cibench: Evaluating your llms with a code interpreter plugin. In Openreview , 2024a. URL https://openreview.net/forum?id=O8jmCw5puG . 
+
+Anonymous (2024b) Anonymous. Mathbench: Evaluating the theory and application proficiency of llms
+with a hierarchical mathematics benchmark. In Openreview , 2024b. URL https://openreview.net/forum?id=4vRO48RwVG . 
+
+Austin et al. (2021) Jacob Austin, Augustus Odena, Maxwell Nye, Maarten Bosma, Henryk Michalewski,
+David Dohan, Ellen Jiang, Carrie Cai, Michael Terry, Quoc Le, et al. Program synthesis with large language models. arXiv preprint arXiv:2108.07732 , 2021. 
+
+Ba et al. (2016) Lei Jimmy Ba, Jamie Ryan Kiros, and Geoffrey E. Hinton. Layer normalization. CoRR , abs/1607.06450, 2016. URL http://arxiv.org/abs/1607.06450 . 
+
+Bai et al. (2023a) Jinze Bai, Shuai Bai, Yunfei Chu, Zeyu Cui, Kai Dang, Xiaodong Deng, Yang Fan,
+Wenbin Ge, Yu Han, Fei Huang, Binyuan Hui, Luo Ji, Mei Li, Junyang Lin, Runji
+Lin, Dayiheng Liu, Gao Liu, Chengqiang Lu, Keming Lu, Jianxin Ma, Rui Men,
+Xingzhang Ren, Xuancheng Ren, Chuanqi Tan, Sinan Tan, Jianhong Tu, Peng Wang,
+Shijie Wang, Wei Wang, Shengguang Wu, Benfeng Xu, Jin Xu, An Yang, Hao Yang,
+Jian Yang, Shusheng Yang, Yang Yao, Bowen Yu, Hongyi Yuan, Zheng Yuan,
+Jianwei Zhang, Xingxuan Zhang, Yichang Zhang, Zhenru Zhang, Chang Zhou,
+Jingren Zhou, Xiaohuan Zhou, and Tianhang Zhu. Qwen technical report. CoRR , abs/2309.16609, 2023a. doi: 10.48550/ARXIV.2309.16609 . URL https://doi.org/10.48550/arXiv.2309.16609 . 
+
+Bai et al. (2022) Yuntao Bai, Andy Jones, Kamal Ndousse, Amanda Askell, Anna Chen, Nova DasSarma,
+Dawn Drain, Stanislav Fort, Deep Ganguli, Tom Henighan, Nicholas Joseph,
+Saurav Kadavath, Jackson Kernion, Tom Conerly, Sheer El-Showk, Nelson Elhage,
+Zac Hatfield-Dodds, Danny Hernandez, Tristan Hume, Scott Johnston, Shauna
+Kravec, Liane Lovitt, Neel Nanda, Catherine Olsson, Dario Amodei, Tom Brown,
+Jack Clark, Sam McCandlish, Chris Olah, Ben Mann, and Jared Kaplan. Training a helpful and harmless assistant with reinforcement learning
+from human feedback, 2022. 
+
+Bai et al. (2023b) Yushi Bai, Xin Lv, Jiajie Zhang, Hongchang Lyu, Jiankai Tang, Zhidian Huang,
+Zhengxiao Du, Xiao Liu, Aohan Zeng, Lei Hou, Yuxiao Dong, Jie Tang, and
+Juanzi Li. Longbench: A bilingual, multitask benchmark for long context
+understanding. CoRR , abs/2308.14508, 2023b. doi: 10.48550/ARXIV.2308.14508 . URL https://doi.org/10.48550/arXiv.2308.14508 . 
+
+Barbaresi (2021) Adrien Barbaresi. Trafilatura: A web scraping library and command-line tool for text
+discovery and extraction. In Heng Ji, Jong C. Park, and Rui Xia (eds.), Proceedings of
+the Joint Conference of the 59th Annual Meeting of the Association for
+Computational Linguistics and the 11th International Joint Conference on
+Natural Language Processing, ACL 2021 - System Demonstrations, Online,
+August 1-6, 2021 , pp. 122–131. Association for Computational Linguistics,
+2021. doi: 10.18653/V1/2021.ACL-DEMO.15 . URL https://doi.org/10.18653/v1/2021.acl-demo.15 . 
+
+Bi et al. (2024) Xiao Bi, Deli Chen, Guanting Chen, Shanhuang Chen, Damai Dai, Chengqi Deng,
+Honghui Ding, Kai Dong, Qiushi Du, Zhe Fu, Huazuo Gao, Kaige Gao, Wenjun Gao,
+Ruiqi Ge, Kang Guan, Daya Guo, Jianzhong Guo, Guangbo Hao, Zhewen Hao, Ying
+He, Wenjie Hu, Panpan Huang, Erhang Li, Guowei Li, Jiashi Li, Yao Li, Y. K.
+Li, Wenfeng Liang, Fangyun Lin, Alex X. Liu, Bo Liu, Wen Liu, Xiaodong Liu,
+Xin Liu, Yiyuan Liu, Haoyu Lu, Shanghao Lu, Fuli Luo, Shirong Ma, Xiaotao
+Nie, Tian Pei, Yishi Piao, Junjie Qiu, Hui Qu, Tongzheng Ren, Zehui Ren,
+Chong Ruan, Zhangli Sha, Zhihong Shao, Junxiao Song, Xuecheng Su, Jingxiang
+Sun, Yaofeng Sun, Minghui Tang, Bingxuan Wang, Peiyi Wang, Shiyu Wang, Yaohui
+Wang, Yongji Wang, Tong Wu, Y. Wu, Xin Xie, Zhenda Xie, Ziwei Xie, Yiliang
+Xiong, Hanwei Xu, R. X. Xu, Yanhong Xu, Dejian Yang, Yuxiang You, Shuiping
+Yu, Xingkai Yu, B. Zhang, Haowei Zhang, Lecong Zhang, Liyue Zhang, Mingchuan
+Zhang, Minghua Zhang, Wentao Zhang, Yichao Zhang, Chenggang Zhao, Yao Zhao,
+Shangyan Zhou, Shunfeng Zhou, Qihao Zhu, and Yuheng Zou. Deepseek LLM: scaling open-source language models with longtermism. CoRR , abs/2401.02954, 2024. doi: 10.48550/ARXIV.2401.02954 . URL https://doi.org/10.48550/arXiv.2401.02954 . 
+
+Bisk et al. (2020) Yonatan Bisk, Rowan Zellers, Ronan Le Bras, Jianfeng Gao, and Yejin Choi. PIQA: reasoning about physical commonsense in natural language. In The Thirty-Fourth AAAI Conference on Artificial
+Intelligence, AAAI 2020, The Thirty-Second Innovative Applications of
+Artificial Intelligence Conference, IAAI 2020, The Tenth AAAI Symposium
+on Educational Advances in Artificial Intelligence, EAAI 2020, New York,
+NY, USA, February 7-12, 2020 , pp. 7432–7439. AAAI Press, 2020. doi: 10.1609/AAAI.V34I05.6239 . URL https://doi.org/10.1609/aaai.v34i05.6239 . 
+
+Broder (1997) Andrei Z. Broder. On the resemblance and containment of documents. In Bruno Carpentieri, Alfredo De Santis, Ugo Vaccaro, and James A.
+Storer (eds.), Compression and Complexity of SEQUENCES 1997,
+Positano, Amalfitan Coast, Salerno, Italy, June 11-13, 1997, Proceedings ,
+pp. 21–29. IEEE, 1997. doi: 10.1109/SEQUEN.1997.666900 . URL https://doi.org/10.1109/SEQUEN.1997.666900 . 
+
+Brown et al. (2020) Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan,
+Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda
+Askell, Sandhini Agarwal, Ariel Herbert-Voss, Gretchen Krueger, Tom
+Henighan, Rewon Child, Aditya Ramesh, Daniel M. Ziegler, Jeffrey Wu, Clemens
+Winter, Christopher Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott
+Gray, Benjamin Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec
+Radford, Ilya Sutskever, and Dario Amodei. Language models are few-shot learners. In Hugo Larochelle, Marc’Aurelio Ranzato, Raia Hadsell,
+Maria-Florina Balcan, and Hsuan-Tien Lin (eds.), Advances in Neural
+Information Processing Systems 33: Annual Conference on Neural Information
+Processing Systems 2020, NeurIPS 2020, December 6-12, 2020, virtual , 2020. URL https://proceedings.neurips.cc/paper/2020/hash/1457c0d6bfcb4967418bfb8ac142f64a-Abstract.html . 
+
+Burges et al. (2005) Christopher J. C. Burges, Tal Shaked, Erin Renshaw, Ari Lazier, Matt Deeds,
+Nicole Hamilton, and Gregory N. Hullender. Learning to rank using gradient descent. In Luc De Raedt and Stefan Wrobel (eds.), Machine Learning,
+Proceedings of the Twenty-Second International Conference (ICML 2005),
+Bonn, Germany, August 7-11, 2005 , volume 119 of ACM International
+Conference Proceeding Series , pp. 89–96. ACM, 2005. doi: 10.1145/1102351.1102363 . URL https://doi.org/10.1145/1102351.1102363 . 
+
+Chen et al. (2021) Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de Oliveira
+Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg
+Brockman, et al. Evaluating large language models trained on code. arXiv preprint arXiv:2107.03374 , 2021. 
+
+Chen et al. (2024a) Qiaoling Chen, Diandian Gu, Guoteng Wang, Xun Chen, YingTong Xiong, Ting Huang,
+Qinghao Hu, Xin Jin, Yonggang Wen, Tianwei Zhang, et al. Internevo: Efficient long-sequence large language model training via
+hybrid parallelism and redundant sharding. arXiv preprint arXiv:2401.09149 , 2024a. 
+
+Chen et al. (2024b) Qiaoling Chen, Qinghao Hu, Guoteng Wang, Yingtong Xiong, Ting Huang, Xun Chen,
+Yang Gao, Hang Yan, Yonggang Wen, Tianwei Zhang, and Peng Sun. Amsp: Reducing communication overhead of zero for efficient llm
+training, 2024b. 
+
+Chen et al. (2023a) Wenhu Chen, Ming Yin, Max Ku, Pan Lu, Yixin Wan, Xueguang Ma, Jianyu Xu, Xinyi
+Wang, and Tony Xia. Theoremqa: A theorem-driven question answering dataset. In Houda Bouamor, Juan Pino, and Kalika Bali (eds.), Proceedings of the 2023 Conference on Empirical Methods in Natural
+Language Processing, EMNLP 2023, Singapore, December 6-10, 2023 , pp. 7889–7901. Association for Computational Linguistics, 2023a. URL https://aclanthology.org/2023.emnlp-main.489 . 
+
+Chen et al. (2023b) Zehui Chen, Weihua Du, Wenwei Zhang, Kuikun Liu, Jiangning Liu, Miao Zheng,
+Jingming Zhuo, Songyang Zhang, Dahua Lin, Kai Chen, et al. T-eval: Evaluating the tool utilization capability step by step. arXiv preprint arXiv:2312.14033 , 2023b. 
+
+Chen et al. (2024c) Zehui Chen, Kuikun Liu, Qiuchen Wang, Jiangning Liu, Dahua Lin, Kai Chen, and
+Feng Zhao. Agent-flan: Designing data and methods of effective agent tuning for
+large language models. work in progress , 2024c. 
+
+Chowdhery et al. (2023) Aakanksha Chowdhery, Sharan Narang, Jacob Devlin, Maarten Bosma, Gaurav Mishra,
+Adam Roberts, Paul Barham, Hyung Won Chung, Charles Sutton, Sebastian
+Gehrmann, Parker Schuh, Kensen Shi, Sasha Tsvyashchenko, Joshua Maynez,
+Abhishek Rao, Parker Barnes, Yi Tay, Noam Shazeer, Vinodkumar Prabhakaran,
+Emily Reif, Nan Du, Ben Hutchinson, Reiner Pope, James Bradbury, Jacob
+Austin, Michael Isard, Guy Gur-Ari, Pengcheng Yin, Toju Duke, Anselm
+Levskaya, Sanjay Ghemawat, Sunipa Dev, Henryk Michalewski, Xavier Garcia,
+Vedant Misra, Kevin Robinson, Liam Fedus, Denny Zhou, Daphne Ippolito, David
+Luan, Hyeontaek Lim, Barret Zoph, Alexander Spiridonov, Ryan Sepassi, David
+Dohan, Shivani Agrawal, Mark Omernick, Andrew M. Dai,
+Thanumalayan Sankaranarayana Pillai, Marie Pellat, Aitor Lewkowycz, Erica
+Moreira, Rewon Child, Oleksandr Polozov, Katherine Lee, Zongwei Zhou, Xuezhi
+Wang, Brennan Saeta, Mark Diaz, Orhan Firat, Michele Catasta, Jason Wei,
+Kathy Meier-Hellstern, Douglas Eck, Jeff Dean, Slav Petrov, and Noah
+Fiedel. Palm: Scaling language modeling with pathways. J. Mach. Learn. Res. , 24:240:1–240:113, 2023. URL http://jmlr.org/papers/v24/22-1144.html . 
+
+Christiano et al. (2017) Paul F. Christiano, Jan Leike, Tom B. Brown, Miljan Martic, Shane Legg, and
+Dario Amodei. Deep reinforcement learning from human preferences. In Isabelle Guyon, Ulrike von Luxburg, Samy Bengio, Hanna M. Wallach,
+Rob Fergus, S. V. N. Vishwanathan, and Roman Garnett (eds.), Advances
+in Neural Information Processing Systems 30: Annual Conference on Neural
+Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA,
+USA , pp. 4299–4307, 2017. URL https://proceedings.neurips.cc/paper/2017/hash/d5e2c0adad503c91f91df240d0cd4e49-Abstract.html . 
+
+Cobbe et al. (2021) Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Mark Chen, Heewoo Jun, Lukasz
+Kaiser, Matthias Plappert, Jerry Tworek, Jacob Hilton, Reiichiro Nakano,
+Christopher Hesse, and John Schulman. Training verifiers to solve math word problems. CoRR , abs/2110.14168, 2021. URL https://arxiv.org/abs/2110.14168 . 
+
+Contributors (2023a) LMDeploy Contributors. Lmdeploy: A toolkit for compressing, deploying, and serving llm. https://github.com/InternLM/lmdeploy , 2023a. 
+
+Contributors (2023b) OpenCompass Contributors. Opencompass: A universal evaluation platform for foundation models. https://github.com/open-compass/opencompass ,
+2023b. 
+
+Cui et al. (2023) Ganqu Cui, Lifan Yuan, Ning Ding, Guanming Yao, Wei Zhu, Yuan Ni, Guotong Xie,
+Zhiyuan Liu, and Maosong Sun. Ultrafeedback: Boosting language models with high-quality feedback,
+2023. 
+
+Dai et al. (2023) Josef Dai, Xuehai Pan, Ruiyang Sun, Jiaming Ji, Xinbo Xu, Mickel Liu, Yizhou
+Wang, and Yaodong Yang. Safe rlhf: Safe reinforcement learning from human feedback, 2023. 
+
+Dao (2023) Tri Dao. Flashattention-2: Faster attention with better parallelism and work
+partitioning. CoRR , abs/2307.08691, 2023. doi: 10.48550/ARXIV.2307.08691 . URL https://doi.org/10.48550/arXiv.2307.08691 . 
+
+Dodge et al. (2021) Jesse Dodge, Maarten Sap, Ana Marasovic, William Agnew, Gabriel Ilharco, Dirk
+Groeneveld, Margaret Mitchell, and Matt Gardner. Documenting large webtext corpora: A case study on the colossal
+clean crawled corpus. In Marie-Francine Moens, Xuanjing Huang, Lucia Specia, and
+Scott Wen-tau Yih (eds.), Proceedings of the 2021 Conference on
+Empirical Methods in Natural Language Processing, EMNLP 2021, Virtual Event
+/ Punta Cana, Dominican Republic, 7-11 November, 2021 , pp. 1286–1305.
+Association for Computational Linguistics, 2021. doi: 10.18653/V1/2021.EMNLP-MAIN.98 . URL https://doi.org/10.18653/v1/2021.emnlp-main.98 . 
+
+Ethayarajh et al. (2022) Kawin Ethayarajh, Yejin Choi, and Swabha Swayamdipta. Understanding dataset difficulty with 𝒱 \mathcal{V} -usable
+information. In Kamalika Chaudhuri, Stefanie Jegelka, Le Song, Csaba Szepesvari,
+Gang Niu, and Sivan Sabato (eds.), Proceedings of the 39th
+International Conference on Machine Learning , volume 162 of Proceedings of Machine Learning Research , pp. 5988–6008. PMLR,
+17–23 Jul 2022. 
+
+Gao et al. (2022) Leo Gao, John Schulman, and Jacob Hilton. Scaling laws for reward model overoptimization. Oct 2022. 
+
+Gao et al. (2023) Yunfan Gao, Yun Xiong, Xinyu Gao, Kangxiang Jia, Jinliu Pan, Yuxi Bi, Yi Dai,
+Jiawei Sun, Qianyu Guo, Meng Wang, and Haofen Wang. Retrieval-augmented generation for large language models: A survey. CoRR , abs/2312.10997, 2023. doi: 10.48550/ARXIV.2312.10997 . URL https://doi.org/10.48550/arXiv.2312.10997 . 
+
+Groeneveld et al. (2024) Dirk Groeneveld, Iz Beltagy, Pete Walsh, Akshita Bhagia, Rodney Kinney, Oyvind
+Tafjord, Ananya Harsh Jha, Hamish Ivison, Ian Magnusson, Yizhong Wang, Shane
+Arora, David Atkinson, Russell Authur, Khyathi Raghavi Chandu, Arman Cohan,
+Jennifer Dumas, Yanai Elazar, Yuling Gu, Jack Hessel, Tushar Khot, William
+Merrill, Jacob Morrison, Niklas Muennighoff, Aakanksha Naik, Crystal Nam,
+Matthew E. Peters, Valentina Pyatkin, Abhilasha Ravichander, Dustin Schwenk,
+Saurabh Shah, Will Smith, Emma Strubell, Nishant Subramani, Mitchell
+Wortsman, Pradeep Dasigi, Nathan Lambert, Kyle Richardson, Luke Zettlemoyer,
+Jesse Dodge, Kyle Lo, Luca Soldaini, Noah A. Smith, and Hannaneh Hajishirzi. Olmo: Accelerating the science of language models. CoRR , abs/2402.00838, 2024. 
+
+Guo et al. (2024) Daya Guo, Qihao Zhu, Dejian Yang, Zhenda Xie, Kai Dong, Wentao Zhang, Guanting
+Chen, Xiao Bi, Y. Wu, Y. K. Li, Fuli Luo, Yingfei Xiong, and Wenfeng Liang. Deepseek-coder: When the large language model meets programming - the
+rise of code intelligence. CoRR , abs/2401.14196, 2024. 
+
+Hendrycks et al. (2020) Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Mantas Mazeika, Dawn
+Song, and Jacob Steinhardt. Measuring massive multitask language understanding. arXiv preprint arXiv:2009.03300 , 2020. 
+
+Hendrycks et al. (2021) Dan Hendrycks, Collin Burns, Saurav Kadavath, Akul Arora, Steven Basart, Eric
+Tang, Dawn Song, and Jacob Steinhardt. Measuring mathematical problem solving with the MATH dataset. In Joaquin Vanschoren and Sai-Kit Yeung (eds.), Proceedings
+of the Neural Information Processing Systems Track on Datasets and Benchmarks
+1, NeurIPS Datasets and Benchmarks 2021, December 2021, virtual , 2021. URL https://datasets-benchmarks-proceedings.neurips.cc/paper/2021/hash/be83ab3ecd0db773eb2dc1b0a17836a1-Abstract-round2.html . 
+
+Hu et al. (2024) Qinghao Hu, Zhisheng Ye, Zerui Wang, Guoteng Wang, Meng Zhang, Qiaoling Chen,
+Peng Sun, Dahua Lin, Xiaolin Wang, Yingwei Luo, et al. Characterization of large language model development in the
+datacenter. In USENIX Symposium on Networked Systems Design and
+Implementation (NSDI’24) , 2024. 
+
+Huang et al. (2019) Yanping Huang, Youlong Cheng, Ankur Bapna, Orhan Firat, Dehao Chen, Mia Chen,
+HyoukJoong Lee, Jiquan Ngiam, Quoc V Le, Yonghui Wu, et al. Gpipe: Efficient training of giant neural networks using pipeline
+parallelism. Advances in neural information processing systems , 32, 2019. 
+
+Huang et al. (2023) Yuzhen Huang, Yuzhuo Bai, Zhihao Zhu, Junlei Zhang, Jinghan Zhang, Tangjun Su,
+Junteng Liu, Chuancheng Lv, Yikai Zhang, Jiayi Lei, Yao Fu, Maosong Sun, and
+Junxian He. C-eval: A multi-level multi-discipline chinese evaluation suite for
+foundation models. arXiv preprint arXiv:2305.08322 , 2023. 
+
+Jiang et al. (2023) Albert Q. Jiang, Alexandre Sablayrolles, Arthur Mensch, Chris Bamford,
+Devendra Singh Chaplot, Diego de Las Casas, Florian Bressand, Gianna Lengyel,
+Guillaume Lample, Lucile Saulnier, Lélio Renard Lavaud, Marie-Anne
+Lachaux, Pierre Stock, Teven Le Scao, Thibaut Lavril, Thomas Wang,
+Timothée Lacroix, and William El Sayed. Mistral 7b. CoRR , abs/2310.06825, 2023. doi: 10.48550/ARXIV.2310.06825 . URL https://doi.org/10.48550/arXiv.2310.06825 . 
+
+Joshi et al. (2017) Mandar Joshi, Eunsol Choi, Daniel S Weld, and Luke Zettlemoyer. Triviaqa: A large scale distantly supervised challenge dataset for
+reading comprehension. arXiv preprint arXiv:1705.03551 , 2017. 
+
+Ke et al. (2023) Pei Ke, Bosi Wen, Zhuoer Feng, Xiao Liu, Xuanyu Lei, Jiale Cheng, Shengyuan
+Wang, Aohan Zeng, Yuxiao Dong, Hongning Wang, et al. Critiquellm: Scaling llm-as-critic for effective and explainable
+evaluation of large language model generation. arXiv preprint arXiv:2311.18702 , 2023. 
+
+Korthikanti et al. (2023) Vijay Anand Korthikanti, Jared Casper, Sangkug Lym, Lawrence McAfee, Michael
+Andersch, Mohammad Shoeybi, and Bryan Catanzaro. Reducing activation recomputation in large transformer models. Proceedings of Machine Learning and Systems , 5, 2023. 
+
+Kwiatkowski et al. (2019) Tom Kwiatkowski, Jennimaria Palomaki, Olivia Redfield, Michael Collins, Ankur
+Parikh, Chris Alberti, Danielle Epstein, Illia Polosukhin, Matthew Kelcey,
+Jacob Devlin, Kenton Lee, Kristina N. Toutanova, Llion Jones, Ming-Wei Chang,
+Andrew Dai, Jakob Uszkoreit, Quoc Le, and Slav Petrov. Natural questions: a benchmark for question answering research. Transactions of the Association of Computational Linguistics ,
+2019. 
+
+Laban et al. (2023) Philippe Laban, Wojciech Kryscinski, Divyansh Agarwal, Alexander R. Fabbri,
+Caiming Xiong, Shafiq Joty, and Chien-Sheng Wu. Summedits: Measuring LLM ability at factual reasoning through the
+lens of summarization. In Houda Bouamor, Juan Pino, and Kalika Bali (eds.), Proceedings of the 2023 Conference on Empirical Methods in Natural
+Language Processing, EMNLP 2023, Singapore, December 6-10, 2023 , pp. 9662–9676. Association for Computational Linguistics, 2023. URL https://aclanthology.org/2023.emnlp-main.600 . 
+
+Lai et al. (2017) Guokun Lai, Qizhe Xie, Hanxiao Liu, Yiming Yang, and Eduard Hovy. RACE: Large-scale ReAding comprehension dataset from
+examinations. In Proceedings of the 2017 Conference on Empirical Methods in
+Natural Language Processing , pp. 785–794, Copenhagen, Denmark, September
+2017. Association for Computational Linguistics. doi: 10.18653/v1/D17-1082 . URL https://aclanthology.org/D17-1082 . 
+
+Lai et al. (2023) Yuhang Lai, Chengxi Li, Yiming Wang, Tianyi Zhang, Ruiqi Zhong, Luke
+Zettlemoyer, Wen-tau Yih, Daniel Fried, Sida Wang, and Tao Yu. Ds-1000: A natural and reliable benchmark for data science code
+generation. In International Conference on Machine Learning , pp. 18319–18345. PMLR, 2023. 
+
+Li et al. (2023a) Haonan Li, Yixuan Zhang, Fajri Koto, Yifei Yang, Hai Zhao, Yeyun Gong, Nan
+Duan, and Timothy Baldwin. Cmmlu: Measuring massive multitask language understanding in chinese,
+2023a. 
+
+Li et al. (2023b) Xuechen Li, Tianyi Zhang, Yann Dubois, Rohan Taori, Ishaan Gulrajani, Carlos
+Guestrin, Percy Liang, and Tatsunori B. Hashimoto. Alpacaeval: An automatic evaluator of instruction-following models. https://github.com/tatsu-lab/alpaca_eval , 2023b. 
+
+Lightman et al. (2023) Hunter Lightman, Vineet Kosaraju, Yura Burda, Harri Edwards, Bowen Baker, Teddy
+Lee, Jan Leike, John Schulman, Ilya Sutskever, and Karl Cobbe. Let’s verify step by step. arXiv preprint arXiv:2305.20050 , 2023. 
+
+Lin et al. (2017) Tsung-Yi Lin, Priya Goyal, Ross B. Girshick, Kaiming He, and Piotr
+Dollár. Focal loss for dense object detection. In IEEE International Conference on Computer Vision, ICCV
+2017, Venice, Italy, October 22-29, 2017 , pp. 2999–3007. IEEE Computer
+Society, 2017. doi: 10.1109/ICCV.2017.324 . URL https://doi.org/10.1109/ICCV.2017.324 . 
+
+Liu et al. (2023a) Xiao Liu, Xuanyu Lei, Shengyuan Wang, Yue Huang, Zhuoer Feng, Bosi Wen, Jiale
+Cheng, Pei Ke, Yifan Xu, Weng Lam Tam, et al. Alignbench: Benchmarking chinese alignment of large language models. arXiv preprint arXiv:2311.18743 , 2023a. 
+
+Liu et al. (2023b) Xiaoran Liu, Hang Yan, Shuo Zhang, Chenxin An, Xipeng Qiu, and Dahua Lin. Scaling laws of rope-based extrapolation. CoRR , abs/2310.05209, 2023b. doi: 10.48550/ARXIV.2310.05209 . URL https://doi.org/10.48550/arXiv.2310.05209 . 
+
+LocalLLaMA (2023) LocalLLaMA. Dynamically scaled rope further increases performance of long context
+llama with zero fine-tuning, July 2023. URL https://www.reddit.com/r/LocalLLaMA/comments/14mrgpr/dynamically_scaled_rope_further_increases/ . 
+
+Loshchilov & Hutter (2019) Ilya Loshchilov and Frank Hutter. Decoupled weight decay regularization. In 7th International Conference on Learning Representations,
+ICLR 2019, New Orleans, LA, USA, May 6-9, 2019 . OpenReview.net, 2019. URL https://openreview.net/forum?id=Bkg6RiCqY7 . 
+
+Lv et al. (2024) Kai Lv, Xiaoran Liu, Qipeng Guo, Hang Yan, Conghui He, Xipeng Qiu, and Dahua
+Lin. Longwanjuan: Towards systematic measurement for long text quality,
+2024. 
+
+Manheim & Garrabrant (2018) David Manheim and Scott Garrabrant. Categorizing variants of goodhart’s law. arXiv: Artificial Intelligence,arXiv: Artificial Intelligence ,
+Mar 2018. 
+
+Mihaylov et al. (2018) Todor Mihaylov, Peter Clark, Tushar Khot, and Ashish Sabharwal. Can a suit of armor conduct electricity? A new dataset for open
+book question answering. In Ellen Riloff, David Chiang, Julia Hockenmaier, and Jun’ichi Tsujii
+(eds.), Proceedings of the 2018 Conference on Empirical Methods in
+Natural Language Processing, Brussels, Belgium, October 31 - November 4,
+2018 , pp. 2381–2391. Association for Computational Linguistics, 2018. doi: 10.18653/V1/D18-1260 . URL https://doi.org/10.18653/v1/d18-1260 . 
+
+Narang et al. (2017) Sharan Narang, Gregory Diamos, Erich Elsen, Paulius Micikevicius, Jonah Alben,
+David Garcia, Boris Ginsburg, Michael Houston, Oleksii Kuchaiev, Ganesh
+Venkatesh, et al. Mixed precision training. In Int. Conf. on Learning Representation , 2017. 
+
+OpenAI (2023) OpenAI. GPT-4 technical report. CoRR , abs/2303.08774, 2023. doi: 10.48550/ARXIV.2303.08774 . URL https://doi.org/10.48550/arXiv.2303.08774 . 
+
+Ouyang et al. (2022) Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll L. Wainwright, Pamela
+Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, John
+Schulman, Jacob Hilton, Fraser Kelton, Luke Miller, Maddie Simens, Amanda
+Askell, Peter Welinder, Paul F. Christiano, Jan Leike, and Ryan Lowe. Training language models to follow instructions with human feedback. In Sanmi Koyejo, S. Mohamed, A. Agarwal, Danielle Belgrave, K. Cho,
+and A. Oh (eds.), Advances in Neural Information Processing Systems 35:
+Annual Conference on Neural Information Processing Systems 2022, NeurIPS
+2022, New Orleans, LA, USA, November 28 - December 9, 2022 , 2022. URL http://papers.nips.cc/paper_files/paper/2022/hash/b1efde53be364a73914f58805a001731-Abstract-Conference.html . 
+
+Parmar et al. (2024) Jupinder Parmar, Shrimai Prabhumoye, Joseph Jennings, Mostofa Patwary, Sandeep
+Subramanian, Dan Su, Chen Zhu, Deepak Narayanan, Aastha Jhunjhunwala, Ayush
+Dattagupta, et al. Nemotron-4 15b technical report. arXiv preprint arXiv:2402.16819 , 2024. 
+
+Penedo et al. (2023) Guilherme Penedo, Quentin Malartic, Daniel Hesslow, Ruxandra Cojocaru,
+Alessandro Cappelli, Hamza Alobeidli, Baptiste Pannier, Ebtesam Almazrouei,
+and Julien Launay. The refinedweb dataset for falcon LLM: outperforming curated
+corpora with web data, and web data only. CoRR , abs/2306.01116, 2023. doi: 10.48550/ARXIV.2306.01116 . URL https://doi.org/10.48550/arXiv.2306.01116 . 
+
+Qin et al. (2023a) Yujia Qin, Shengding Hu, Yankai Lin, Weize Chen, Ning Ding, Ganqu Cui, Zheni
+Zeng, Yufei Huang, Chaojun Xiao, Chi Han, Yi Ren Fung, Yusheng Su, Huadong
+Wang, Cheng Qian, Runchu Tian, Kunlun Zhu, Shihao Liang, Xingyu Shen, Bokai
+Xu, Zhen Zhang, Yining Ye, Bowen Li, Ziwei Tang, Jing Yi, Yuzhang Zhu,
+Zhenning Dai, Lan Yan, Xin Cong, Yaxi Lu, Weilin Zhao, Yuxiang Huang, Junxi
+Yan, Xu Han, Xian Sun, Dahai Li, Jason Phang, Cheng Yang, Tongshuang Wu, Heng
+Ji, Zhiyuan Liu, and Maosong Sun. Tool learning with foundation models. CoRR , abs/2304.08354, 2023a. doi: 10.48550/ARXIV.2304.08354 . URL https://doi.org/10.48550/arXiv.2304.08354 . 
+
+Qin et al. (2023b) Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan Yan, Yaxi Lu, Yankai Lin,
+Xin Cong, Xiangru Tang, Bill Qian, Sihan Zhao, Runchu Tian, Ruobing Xie, Jie
+Zhou, Mark Gerstein, Dahai Li, Zhiyuan Liu, and Maosong Sun. Toolllm: Facilitating large language models to master 16000+
+real-world apis. CoRR , abs/2307.16789, 2023b. doi: 10.48550/ARXIV.2307.16789 . URL https://doi.org/10.48550/arXiv.2307.16789 . 
+
+Rae et al. (2021) Jack W. Rae, Sebastian Borgeaud, Trevor Cai, Katie Millican, Jordan Hoffmann,
+H. Francis Song, John Aslanides, Sarah Henderson, Roman Ring, Susannah Young,
+Eliza Rutherford, Tom Hennigan, Jacob Menick, Albin Cassirer, Richard Powell,
+George van den Driessche, Lisa Anne Hendricks, Maribeth Rauh, Po-Sen Huang,
+Amelia Glaese, Johannes Welbl, Sumanth Dathathri, Saffron Huang, Jonathan
+Uesato, John Mellor, Irina Higgins, Antonia Creswell, Nat McAleese, Amy Wu,
+Erich Elsen, Siddhant M. Jayakumar, Elena Buchatskaya, David Budden, Esme
+Sutherland, Karen Simonyan, Michela Paganini, Laurent Sifre, Lena Martens,
+Xiang Lorraine Li, Adhiguna Kuncoro, Aida Nematzadeh, Elena Gribovskaya,
+Domenic Donato, Angeliki Lazaridou, Arthur Mensch, Jean-Baptiste Lespiau,
+Maria Tsimpoukelli, Nikolai Grigorev, Doug Fritz, Thibault Sottiaux, Mantas
+Pajarskas, Toby Pohlen, Zhitao Gong, Daniel Toyama, Cyprien
+de Masson d’Autume, Yujia Li, Tayfun Terzi, Vladimir Mikulik, Igor
+Babuschkin, Aidan Clark, Diego de Las Casas, Aurelia Guy, Chris Jones, James
+Bradbury, Matthew J. Johnson, Blake A. Hechtman, Laura Weidinger, Iason
+Gabriel, William Isaac, Edward Lockhart, Simon Osindero, Laura Rimell, Chris
+Dyer, Oriol Vinyals, Kareem Ayoub, Jeff Stanway, Lorrayne Bennett, Demis
+Hassabis, Koray Kavukcuoglu, and Geoffrey Irving. Scaling language models: Methods, analysis & insights from
+training gopher. CoRR , abs/2112.11446, 2021. URL https://arxiv.org/abs/2112.11446 . 
+
+Rajbhandari et al. (2020) Samyam Rajbhandari, Jeff Rasley, Olatunji Ruwase, and Yuxiong He. Zero: Memory optimizations toward training trillion parameter models. In SC20: International Conference for High Performance
+Computing, Networking, Storage and Analysis , pp. 1–16. IEEE, 2020. 
+
+Rasley et al. (2020) Jeff Rasley, Samyam Rajbhandari, Olatunji Ruwase, and Yuxiong He. Deepspeed: System optimizations enable training deep learning models
+with over 100 billion parameters. In Proceedings of the 26th ACM SIGKDD International Conference
+on Knowledge Discovery & Data Mining , pp. 3505–3506, 2020. 
+
+Rozière et al. (2023) Baptiste Rozière, Jonas Gehring, Fabian Gloeckle, Sten Sootla, Itai Gat,
+Xiaoqing Ellen Tan, Yossi Adi, Jingyu Liu, Tal Remez, Jérémy
+Rapin, Artyom Kozhevnikov, Ivan Evtimov, Joanna Bitton, Manish Bhatt,
+Cristian Canton-Ferrer, Aaron Grattafiori, Wenhan Xiong, Alexandre
+Défossez, Jade Copet, Faisal Azhar, Hugo Touvron, Louis Martin, Nicolas
+Usunier, Thomas Scialom, and Gabriel Synnaeve. Code llama: Open foundation models for code. CoRR , abs/2308.12950, 2023. doi: 10.48550/ARXIV.2308.12950 . URL https://doi.org/10.48550/arXiv.2308.12950 . 
+
+Sachdeva et al. (2024) Noveen Sachdeva, Benjamin Coleman, Wang-Cheng Kang, Jianmo Ni, Lichan Hong,
+Ed H. Chi, James Caverlee, Julian J. McAuley, and Derek Zhiyuan Cheng. How to train data-efficient llms. CoRR , abs/2402.09668, 2024. 
+
+Sakaguchi et al. (2020) Keisuke Sakaguchi, Ronan Le Bras, Chandra Bhagavatula, and Yejin Choi. Winogrande: An adversarial winograd schema challenge at scale. In The Thirty-Fourth AAAI Conference on Artificial
+Intelligence, AAAI 2020, The Thirty-Second Innovative Applications of
+Artificial Intelligence Conference, IAAI 2020, The Tenth AAAI Symposium
+on Educational Advances in Artificial Intelligence, EAAI 2020, New York,
+NY, USA, February 7-12, 2020 , pp. 8732–8740. AAAI Press, 2020. doi: 10.1609/AAAI.V34I05.6399 . URL https://doi.org/10.1609/aaai.v34i05.6399 . 
+
+Schick et al. (2023) Timo Schick, Jane Dwivedi-Yu, Roberto Dessì, Roberta Raileanu, Maria
+Lomeli, Luke Zettlemoyer, Nicola Cancedda, and Thomas Scialom. Toolformer: Language models can teach themselves to use tools. CoRR , abs/2302.04761, 2023. doi: 10.48550/ARXIV.2302.04761 . URL https://doi.org/10.48550/arXiv.2302.04761 . 
+
+Schulman et al. (2017) John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov. Proximal policy optimization algorithms. CoRR , abs/1707.06347, 2017. URL http://arxiv.org/abs/1707.06347 . 
+
+Shazeer (2020) Noam Shazeer. GLU variants improve transformer. CoRR , abs/2002.05202, 2020. URL https://arxiv.org/abs/2002.05202 . 
+
+Shoeybi et al. (2019) Mohammad Shoeybi, Mostofa Patwary, Raul Puri, Patrick LeGresley, Jared Casper,
+and Bryan Catanzaro. Megatron-lm: Training multi-billion parameter language models using
+model parallelism. arXiv preprint arXiv:1909.08053 , 2019. 
+
+Stiennon et al. (2020) Nisan Stiennon, Long Ouyang, Jeff Wu, Daniel M. Ziegler, Ryan Lowe, Chelsea
+Voss, Alec Radford, Dario Amodei, and Paul Christiano. Learning to summarize from human feedback. In NeurIPS , 2020. 
+
+Sun et al. (2020) Kai Sun, Dian Yu, Dong Yu, and Claire Cardie. Investigating prior knowledge for challenging chinese machine reading
+comprehension. Transactions of the Association for Computational Linguistics ,
+2020. URL https://arxiv.org/abs/1904.09679v3 . 
+
+Suzgun et al. (2023) Mirac Suzgun, Nathan Scales, Nathanael Schärli, Sebastian Gehrmann,
+Yi Tay, Hyung Won Chung, Aakanksha Chowdhery, Quoc V. Le, Ed H. Chi, Denny
+Zhou, and Jason Wei. Challenging big-bench tasks and whether chain-of-thought can solve
+them. In Anna Rogers, Jordan L. Boyd-Graber, and Naoaki Okazaki (eds.), Findings of the Association for Computational Linguistics: ACL 2023,
+Toronto, Canada, July 9-14, 2023 , pp. 13003–13051. Association for
+Computational Linguistics, 2023. doi: 10.18653/V1/2023.FINDINGS-ACL.824 . URL https://doi.org/10.18653/v1/2023.findings-acl.824 . 
+
+Team et al. (2022) NLLB Team, Marta R. Costa-jussà, James Cross, Onur Çelebi, Maha Elbayad,
+Kenneth Heafield, Kevin Heffernan, Elahe Kalbassi, Janice Lam, Daniel Licht,
+Jean Maillard, Anna Sun, Skyler Wang, Guillaume Wenzek, Al Youngblood, Bapi
+Akula, Loic Barrault, Gabriel Mejia Gonzalez, Prangthip Hansanti, John
+Hoffman, Semarley Jarrett, Kaushik Ram Sadagopan, Dirk Rowe, Shannon Spruit,
+Chau Tran, Pierre Andrews, Necip Fazil Ayan, Shruti Bhosale, Sergey Edunov,
+Angela Fan, Cynthia Gao, Vedanuj Goswami, Francisco Guzmán, Philipp Koehn,
+Alexandre Mourachko, Christophe Ropers, Safiyyah Saleem, Holger Schwenk, and
+Jeff Wang. No language left behind: Scaling human-centered machine translation. 2022. 
+
+Touvron et al. (2023a) Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Martinet, Marie-Anne
+Lachaux, Timothée Lacroix, Baptiste Rozière, Naman Goyal, Eric
+Hambro, Faisal Azhar, Aurélien Rodriguez, Armand Joulin, Edouard Grave,
+and Guillaume Lample. Llama: Open and efficient foundation language models. CoRR , abs/2302.13971, 2023a. doi: 10.48550/ARXIV.2302.13971 . URL https://doi.org/10.48550/arXiv.2302.13971 . 
+
+Touvron et al. (2023b) Hugo Touvron, Louis Martin, Kevin Stone, Peter Albert, Amjad Almahairi, Yasmine
+Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale,
+Dan Bikel, Lukas Blecher, Cristian Canton-Ferrer, Moya Chen, Guillem
+Cucurull, David Esiobu, Jude Fernandes, Jeremy Fu, Wenyin Fu, Brian Fuller,
+Cynthia Gao, Vedanuj Goswami, Naman Goyal, Anthony Hartshorn, Saghar
+Hosseini, Rui Hou, Hakan Inan, Marcin Kardas, Viktor Kerkez, Madian Khabsa,
+Isabel Kloumann, Artem Korenev, Punit Singh Koura, Marie-Anne Lachaux,
+Thibaut Lavril, Jenya Lee, Diana Liskovich, Yinghai Lu, Yuning Mao, Xavier
+Martinet, Todor Mihaylov, Pushkar Mishra, Igor Molybog, Yixin Nie, Andrew
+Poulton, Jeremy Reizenstein, Rashi Rungta, Kalyan Saladi, Alan Schelten, Ruan
+Silva, Eric Michael Smith, Ranjan Subramanian, Xiaoqing Ellen Tan, Binh Tang,
+Ross Taylor, Adina Williams, Jian Xiang Kuan, Puxin Xu, Zheng Yan, Iliyan
+Zarov, Yuchen Zhang, Angela Fan, Melanie Kambadur, Sharan Narang,
+Aurélien Rodriguez, Robert Stojnic, Sergey Edunov, and Thomas Scialom. Llama 2: Open foundation and fine-tuned chat models. CoRR , abs/2307.09288, 2023b. doi: 10.48550/ARXIV.2307.09288 . URL https://doi.org/10.48550/arXiv.2307.09288 . 
+
+Vaswani et al. (2017) Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones,
+Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin. Attention is all you need. In Isabelle Guyon, Ulrike von Luxburg, Samy Bengio, Hanna M. Wallach,
+Rob Fergus, S. V. N. Vishwanathan, and Roman Garnett (eds.), Advances
+in Neural Information Processing Systems 30: Annual Conference on Neural
+Information Processing Systems 2017, December 4-9, 2017, Long Beach, CA,
+USA , pp. 5998–6008, 2017. URL https://proceedings.neurips.cc/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html . 
+
+Wei et al. (2023) Tianwen Wei, Liang Zhao, Lichang Zhang, Bo Zhu, Lijie Wang, Haihua Yang, Biye
+Li, Cheng Cheng, Weiwei Lü, Rui Hu, Chenxia Li, Liu Yang, Xilin Luo, Xuejie
+Wu, Lunan Liu, Wenjun Cheng, Peng Cheng, Jianhao Zhang, Xiaoyu Zhang, Lei
+Lin, Xiaokun Wang, Yutuan Ma, Chuanhai Dong, Yanqi Sun, Yifu Chen, Yongyi
+Peng, Xiaojuan Liang, Shuicheng Yan, Han Fang, and Yahui Zhou. Skywork: A more open bilingual foundation model, 2023. 
+
+Wettig et al. (2024) Alexander Wettig, Aatmik Gupta, Saumya Malik, and Danqi Chen. Qurating: Selecting high-quality data for training language models. CoRR , abs/2402.09739, 2024. 
+
+Wu et al. (2023) Zeqiu Wu, Yushi Hu, Weijia Shi, Nouha Dziri, Alane Suhr, Prithviraj
+Ammanabrolu, Noah A Smith, Mari Ostendorf, and Hannaneh Hajishirzi. Fine-grained human feedback gives better rewards for language model
+training. arXiv preprint arXiv:2306.01693 , 2023. 
+
+Xi et al. (2023) Zhiheng Xi, Wenxiang Chen, Xin Guo, Wei He, Yiwen Ding, Boyang Hong, Ming
+Zhang, Junzhe Wang, Senjie Jin, Enyu Zhou, Rui Zheng, Xiaoran Fan, Xiao Wang,
+Limao Xiong, Yuhao Zhou, Weiran Wang, Changhao Jiang, Yicheng Zou, Xiangyang
+Liu, Zhangyue Yin, Shihan Dou, Rongxiang Weng, Wensen Cheng, Qi Zhang,
+Wenjuan Qin, Yongyan Zheng, Xipeng Qiu, Xuanjing Huan, and Tao Gui. The rise and potential of large language model based agents: A
+survey. CoRR , abs/2309.07864, 2023. doi: 10.48550/ARXIV.2309.07864 . URL https://doi.org/10.48550/arXiv.2309.07864 . 
+
+Xiong et al. (2023) Wenhan Xiong, Jingyu Liu, Igor Molybog, Hejia Zhang, Prajjwal Bhargava, Rui
+Hou, Louis Martin, Rashi Rungta, Karthik Abinav Sankararaman, Barlas Oguz,
+Madian Khabsa, Han Fang, Yashar Mehdad, Sharan Narang, Kshitiz Malik, Angela
+Fan, Shruti Bhosale, Sergey Edunov, Mike Lewis, Sinong Wang, and Hao Ma. Effective long-context scaling of foundation models. CoRR , abs/2309.16039, 2023. doi: 10.48550/ARXIV.2309.16039 . URL https://doi.org/10.48550/arXiv.2309.16039 . 
+
+Yang et al. (2023) Aiyuan Yang, Bin Xiao, Bingning Wang, Borong Zhang, Ce Bian, Chao Yin, Chenxu
+Lv, Da Pan, Dian Wang, Dong Yan, Fan Yang, Fei Deng, Feng Wang, Feng Liu,
+Guangwei Ai, Guosheng Dong, Haizhou Zhao, Hang Xu, Haoze Sun, Hongda Zhang,
+Hui Liu, Jiaming Ji, Jian Xie, Juntao Dai, Kun Fang, Lei Su, Liang Song,
+Lifeng Liu, Liyun Ru, Luyao Ma, Mang Wang, Mickel Liu, MingAn Lin, Nuolan
+Nie, Peidong Guo, Ruiyang Sun, Tao Zhang, Tianpeng Li, Tianyu Li, Wei Cheng,
+Weipeng Chen, Xiangrong Zeng, Xiaochuan Wang, Xiaoxi Chen, Xin Men, Xin Yu,
+Xuehai Pan, Yanjun Shen, Yiding Wang, Yiyu Li, Youxin Jiang, Yuchen Gao,
+Yupeng Zhang, Zenan Zhou, and Zhiying Wu. Baichuan 2: Open large-scale language models. CoRR , abs/2309.10305, 2023. doi: 10.48550/ARXIV.2309.10305 . URL https://doi.org/10.48550/arXiv.2309.10305 . 
+
+Yao et al. (2023) Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik R.
+Narasimhan, and Yuan Cao. React: Synergizing reasoning and acting in language models. In The Eleventh International Conference on Learning
+Representations, ICLR 2023, Kigali, Rwanda, May 1-5, 2023 . OpenReview.net,
+2023. URL https://openreview.net/pdf?id=WE_vluYUL-X . 
+
+Ying et al. (2024) Huaiyuan Ying, Shuo Zhang, Linyang Li, Zhejian Zhou, Yunfan Shao, Zhaoye Fei,
+Yichuan Ma, Jiawei Hong, Kuikun Liu, Ziyi Wang, Yudong Wang, Zijian Wu,
+Shuaibin Li, Fengzhe Zhou, Hongwei Liu, Songyang Zhang, Wenwei Zhang, Hang
+Yan, Xipeng Qiu, Jiayu Wang, Kai Chen, and Dahua Lin. Internlm-math: Open math large language models toward verifiable
+reasoning, 2024. 
+
+Zellers et al. (2019) Rowan Zellers, Ari Holtzman, Yonatan Bisk, Ali Farhadi, and Yejin Choi. Hellaswag: Can a machine really finish your sentence? In Anna Korhonen, David R. Traum, and Lluís Màrquez
+(eds.), Proceedings of the 57th Conference of the Association for
+Computational Linguistics, ACL 2019, Florence, Italy, July 28- August 2,
+2019, Volume 1: Long Papers , pp. 4791–4800. Association for Computational
+Linguistics, 2019. doi: 10.18653/V1/P19-1472 . URL https://doi.org/10.18653/v1/p19-1472 . 
+
+Zeng et al. (2023) Aohan Zeng, Xiao Liu, Zhengxiao Du, Zihan Wang, Hanyu Lai, Ming Ding, Zhuoyi
+Yang, Yifan Xu, Wendi Zheng, Xiao Xia, Weng Lam Tam, Zixuan Ma, Yufei Xue,
+Jidong Zhai, Wenguang Chen, Zhiyuan Liu, Peng Zhang, Yuxiao Dong, and Jie
+Tang. GLM-130B: an open bilingual pre-trained model. In The Eleventh International Conference on Learning
+Representations, ICLR 2023, Kigali, Rwanda, May 1-5, 2023 . OpenReview.net,
+2023. URL https://openreview.net/pdf?id=-Aw0rrrPUF . 
+
+Zhang & Sennrich (2019) Biao Zhang and Rico Sennrich. Root mean square layer normalization. In Hanna M. Wallach, Hugo Larochelle, Alina Beygelzimer, Florence
+d’Alché-Buc, Emily B. Fox, and Roman Garnett (eds.), Advances
+in Neural Information Processing Systems 32: Annual Conference on Neural
+Information Processing Systems 2019, NeurIPS 2019, December 8-14, 2019,
+Vancouver, BC, Canada , pp. 12360–12371, 2019. URL https://proceedings.neurips.cc/paper/2019/hash/1e8a19426224ca89e83cef47f1e7f53b-Abstract.html . 
+
+Zhang et al. (2023) Xiaotian Zhang, Chunyang Li, Yi Zong, Zhengyu Ying, Liang He, and Xipeng Qiu. Evaluating the performance of large language models on gaokao
+benchmark. 2023. 
+
+Zhang et al. (2022) Zhen Zhang, Shuai Zheng, Yida Wang, Justin Chiu, George Karypis, Trishul
+Chilimbi, Mu Li, and Xin Jin. Mics: Near-linear scaling for training gigantic model on public. Proceedings of the VLDB Endowment , 16(1):37–50, 2022. 
+
+Zheng et al. (2023a) Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao
+Zhuang, Zi Lin, Zhuohan Li, Dacheng Li, Eric. P Xing, Hao Zhang, Joseph E.
+Gonzalez, and Ion Stoica. Judging llm-as-a-judge with mt-bench and chatbot arena,
+2023a. 
+
+Zheng et al. (2023b) Qinkai Zheng, Xiao Xia, Xu Zou, Yuxiao Dong, Shan Wang, Yufei Xue, Zihan Wang,
+Lei Shen, Andi Wang, Yang Li, et al. Codegeex: A pre-trained model for code generation with multilingual
+evaluations on humaneval-x. arXiv preprint arXiv:2303.17568 , 2023b. 
+
+Zhong et al. (2023) Wanjun Zhong, Ruixiang Cui, Yiduo Guo, Yaobo Liang, Shuai Lu, Yanlin Wang, Amin
+Saied, Weizhu Chen, and Nan Duan. Agieval: A human-centric benchmark for evaluating foundation models,
+2023. 
+
+Zhou et al. (2023) Jeffrey Zhou, Tianjian Lu, Swaroop Mishra, Siddhartha Brahma, Sujoy Basu,
+Yi Luan, Denny Zhou, and Le Hou. Instruction-following evaluation for large language models. arXiv preprint arXiv:2311.07911 , 2023. 
+
+Appendix A Appendix 
+
+A.1 Acknowledgements 
+
+The InternLM project has been made possible thanks to the contributions of the following individuals. We would like to express our gratitude to them for their support: 11 11 11 Authors are ordered alphabetically by the last name. : 
+
+Xiang Cao, Yuanyuan Cao, Weihan Cao, Yuhang Cao, Xiaodong Chang, Wenjun Chen, Lu Chen, Songyang Gao, Jianfei Gao, Yihan Geng, Honglin Guo, Ziwei Ji, Tian Lan, Menglei Li, Peiji Li, Bowen Li, Mo Li, Xingpu Li, Yiqi Lin, Lindong Lu, Han Lv, Ren Ma, Yichuan Ma, Xiuda Ma, Jiahui Peng, Runyu Peng, Wenwen Qu, Guanlin Shen, Haowen Shen, Jin Shi, Yixin Song, Chenlin Su, Xiaohui Su, Zhewen Tan, Shihan Tian, Zhongying Tu, Bo Wang, Shasha Wang, Zhiqiang Wang, Zerui Wang, Chonghua Wang, Mengke Wang, Jiang Wu, Hui Wu, Shuhao Xing, Rui Xu, Qian Yao, Chang Yuan, Zhiyuan Zeng, Zijian Zhang, Yifan Zhang, Min Zhang, Zhiyuan Zhao, Ying Zhao, Zilong Zheng, Yunhua Zhou, Zhihao Zhu, Jie Zhu, Lin Zhu. 
+
+A.2 Prompts for Evaluation 
+Figure 17: Illustraction of streaming format adopted by InternLM2-Chat to conduct function calls, especially JSON format to ease downstream applications. 
+
+Figure 18: An example of misunderstandings of mathematical concepts. 
+
+Figure 19: Prompt used in CIBench 
+
+Figure 20: Prompt used in MATH 
+
+Figure 21: Prompt used in GSM8K 
+
+Figure 22: Prompt used in AlpacaEval 
+
+Figure 23: Prompt used in MTBench

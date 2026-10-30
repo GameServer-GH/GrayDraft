@@ -12,11 +12,14 @@ const (
 	BlueprintStatusFailed  = "failed"
 )
 
-// DocSummarySnippet is a short document summary for blueprint generation.
+// DocSummarySnippet is a short document summary for blueprint generation and knowledge.catalog.
 type DocSummarySnippet struct {
-	DocID   string `json:"doc_id"`
-	Title   string `json:"title"`
-	Summary string `json:"summary"`
+	DocID       string `json:"doc_id"`
+	Title       string `json:"title"`
+	Summary     string `json:"summary"`
+	DocGroup    string `json:"doc_group,omitempty"`
+	ParentTitle string `json:"parent_title,omitempty"`
+	IndexReady  bool   `json:"index_ready,omitempty"`
 }
 
 // MappingDelta is a local blueprint from one document ingest (Loop A input).

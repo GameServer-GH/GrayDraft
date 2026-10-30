@@ -304,6 +304,30 @@ class DocumentRepository:
                 )
         return ids
 
+    async def list_chunk_texts(
+        self,
+        *,
+        doc_id: str | uuid.UUID,
+        kb_type: str,
+        limit: int = 80,
+    ) -> list[dict[str, Any]]:
+        lim = max(1, min(int(limit or 80), 200))
+        async with self._pool.acquire() as conn:
+            await conn.execute("SET LOCAL statement_timeout = '30s'")
+            rows = await conn.fetch(
+                """
+                SELECT id, content
+                FROM kb_chunks
+                WHERE doc_id = $1::uuid AND kb_type = $2
+                ORDER BY chunk_index ASC
+                LIMIT $3
+                """,
+                str(doc_id),
+                kb_type,
+                lim,
+            )
+        return [{"id": r["id"], "content": r["content"] or ""} for r in rows]
+
     async def insert_qa_pairs(
         self,
         *,
@@ -485,11 +509,42 @@ class DocumentRepository:
             await conn.execute("SET LOCAL lock_timeout = '5s'")
             await conn.execute(
                 """
-                UPDATE ugc_ingest_tasks SET status = 'processing', updated_at = now()
+                UPDATE ugc_ingest_tasks
+                SET status = 'processing', current_stage = 'accepted', updated_at = now()
                 WHERE id = $1::uuid
                 """,
                 str(task_id),
             )
+
+    async def set_task_stage(self, *, task_id: str | uuid.UUID, stage: str) -> None:
+        """Record pipeline stage on the UGC task (P2-1 observability on single-subject path)."""
+        tid = str(task_id or "").strip()
+        st = (stage or "").strip()
+        if not tid or not st:
+            return
+        async with self._pool.acquire() as conn:
+            await conn.execute("SET LOCAL statement_timeout = '30s'")
+            await conn.execute("SET LOCAL lock_timeout = '5s'")
+            if st == "indexed":
+                await conn.execute(
+                    """
+                    UPDATE ugc_ingest_tasks
+                    SET current_stage = $2, ready_at = COALESCE(ready_at, now()), updated_at = now()
+                    WHERE id = $1::uuid
+                    """,
+                    tid,
+                    st,
+                )
+            else:
+                await conn.execute(
+                    """
+                    UPDATE ugc_ingest_tasks
+                    SET current_stage = $2, updated_at = now()
+                    WHERE id = $1::uuid
+                    """,
+                    tid,
+                    st,
+                )
 
     async def get_enrichment_cache_by_hash(
         self,
@@ -537,26 +592,40 @@ class DocumentRepository:
         self,
         *,
         kb_type: str,
-        parent_title: str,
+        parent_title: str = "",
+        doc_group: str = "",
     ) -> list[dict[str, Any]]:
         pt = (parent_title or "").strip()
-        if not pt:
+        dg = (doc_group or "").strip()
+        if not pt and not dg:
             return []
         async with self._pool.acquire() as conn:
             # V1-28: protect writes from long-running transactions
             await conn.execute("SET LOCAL statement_timeout = '30s'")
             await conn.execute("SET LOCAL lock_timeout = '5s'")
-            rows = await conn.fetch(
-                """
-                SELECT id, title, extensions
-                FROM kb_documents
-                WHERE kb_type = $1
-                  AND trim(extensions->>'parent_title') = $2
-                  AND (extensions ? 'segment_index')
-                """,
-                kb_type,
-                pt,
-            )
+            if dg:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, title, extensions
+                    FROM kb_documents
+                    WHERE kb_type = $1
+                      AND trim(extensions->>'doc_group') = $2
+                    """,
+                    kb_type,
+                    dg,
+                )
+            else:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, title, extensions
+                    FROM kb_documents
+                    WHERE kb_type = $1
+                      AND trim(extensions->>'parent_title') = $2
+                      AND (extensions ? 'segment_index' OR extensions ? 'doc_group')
+                    """,
+                    kb_type,
+                    pt,
+                )
         out: list[dict[str, Any]] = []
         for r in rows:
             ext_raw = r["extensions"]

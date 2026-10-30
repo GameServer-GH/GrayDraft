@@ -82,7 +82,8 @@ type ExecuteRunOptions struct {
 }
 
 // ExecuteRunWith is the full worker entry used by Launcher.
-func ExecuteRunWith(ctx context.Context, store RunStore, run RunRecord, planner Planner, tools ToolExecutor, limits Limits, streamer TokenStreamer, validator AnswerValidator) (Result, error) {
+// Optional seed observations (e.g. long-term memory) are injected before the first decide.
+func ExecuteRunWith(ctx context.Context, store RunStore, run RunRecord, planner Planner, tools ToolExecutor, limits Limits, streamer TokenStreamer, validator AnswerValidator, seed ...Observation) (Result, error) {
 	started := time.Now()
 	if store == nil {
 		return Result{State: StateFailed}, fmt.Errorf("agent: run store is required")
@@ -110,10 +111,11 @@ func ExecuteRunWith(ctx context.Context, store RunStore, run RunRecord, planner 
 		WithAnswerValidator(validator).
 		WithAnswerStreamer(streamer)
 	result, err := rt.Run(ctx, Request{
-		Prompt:          run.Prompt,
-		Limits:          limits,
-		AuthorizedKBs:   run.AuthorizedKBs,
-		DisableThinking: run.DisableThinking,
+		Prompt:           run.Prompt,
+		Limits:           limits,
+		AuthorizedKBs:    run.AuthorizedKBs,
+		DisableThinking:  run.DisableThinking,
+		SeedObservations: seed,
 	})
 	status := string(result.State)
 	if err != nil && status == "" {

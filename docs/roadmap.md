@@ -63,7 +63,7 @@
 
 | 序号 | 项 | 说明 |
 |------|-----|------|
-| 10 | **分类模型化** | 替换规则分类器，保留 `RoutePlan` |
+| 10 | **分类模型化** | 暂缓：赛事联调显示规则分类器已够用；优先热路径收窄（见 [upgrade-optimization-contest-2026-10-29](architecture/upgrade-optimization-contest-2026-10-29.md)），保留 `RoutePlan` |
 | 11 | **批量回归 / RAGAS** | 用例集与多配置对比 |
 | 12 | **多模态差距项** | 2048 维、OSS 原图、Chat 媒体引用、Console 运营台（见 `features/multimodal.md` §6） |
 

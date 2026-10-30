@@ -40,9 +40,25 @@ func (r *UGCRepo) CreateTask(ctx context.Context, taskID uuid.UUID, kbType, titl
 func (r *UGCRepo) UpdateTaskCompleted(ctx context.Context, taskID uuid.UUID, docID uuid.UUID, chunkCount int) error {
 	_, err := r.client.pool.Exec(ctx, `
 		UPDATE ugc_ingest_tasks
-		SET status = 'completed', doc_id = $2, chunk_count = $3, updated_at = now()
+		SET status = 'completed', doc_id = $2, chunk_count = $3,
+		    current_stage = COALESCE(NULLIF(current_stage, ''), 'indexed'),
+		    ready_at = COALESCE(ready_at, now()),
+		    updated_at = now()
 		WHERE id = $1
 	`, taskID, docID, chunkCount)
+	return err
+}
+
+// SetTaskStage records the active ingest stage for observability (P2-1).
+func (r *UGCRepo) SetTaskStage(ctx context.Context, taskID uuid.UUID, stage string) error {
+	if stage == "" {
+		return nil
+	}
+	_, err := r.client.pool.Exec(ctx, `
+		UPDATE ugc_ingest_tasks
+		SET current_stage = $2, updated_at = now()
+		WHERE id = $1
+	`, taskID, stage)
 	return err
 }
 

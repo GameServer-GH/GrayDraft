@@ -124,7 +124,7 @@ func (h *AgentHandler) CreateRun(c *gin.Context) {
 		}
 	}
 	traceID := trace.FromContext(c.Request.Context())
-	deadline := time.Now().Add(60 * time.Second)
+	deadline := time.Now().Add(90 * time.Second)
 	if req.DeadlineSeconds > 0 && req.DeadlineSeconds < 300 {
 		deadline = time.Now().Add(time.Duration(req.DeadlineSeconds) * time.Second)
 	}

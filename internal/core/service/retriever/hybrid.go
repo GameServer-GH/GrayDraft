@@ -249,8 +249,16 @@ func (h *Hybrid) Search(ctx context.Context, req model.SearchRequest) (resp *mod
 	includeCold := req.IncludeCold
 
 	if semanticFilterApplied {
-		strategy = "hybrid_rrf+" + strategy + "+sem4d"
-		chunks, wfSuffix, rawStats, err = h.searchWithSem4DWaterfall(ctx, req, candidateK, ftWeight, vecWeight, includeCold, sem4d, plan)
+		// Soft-only path (default): recall without SQL 4D WHERE, then BoostSemantic4D.
+		// Waterfall dual-query stays available when semantic_4d_strict_filter is on.
+		if h.cfg.Retrieval.Semantic4DStrictFilter {
+			strategy = "hybrid_rrf+" + strategy + "+sem4d"
+			chunks, wfSuffix, rawStats, err = h.searchWithSem4DWaterfall(ctx, req, candidateK, ftWeight, vecWeight, includeCold, sem4d, plan)
+		} else {
+			strategy = "hybrid_rrf+" + strategy + "+sem4d_boost"
+			chunks, rawStats, err = h.searchCandidates(ctx, req, candidateK, ftWeight, vecWeight, includeCold, nil, plan)
+			wfSuffix = "_sem4d_boost"
+		}
 	} else {
 		switch {
 		case plan.UseGlobalIndex && req.KBType == "":

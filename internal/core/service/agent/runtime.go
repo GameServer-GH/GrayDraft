@@ -138,6 +138,9 @@ type Request struct {
 	AuthorizedKBs []string
 	// DisableThinking hides planner reasoning events. The education loop, tools, and AnswerGate still run.
 	DisableThinking bool
+	// SeedObservations are injected before the first decide (e.g. long-term memory).
+	// They must not be mistaken for the user prompt.
+	SeedObservations []Observation
 }
 
 type Result struct {
@@ -213,6 +216,9 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 	}
 	limits := req.Limits.normalized()
 	var out Result
+	if len(req.SeedObservations) > 0 {
+		out.Observations = append(out.Observations, req.SeedObservations...)
+	}
 	state, seq := StateQueued, int64(0)
 	ctx, runSpan := StartAgentSpan(ctx, "run", SpanKindRun, 0, "", "")
 	runStarted := Event{Type: "run.started", State: state}
@@ -255,6 +261,10 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 		decision, err := r.planner.Decide(decideCtx, PlannerInput{
 			Prompt: req.Prompt, Step: out.Steps, Observations: out.Observations, AuthorizedKBs: req.AuthorizedKBs,
 		})
+		if err != nil && hasUsefulEvidence(out.Observations) && (errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)) {
+			decision = Decision{Decision: DecisionFinal, ThoughtNote: "已有证据，整理回答"}
+			err = nil
+		}
 		stepSpan.ApplyEvent(&stepEv, err)
 		if err != nil {
 			out.State = StateFailed
@@ -266,41 +276,17 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 				_ = r.emit(ctx, Event{Type: "planner.thought", State: StateDeciding, Message: note, StepID: stepID}, &seq)
 			}
 		}
+		decision = resolveClarify(decision, out.Observations)
 		switch decision.Decision {
 		case DecisionFinal, DecisionClarify:
 			out.State = StateFinalizing
 			out.Answer = decision.Answer
-			if decision.Decision == DecisionFinal && r.validator != nil {
-				vr, err := r.validator.Validate(ctx, out.Answer, out.Observations)
-				if err != nil {
-					return out, err
-				}
-				if vr.Rejected && out.Steps < limits.MaxSteps {
-					gap, _ := json.Marshal(map[string]any{
-						"gap":                vr.Gate.RefuseReason,
-						"hint":               "证据不足。请改用 knowledge.lexical、knowledge.semantic、knowledge.read 或 knowledge.expand，或向用户澄清。不要用相同参数重复调用。",
-						"required_citations": vr.Gate.RequiredCitations,
-						"citation_count":     vr.Gate.CitationCount,
-					})
-					out.Observations = append(out.Observations, Observation{
-						CallID: "answer_gate", Name: "answer.gap", Output: gap,
-					})
-					msg := vr.Gate.RefuseReason
-					if detail := GateDetailJSON(vr.Gate); len(detail) > 0 {
-						msg = string(detail)
-					}
-					_ = r.emit(ctx, Event{Type: "answer.rejected", State: StateFinalizing, Message: msg, StepID: stepID}, &seq)
-					continue
-				}
-				if vr.Rejected {
-					out.Answer = vr.Answer
-					_ = r.emit(ctx, Event{Type: "answer.rejected", State: StateFinalizing, Message: string(GateDetailJSON(vr.Gate))}, &seq)
-				} else if detail := GateDetailJSON(vr.Gate); len(detail) > 0 {
-					_ = r.emit(ctx, Event{Type: "answer.validated", State: StateFinalizing, Message: string(detail)}, &seq)
-				}
-			}
+			isRefuseTemplate := strings.TrimSpace(out.Answer) == refuseNoEvidenceTemplate
 			streamed := false
-			if decision.Decision == DecisionFinal && r.streamer != nil && strings.TrimSpace(out.Answer) != "" {
+			streamAnswer := func() error {
+				if r.streamer == nil || isRefuseTemplate {
+					return nil
+				}
 				if !req.DisableThinking {
 					_ = r.emit(ctx, Event{Type: "answer.generating", State: StateFinalizing, Message: "正在生成回答…"}, &seq)
 				}
@@ -313,21 +299,89 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 						return r.emit(ctx, Event{Type: "llm.reasoning.delta", State: StateFinalizing, Message: delta, StepID: stepID}, &seq)
 					})
 				}
-				answer, streamErr := StreamFinalAnswer(streamCtx, r.streamer, req.Prompt, out.Observations, decision.Answer, func(delta string) error {
+				answerCtx, answerCancel := context.WithTimeout(streamCtx, answerStreamTimeout)
+				defer answerCancel()
+				answer, streamErr := StreamFinalAnswer(answerCtx, r.streamer, req.Prompt, out.Observations, out.Answer, func(delta string) error {
 					streamed = true
 					return r.emit(ctx, Event{Type: "answer.delta", State: StateFinalizing, Message: delta}, &seq)
 				})
 				if streamErr != nil && answer == "" {
-					out.State = StateFailed
-					_ = r.emit(ctx, Event{Type: "run.failed", State: out.State, Message: streamErr.Error()}, &seq)
-					return out, streamErr
+					return streamErr
 				}
 				if answer != "" {
 					out.Answer = answer
 				}
+				return nil
+			}
+
+			if decision.Decision == DecisionFinal && !isRefuseTemplate {
+				draftEmpty := strings.TrimSpace(out.Answer) == ""
+				// A catalog-only hop is the overview. Titles are the evidence; do not
+				// ask the answer model to refuse for lack of full text and then retry.
+				if draftEmpty && !hasChunkEvidence(out.Observations) {
+					if overview := catalogOverviewAnswer(out.Observations); overview != "" {
+						out.Answer = overview
+						streamed = true
+						_ = r.emit(ctx, Event{Type: "answer.delta", State: StateFinalizing, Message: overview}, &seq)
+					}
+				}
+				// Planner leaves answer empty on purpose; stream from evidence first, then gate.
+				if !streamed && draftEmpty && hasUsefulEvidence(out.Observations) {
+					if err := streamAnswer(); err != nil {
+						out.State = StateFailed
+						_ = r.emit(ctx, Event{Type: "run.failed", State: out.State, Message: err.Error()}, &seq)
+						return out, err
+					}
+				}
+				catalogOverview := !hasChunkEvidence(out.Observations) && catalogOverviewAnswer(out.Observations) != ""
+				if r.validator != nil && !catalogOverview && !(draftEmpty && hasUsefulEvidence(out.Observations) && strings.TrimSpace(out.Answer) == "") {
+					vr, err := r.validator.Validate(ctx, out.Answer, out.Observations)
+					if err != nil {
+						return out, err
+					}
+					if vr.Rejected && out.Steps < limits.MaxSteps {
+						gap, _ := json.Marshal(map[string]any{
+							"gap":                vr.Gate.RefuseReason,
+							"hint":               "证据不足。请改用 knowledge.lexical、knowledge.semantic、knowledge.read 或 knowledge.expand。不要用相同参数重复调用。",
+							"required_citations": vr.Gate.RequiredCitations,
+							"citation_count":     vr.Gate.CitationCount,
+						})
+						out.Observations = append(out.Observations, Observation{
+							CallID: "answer_gate", Name: "answer.gap", Output: gap,
+						})
+						msg := vr.Gate.RefuseReason
+						if detail := GateDetailJSON(vr.Gate); len(detail) > 0 {
+							msg = string(detail)
+						}
+						_ = r.emit(ctx, Event{Type: "answer.rejected", State: StateFinalizing, Message: msg, StepID: stepID}, &seq)
+						continue
+					}
+					if vr.Rejected {
+						if evidenceIsEmpty(out.Observations) || strings.TrimSpace(vr.Answer) == "" {
+							out.Answer = refuseNoEvidenceTemplate
+						} else {
+							out.Answer = vr.Answer
+						}
+						streamed = false
+						_ = r.emit(ctx, Event{Type: "answer.rejected", State: StateFinalizing, Message: string(GateDetailJSON(vr.Gate))}, &seq)
+					} else if detail := GateDetailJSON(vr.Gate); len(detail) > 0 {
+						_ = r.emit(ctx, Event{Type: "answer.validated", State: StateFinalizing, Message: string(detail)}, &seq)
+					}
+				}
+				// Non-empty planner draft (legacy / tests): gate first, then stream.
+				if !streamed && !isRefuseTemplate && strings.TrimSpace(out.Answer) != "" && strings.TrimSpace(out.Answer) != refuseNoEvidenceTemplate {
+					if err := streamAnswer(); err != nil {
+						out.State = StateFailed
+						_ = r.emit(ctx, Event{Type: "run.failed", State: out.State, Message: err.Error()}, &seq)
+						return out, err
+					}
+				}
 			}
 			if decision.Decision == DecisionClarify && out.Answer == "" {
-				out.Answer = "请补充要查询的概念、参数或文档范围后再试。"
+				out.Answer = clarifyAskTemplate
+			}
+			if decision.Decision == DecisionFinal && strings.TrimSpace(out.Answer) == "" && evidenceIsEmpty(out.Observations) {
+				out.Answer = refuseNoEvidenceTemplate
 			}
 			// When no token streamer ran, emit one synthetic delta so BFF still gets a chunk.
 			if !streamed && strings.TrimSpace(out.Answer) != "" {
@@ -423,21 +477,6 @@ func errorText(err error) string {
 		return ""
 	}
 	return err.Error()
-}
-
-// DecodeDecision validates the planner's strict JSON response.
-func DecodeDecision(raw []byte) (Decision, error) {
-	var d Decision
-	if err := json.Unmarshal(raw, &d); err != nil {
-		return d, fmt.Errorf("agent: invalid decision json: %w", err)
-	}
-	if d.Decision != DecisionFinal && d.Decision != DecisionTools && d.Decision != DecisionClarify {
-		return d, fmt.Errorf("agent: unsupported decision %q", d.Decision)
-	}
-	if d.Decision == DecisionTools && len(d.ToolCalls) == 0 {
-		return d, errors.New("agent: tool_calls cannot be empty")
-	}
-	return d, nil
 }
 
 // StableArgumentKeys is useful to canonicalize argument maps before hashing.

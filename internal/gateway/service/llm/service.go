@@ -25,7 +25,7 @@ func (s *Service) StreamCompletion(ctx context.Context, req ChatRequest, emit fu
 	}
 
 	binding, model, complexTier := resolveBinding(s.cfg, req.Model)
-	err := s.streamWithBinding(ctx, req, binding, model, !complexTier, emit)
+	err := s.streamWithBinding(ctx, req, binding, model, !complexTier || req.DisableThinking, emit)
 	if err == nil {
 		return nil
 	}

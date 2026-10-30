@@ -13,6 +13,7 @@ from worker.cache_purge import CachePurger
 from worker.config import Settings
 from worker.pipeline.ingest import IngestPipeline
 from worker.pipeline.jetstream_setup import ensure_streams
+from worker.pipeline.stage_consumer import StageConsumer
 from worker.schemas import UGCMessage
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ class UGCConsumer:
         self._sub = None
         self._pull_task: asyncio.Task | None = None
         self._cache_purger = CachePurger(settings)
+        self._stage = StageConsumer(settings, pipeline, repo)
 
     async def start(self) -> None:
         if not self._settings.nats_enabled:
@@ -91,6 +93,7 @@ class UGCConsumer:
             self._settings.nats_js_consumer,
             self._settings.nats_ugc_subject,
         )
+        await self._stage.start(self._nc, self._js)
 
     async def _pull_loop(self) -> None:
         assert self._sub is not None
@@ -111,6 +114,7 @@ class UGCConsumer:
                 await self._on_jetstream_message(msg)
 
     async def stop(self) -> None:
+        await self._stage.stop()
         if self._pull_task:
             self._pull_task.cancel()
             try:

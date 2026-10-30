@@ -44,7 +44,11 @@ def check_content(
     All domain-specific entity recognition is performed upstream by the
     smart-import unified LLM; this gate only validates structural quality.
     """
-    text = (content or "").strip()
+    # Collapse long identical-char runs before spam checks (arXiv HTML / OCR noise).
+    # Ingest also normalizes via long_narrative; this keeps direct API checks aligned.
+    from worker.pipeline.long_narrative import collapse_spam_runs
+
+    text = collapse_spam_runs((content or "").strip())
     combined = f"{title or ''}\n{text}".strip()
 
     tags_list = tags or []

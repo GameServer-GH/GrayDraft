@@ -16,10 +16,16 @@ type ChunkNavigator interface {
 	Expand(ctx context.Context, kbType, entity string, limit int) ([]model.Chunk, error)
 }
 
-// EducationTools is the retrieval surface used by the four education tools.
+// DocCatalog lists workspace documents for theme / multi-doc questions (P2-4).
+type DocCatalog interface {
+	ListRecentDocSummaries(ctx context.Context, kbType string, limit int) ([]model.DocSummarySnippet, error)
+}
+
+// EducationTools is the retrieval surface used by the education tools.
 type EducationTools struct {
 	Searcher  Searcher
 	Navigator ChunkNavigator
+	Catalog   DocCatalog
 	TenantID  string
 	AllowedKB map[string]bool
 }
@@ -52,6 +58,60 @@ func (t EducationTools) Read(ctx context.Context, raw json.RawMessage) (json.Raw
 		return nil, err
 	}
 	return marshalHits("knowledge.read", in.ChunkID, kb, chunks)
+}
+
+func (t EducationTools) CatalogDocs(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
+	var in struct {
+		KBType string `json:"kb_type,omitempty"`
+		Limit  int    `json:"limit,omitempty"`
+		Query  string `json:"query,omitempty"`
+	}
+	_ = json.Unmarshal(raw, &in)
+	kb, err := t.resolveKB(in.KBType, "knowledge.catalog")
+	if err != nil {
+		return nil, err
+	}
+	if t.Catalog == nil {
+		return nil, fmt.Errorf("knowledge.catalog: catalog unavailable")
+	}
+	if in.Limit <= 0 || in.Limit > 30 {
+		in.Limit = 20
+	}
+	docs, err := t.Catalog.ListRecentDocSummaries(ctx, kb, in.Limit)
+	if err != nil {
+		return nil, err
+	}
+	type row struct {
+		DocID       string `json:"doc_id"`
+		Title       string `json:"title"`
+		Summary     string `json:"summary,omitempty"`
+		DocGroup    string `json:"doc_group,omitempty"`
+		ParentTitle string `json:"parent_title,omitempty"`
+		IndexReady  bool   `json:"index_ready"`
+	}
+	q := strings.ToLower(strings.TrimSpace(in.Query))
+	// A full question is an overview, not a title. Substring-filtering it
+	// empties the catalog ("三篇论文各自讲什么" matches no title).
+	if catalogOverviewQuery(q) {
+		q = ""
+	}
+	out := make([]row, 0, len(docs))
+	for _, d := range docs {
+		if q != "" {
+			blob := strings.ToLower(d.Title + " " + d.Summary + " " + d.ParentTitle)
+			if !strings.Contains(blob, q) {
+				continue
+			}
+		}
+		out = append(out, row{
+			DocID: d.DocID, Title: d.Title, Summary: d.Summary,
+			DocGroup: d.DocGroup, ParentTitle: d.ParentTitle, IndexReady: d.IndexReady,
+		})
+	}
+	return json.Marshal(map[string]any{
+		"tool": "knowledge.catalog", "kb_type": kb, "query": in.Query,
+		"total": len(out), "documents": out,
+	})
 }
 
 func (t EducationTools) Expand(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
@@ -166,6 +226,17 @@ func marshalHits(tool, query, kb string, chunks []model.Chunk) (json.RawMessage,
 	return json.Marshal(map[string]any{
 		"query": query, "kb_type": kb, "tool": tool, "total": len(hits), "hits": hits,
 	})
+}
+
+func catalogOverviewQuery(q string) bool {
+	q = strings.TrimSpace(q)
+	if q == "" {
+		return false
+	}
+	if strings.ContainsAny(q, "？?，,。 ") {
+		return true
+	}
+	return len([]rune(q)) >= 8
 }
 
 func floatPtr(v float64) *float64 { return &v }

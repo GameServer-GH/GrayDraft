@@ -23,10 +23,14 @@ func (r *DocumentRepo) ListRecentDocSummaries(ctx context.Context, kbType string
 			COALESCE(
 				NULLIF(extensions->>'global_summary', ''),
 				NULLIF(extensions->>'semantic_summary', ''),
-				LEFT(COALESCE(content, ''), 400)
-			)
+				NULLIF(extensions->>'context_enhancement', ''),
+				''
+			),
+			COALESCE(NULLIF(extensions->>'doc_group', ''), ''),
+			COALESCE(NULLIF(extensions->>'parent_title', ''), ''),
+			COALESCE(index_ready, false)
 		FROM kb_documents
-		WHERE kb_type = $1 AND status = 'active'
+		WHERE kb_type = $1
 		ORDER BY updated_at DESC NULLS LAST, created_at DESC
 		LIMIT $2
 	`, kbType, limit)
@@ -37,7 +41,7 @@ func (r *DocumentRepo) ListRecentDocSummaries(ctx context.Context, kbType string
 	var out []model.DocSummarySnippet
 	for rows.Next() {
 		var s model.DocSummarySnippet
-		if err := rows.Scan(&s.DocID, &s.Title, &s.Summary); err != nil {
+		if err := rows.Scan(&s.DocID, &s.Title, &s.Summary, &s.DocGroup, &s.ParentTitle, &s.IndexReady); err != nil {
 			return nil, err
 		}
 		s.Summary = trimSummary(s.Summary, 500)

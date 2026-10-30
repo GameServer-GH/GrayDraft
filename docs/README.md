@@ -33,6 +33,7 @@
 | [Agent 实现说明](architecture/Agent流程技术实现方案.md) | `edu_workspace_v1` 的 Loop、工具、证据层与记忆 |
 | [架构决策记录 (ADR)](architecture/README.md) | Monorepo、pgvector、JetStream、缓存等决策 |
 | [性能优化 1.0 方案](architecture/performance-optimization-v1.md) | 导入流水线、Embedding 微批、检索缓存、索引与可观测性优化 |
+| [赛事联调驱动升级优化](architecture/upgrade-optimization-contest-2026-10-29.md) | 2026-10-29 双工作区实测差异分析与热路径升级验收 |
 | [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | 仓库目录与 Core/Worker 分层速查 |
 | [问答可靠性治理](architecture/agent-import-chat-reliability.md) | 导入→问答断点与排障 |
 | [roadmap.md](roadmap.md) | 已落地能力与后续项 |

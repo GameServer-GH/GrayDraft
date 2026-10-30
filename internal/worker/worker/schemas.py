@@ -102,7 +102,9 @@ class IngestRequest(BaseModel):
     source_url: Optional[str] = None
     mime_type: str = "text/plain"
     doc_id: Optional[str] = None
-    generate_qa: bool = True
+    task_id: Optional[str] = None
+    # QA is optional post-index work; default off so ready path stays lean (P2-2).
+    generate_qa: bool = False
     auto_index: bool = True
     tags: list[str] = Field(default_factory=list)
     extensions: dict[str, Any] = Field(default_factory=dict)
@@ -127,6 +129,6 @@ class UGCMessage(BaseModel):
     content: str
     source_url: Optional[str] = None
     mime_type: str = "text/plain"
-    generate_qa: bool = True
+    generate_qa: bool = False
     tags: list[str] = Field(default_factory=list)
     extensions: dict[str, Any] = Field(default_factory=dict)

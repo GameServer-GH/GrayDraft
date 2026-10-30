@@ -39,6 +39,7 @@ node_modules/
 # IDE
 .idea/
 .vscode/
+.cursor/rules/
 *.swp
 *.swo
 .DS_Store

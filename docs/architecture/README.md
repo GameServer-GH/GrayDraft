@@ -19,6 +19,7 @@
 | [**教育场景 Agent 实现说明**](Agent流程技术实现方案.md) | `edu_workspace_v1` 的 Loop、工具、记忆与评测 |
 | [**性能优化 1.0 方案**](performance-optimization-v1.md) | 导入与问答性能优化的 1.0 落地路线 |
 | [**智能语义驱动检索方案**](semantic-driven-retrieval-scheme.md) | 语义 Blueprint / 瀑布 / 进化：已实现逻辑与待办 |
+| [**赛事联调驱动升级优化**](upgrade-optimization-contest-2026-10-29.md) | SCP vs 论文差异技术分析 + 热路径收窄与验收目标 |
 | [语义检索代码对照](semantic-driven-retrieval.md) | Roadmap 勾选与配置速查 |
 | [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md) | 目录与分层速查 |
 | [deployment.md](../deployment.md) | Compose、Nginx、环境变量 |

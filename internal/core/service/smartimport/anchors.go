@@ -1,6 +1,12 @@
 package smartimport
 
-import "github.com/graydraft/core/model"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+
+	"github.com/graydraft/core/model"
+)
 
 // MergeSegmentExtensions injects 2.0 context anchors (Anchor A/B/C) into UGC extensions.
 func MergeSegmentExtensions(base model.Extensions, analysis DocAnalysis, seg PlannedSegment, index, total int) model.Extensions {
@@ -10,6 +16,9 @@ func MergeSegmentExtensions(base model.Extensions, analysis DocAnalysis, seg Pla
 	}
 	if analysis.ParentTitle != "" {
 		out["parent_title"] = analysis.ParentTitle
+	}
+	if group := DocGroupID(analysis.ParentTitle, analysis.Subject, index, total); group != "" {
+		out["doc_group"] = group
 	}
 	if analysis.Version != "" {
 		out["version"] = analysis.Version
@@ -56,4 +65,20 @@ func cloneExtensions(base model.Extensions) model.Extensions {
 		out[k] = v
 	}
 	return out
+}
+
+// DocGroupID builds a stable source-level group key for multi-segment imports (P2-5).
+func DocGroupID(parentTitle, subject string, index, total int) string {
+	seed := parentTitle
+	if seed == "" {
+		seed = subject
+	}
+	if seed == "" && total <= 1 {
+		return ""
+	}
+	if seed == "" {
+		seed = fmt.Sprintf("seg-%d-of-%d", index, total)
+	}
+	sum := sha256.Sum256([]byte(seed))
+	return "dg_" + hex.EncodeToString(sum[:8])
 }

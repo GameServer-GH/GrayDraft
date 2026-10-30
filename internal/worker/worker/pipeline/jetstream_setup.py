@@ -60,6 +60,44 @@ async def ensure_streams(js, settings: Settings) -> None:
         if not _stream_exists_ok(e):
             raise
 
+    if settings.nats_stage_streams_enabled:
+        stage_subjects = [
+            s
+            for s in (settings.nats_stage_subjects or [])
+            if s and s != settings.nats_ugc_subject
+        ]
+        stage = StreamConfig(
+            name=settings.nats_js_stage_stream,
+            subjects=stage_subjects,
+            retention=RetentionPolicy.LIMITS,
+            storage=storage,
+            max_age=max_age,
+            max_bytes=settings.nats_js_max_bytes,
+            num_replicas=settings.nats_js_replicas,
+        )
+        try:
+            await _add_or_update_stream(js, stage)
+            logger.info("jetstream stage stream ready name=%s", settings.nats_js_stage_stream)
+        except Exception as e:
+            if not _stream_exists_ok(e):
+                raise
+
+        stage_dlq = StreamConfig(
+            name=settings.nats_js_dlq_stream + "_STAGES" if settings.nats_js_dlq_stream else "GRAYDRAFT_UGC_DLQ_STAGES",
+            subjects=[f"graydraft.ingest.dlq.{s.split('.')[-1]}" for s in (settings.nats_stage_subjects or [])],
+            retention=RetentionPolicy.LIMITS,
+            storage=storage,
+            max_age=max_age,
+            max_bytes=max(settings.nats_js_max_bytes // 4, 1),
+            num_replicas=settings.nats_js_replicas,
+        )
+        try:
+            await _add_or_update_stream(js, stage_dlq)
+            logger.info("jetstream stage dlq ready name=%s", stage_dlq.name)
+        except Exception as e:
+            if not _stream_exists_ok(e):
+                raise
+
     if not settings.nats_js_dlq_stream:
         return
 

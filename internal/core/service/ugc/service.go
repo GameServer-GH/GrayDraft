@@ -56,7 +56,8 @@ func (s *Service) Notify(ctx context.Context, req model.UGCNotifyRequest) (*mode
 	if req.MimeType == "" {
 		req.MimeType = "text/plain"
 	}
-	generateQA := true
+	// Default off: QA pairs are panel-only and must not shape the ready path (P2-2).
+	generateQA := false
 	if req.GenerateQA != nil {
 		generateQA = *req.GenerateQA
 	}

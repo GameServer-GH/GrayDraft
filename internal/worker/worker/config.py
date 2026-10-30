@@ -53,6 +53,24 @@ class Settings(BaseSettings):
     nats_js_ack_wait_seconds: int = 120
     nats_js_fetch_batch: int = 5
     nats_js_fetch_timeout_seconds: float = 5.0
+    nats_stage_streams_enabled: bool = False
+    nats_js_stage_stream: str = "GRAYDRAFT_UGC_STAGES"
+    nats_stage_accepted: str = "graydraft.ingest.accepted"
+    nats_stage_indexed: str = "graydraft.ingest.indexed"
+    nats_stage_qa: str = "graydraft.ingest.qa"
+    nats_js_stage_accepted_consumer: str = "graydraft-worker-stage-accepted"
+    nats_js_stage_qa_consumer: str = "graydraft-worker-stage-qa"
+    nats_stage_subjects: list[str] = Field(
+        default_factory=lambda: [
+            "graydraft.ingest.accepted",
+            "graydraft.ingest.parsed",
+            "graydraft.ingest.media_extracted",
+            "graydraft.ingest.chunked",
+            "graydraft.ingest.embedded",
+            "graydraft.ingest.indexed",
+            "graydraft.ingest.qa",
+        ]
+    )
 
     chunk_size: int = 512
     chunk_overlap: int = 64
@@ -142,6 +160,25 @@ def _flatten_yaml(raw: dict[str, Any]) -> dict[str, Any]:
             out["nats_js_fetch_timeout_seconds"] = js.get(
                 "fetch_timeout_seconds", out.get("nats_js_fetch_timeout_seconds")
             )
+            out["nats_stage_streams_enabled"] = js.get(
+                "stage_streams_enabled", out.get("nats_stage_streams_enabled")
+            )
+            if stage_stream := js.get("stage_stream"):
+                out["nats_js_stage_stream"] = stage_stream
+            if stage_subjects := js.get("stage_subjects"):
+                out["nats_stage_subjects"] = stage_subjects
+            if cons := js.get("stage_accepted_consumer"):
+                out["nats_js_stage_accepted_consumer"] = cons
+            if cons := js.get("stage_qa_consumer"):
+                out["nats_js_stage_qa_consumer"] = cons
+        if stages := nats.get("stage_subjects"):
+            if isinstance(stages, dict):
+                if stages.get("accepted"):
+                    out["nats_stage_accepted"] = stages["accepted"]
+                if stages.get("indexed"):
+                    out["nats_stage_indexed"] = stages["indexed"]
+                if stages.get("qa"):
+                    out["nats_stage_qa"] = stages["qa"]
     if chunk := raw.get("chunking"):
         out["chunk_size"] = chunk.get("size", out.get("chunk_size"))
         out["chunk_overlap"] = chunk.get("overlap", out.get("chunk_overlap"))

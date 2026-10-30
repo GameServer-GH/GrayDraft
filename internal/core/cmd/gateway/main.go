@@ -169,7 +169,10 @@ func main() {
 			for _, kb := range run.AuthorizedKBs {
 				allowed[kb] = true
 			}
-			edu := agent.EducationTools{Searcher: hybrid, Navigator: chunkRepo, TenantID: run.TenantID, AllowedKB: allowed}
+			edu := agent.EducationTools{
+				Searcher: hybrid, Navigator: chunkRepo, Catalog: docRepo,
+				TenantID: run.TenantID, AllowedKB: allowed,
+			}
 			note := agent.NoteDraftTool{
 				TenantID: run.TenantID, AllowedKB: allowed,
 				Ingest: func(ctx context.Context, tenantID, kbType, title, body, sourceQuery string, citations []string) (string, error) {
@@ -196,6 +199,7 @@ func main() {
 				"knowledge.semantic": edu.Semantic,
 				"knowledge.read":     edu.Read,
 				"knowledge.expand":   edu.Expand,
+				"knowledge.catalog":  edu.CatalogDocs,
 				"note.draft":         note.Call,
 			}
 		},
@@ -218,8 +222,19 @@ func main() {
 	} else {
 		log.Warn("agent memory redis unavailable; using in-process fallback", "error", err)
 	}
+	agentPlanner := agent.FirstHopPlanner{
+		Inner: agent.LLMPlanner{LLM: llmClient},
+		Select: func(query string, _ []string) (string, bool) {
+			q := agent.CurrentUserQuery(query)
+			if agent.PrefersLexical(q) {
+				return "knowledge.lexical", true
+			}
+			plan := clf.ClassifyAndRoute(q)
+			return agent.FirstHopFromIntent(string(plan.Intent)), true
+		},
+	}
 	agentLauncher := &agent.Launcher{
-		Store: agentRunRepo, Planner: agent.LLMPlanner{LLM: llmClient}, PerTenant: 4, Budget: budgetGuard,
+		Store: agentRunRepo, Planner: agentPlanner, PerTenant: 4, Budget: budgetGuard,
 		Memory: func(run agent.RunRecord) agent.ShortTermMemory {
 			base := postgres.NewMemoryRepo(db, run.TenantID, run.ActorID)
 			return agent.CachedMemory(base, shortMemoryCache, run.TenantID+":"+run.ConversationID)

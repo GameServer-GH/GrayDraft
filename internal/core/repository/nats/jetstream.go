@@ -56,9 +56,9 @@ func ensureStreams(js nats.JetStreamContext, cfg *config.Config) error {
 	// Individual consumers filter per-stage subject.
 	if jsCfg.StageStreamsEnabled {
 		stageStream := jsCfg.Stream + "_STAGES"
+		// Stage subjects must stay disjoint from GRAYDRAFT_UGC (graydraft.ugc.ingest).
+		// Legacy ingest stays on the main stream; staged ingest publishes graydraft.ingest.*.
 		stageSubjects := model.AllStageSubjects()
-		// Also include the legacy subject for backward compat.
-		stageSubjects = append(stageSubjects, cfg.NATS.UGCSubject)
 		if err := addOrUpdateStream(js, &nats.StreamConfig{
 			Name:      stageStream,
 			Subjects:  stageSubjects,

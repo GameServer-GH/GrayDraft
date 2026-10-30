@@ -101,13 +101,14 @@ func ensureRequired(fields []string, name string) []string {
 	return append(fields, name)
 }
 
-// DefaultEducationRegistry is the only tool table: four retrieval entries and note.draft.
+// DefaultEducationRegistry is the education tool table: retrieval, catalog, and note.draft.
 func DefaultEducationRegistry() *ToolRegistry {
 	return NewToolRegistry(
 		ToolSpec{Name: "knowledge.lexical", Version: "1.0.0", Risk: RiskR0, Scopes: []string{"knowledge:read"}, Required: []string{"query"}, TimeoutMS: 15000, Idempotent: true},
 		ToolSpec{Name: "knowledge.semantic", Version: "1.0.0", Risk: RiskR0, Scopes: []string{"knowledge:read"}, Required: []string{"query"}, TimeoutMS: 15000, Idempotent: true},
 		ToolSpec{Name: "knowledge.read", Version: "1.0.0", Risk: RiskR0, Scopes: []string{"knowledge:read"}, Required: []string{"chunk_id"}, TimeoutMS: 8000, Idempotent: true},
 		ToolSpec{Name: "knowledge.expand", Version: "1.0.0", Risk: RiskR0, Scopes: []string{"knowledge:read"}, Required: []string{"entity"}, TimeoutMS: 15000, Idempotent: true},
+		ToolSpec{Name: "knowledge.catalog", Version: "1.0.0", Risk: RiskR0, Scopes: []string{"knowledge:read"}, Required: []string{}, TimeoutMS: 8000, Idempotent: true},
 		ToolSpec{Name: "note.draft", Version: "1.0.0", Risk: RiskR1, Scopes: []string{"note:write"}, Required: []string{"title", "body", "citations"}, TimeoutMS: 20000, Idempotent: false},
 	)
 }

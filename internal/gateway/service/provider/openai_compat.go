@@ -14,6 +14,12 @@ import (
 	"github.com/graydraft/gateway/config"
 )
 
+// streamFinished reports whether an OpenAI-compatible finish_reason ends the SSE stream.
+// A nil pointer or blank string must not end the stream (Intern sends "" on every delta).
+func streamFinished(finishReason *string) bool {
+	return finishReason != nil && strings.TrimSpace(*finishReason) != ""
+}
+
 // openAIURL joins an OpenAI-compatible base with an API path.
 // Bases that already end in /v1, such as the InternLM endpoint, are not given a second /v1.
 func openAIURL(base, path string) string {
@@ -158,7 +164,7 @@ func StreamChat(
 		}
 		// Intern 等兼容接口会在每个增量里带上空字符串 finish_reason。
 		// 只有非空结束原因才表示流结束，否则会在第一个 token 后截断。
-		if fr := chunk.Choices[0].FinishReason; fr != nil && strings.TrimSpace(*fr) != "" {
+		if streamFinished(chunk.Choices[0].FinishReason) {
 			return emit("", "", true)
 		}
 	}

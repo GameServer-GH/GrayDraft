@@ -90,11 +90,11 @@ func buildAnswerStreamPrompt(prompt []byte, obs []Observation, draft string) str
 		fmt.Fprintf(&b, "[%d] tool=%s\n%s\n\n", i+1, o.Name, truncateRunes(string(o.Output), 2400))
 	}
 	if d := strings.TrimSpace(draft); d != "" {
-		b.WriteString("规划草稿（可参考，请输出最终完整答案）：\n")
+		b.WriteString("可选提纲（不要照抄，请依据证据重写完整答案）：\n")
 		b.WriteString(d)
 		b.WriteString("\n")
 	}
-	b.WriteString("\n请直接输出最终答案，不要输出 JSON。")
+	b.WriteString("\n请直接输出最终答案，不要输出 JSON。证据不足时明确说明本工作区资料没有。")
 	return b.String()
 }
 

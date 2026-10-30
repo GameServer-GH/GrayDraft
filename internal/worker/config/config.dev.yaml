@@ -29,11 +29,25 @@ nats:
   url: nats://nats:4222
   ugc_subject: graydraft.ugc.ingest
   enabled: true
+  stage_subjects:
+    accepted: graydraft.ingest.accepted
+    indexed: graydraft.ingest.indexed
+    qa: graydraft.ingest.qa
   jetstream:
     enabled: true
     stream: GRAYDRAFT_UGC
     subjects:
       - graydraft.ugc.ingest
+    stage_streams_enabled: true
+    stage_stream: GRAYDRAFT_UGC_STAGES
+    stage_subjects:
+      - graydraft.ingest.accepted
+      - graydraft.ingest.parsed
+      - graydraft.ingest.media_extracted
+      - graydraft.ingest.chunked
+      - graydraft.ingest.embedded
+      - graydraft.ingest.indexed
+      - graydraft.ingest.qa
     storage: file
     max_age_hours: 168
     max_bytes: 1073741824
@@ -43,6 +57,8 @@ nats:
     dlq_subjects:
       - graydraft.ugc.dlq
     consumer: graydraft-worker-ugc
+    stage_accepted_consumer: graydraft-worker-stage-accepted
+    stage_qa_consumer: graydraft-worker-stage-qa
     max_deliver: 5
     ack_wait_seconds: 120
     fetch_batch: 5

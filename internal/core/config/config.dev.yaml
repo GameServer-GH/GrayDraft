@@ -79,12 +79,21 @@ nats:
   enabled: true
   ugc_subject: graydraft.ugc.ingest
   connect_timeout_seconds: 5
+  stage_subjects:
+    accepted: graydraft.ingest.accepted
+    parsed: graydraft.ingest.parsed
+    media_extracted: graydraft.ingest.media_extracted
+    chunked: graydraft.ingest.chunked
+    embedded: graydraft.ingest.embedded
+    indexed: graydraft.ingest.indexed
+    qa: graydraft.ingest.qa
   jetstream:
     enabled: true
     stream: GRAYDRAFT_UGC
     # 勿用 graydraft.ugc.>：会与 DLQ subject graydraft.ugc.dlq 重叠导致建流失败
     subjects:
       - graydraft.ugc.ingest
+    stage_streams_enabled: true
     storage: file
     max_age_hours: 168
     max_bytes: 1073741824

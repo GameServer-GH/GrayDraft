@@ -39,6 +39,7 @@ from worker.pipeline.ingest_enrichment import (
     tags_from_extensions,
 )
 from worker.pipeline.parent_title import summarize_parent_title_from_child_titles
+from worker.pipeline.long_narrative import NarrativePart, prepare_for_ingest
 from worker.textutil.emoji import strip_emojis
 
 
@@ -55,8 +56,76 @@ class IngestPipeline:
             if INGEST_DURATION is not None:
                 INGEST_DURATION.observe(time.perf_counter() - start)
 
+    async def _ingest_split_group(self, req: IngestRequest, parts: list[NarrativePart]) -> IngestResponse:
+        """Ingest auto-split narrative parts under one doc_group; QA stays off the ready path."""
+        first: IngestResponse | None = None
+        total_chunks = 0
+        for part in parts:
+            ext = dict(req.extensions or {})
+            ext.update(
+                {
+                    "doc_group": part.doc_group,
+                    "parent_title": part.parent_title,
+                    "segment_index": part.segment_index,
+                    "segment_total": part.segment_total,
+                    "auto_split": True,
+                    "_narrative_prepared": True,
+                }
+            )
+            sub = req.model_copy(
+                update={
+                    "doc_id": req.doc_id if part.segment_index == 1 else None,
+                    "title": part.title,
+                    "content": part.content,
+                    # Sibling parts never block index_ready on QA work.
+                    "generate_qa": bool(req.generate_qa) and part.segment_index == 1,
+                    "extensions": ext,
+                }
+            )
+            resp = await self._ingest(sub)
+            total_chunks += resp.chunk_count
+            if first is None:
+                first = resp
+        assert first is not None
+        first.chunk_count = total_chunks
+        return first
+
     async def _ingest(self, req: IngestRequest) -> IngestResponse:
         tags = getattr(req, "tags", None) or []
+        ext0 = req.extensions if isinstance(req.extensions, dict) else {}
+        if not ext0.get("_narrative_prepared"):
+            parts = prepare_for_ingest(
+                req.content,
+                title=req.title,
+                max_length=self._settings.quality_gate_max_length,
+                extensions=ext0,
+            )
+            if len(parts) > 1:
+                logger.info(
+                    "long_narrative_auto_split kb_type=%s parts=%d doc_group=%s title=%s",
+                    req.kb_type,
+                    len(parts),
+                    parts[0].doc_group,
+                    (req.title or "")[:80],
+                )
+                return await self._ingest_split_group(req, parts)
+            part = parts[0]
+            ext1 = dict(ext0)
+            ext1.update(
+                {
+                    "doc_group": part.doc_group,
+                    "parent_title": part.parent_title,
+                    "segment_index": part.segment_index,
+                    "segment_total": part.segment_total,
+                    "_narrative_prepared": True,
+                }
+            )
+            req = req.model_copy(
+                update={"content": part.content, "title": part.title or req.title, "extensions": ext1}
+            )
+
+        await self._set_stage(req, "parsing")
+
         gate = check_content(
             req.content,
             title=req.title,
@@ -262,10 +331,16 @@ class IngestPipeline:
                     logger.exception("qa generation failed for doc=%s", doc_id)
             asyncio.create_task(_run_qa())
 
+        await self._set_stage(req, "embedded")
+
         index_ready = False
         if req.auto_index:
             await self._repo.mark_index_ready(doc_id=doc_id, kb_type=req.kb_type)
             index_ready = True
+            await self._set_stage(req, "indexed")
+
+        if qa_task:
+            await self._set_stage(req, "qa")
 
         if INGEST_TOTAL is not None:
             INGEST_TOTAL.labels(status="ok").inc()
@@ -278,6 +353,15 @@ class IngestPipeline:
             index_ready=index_ready,
         )
 
+    async def _set_stage(self, req: IngestRequest, stage: str) -> None:
+        task_id = getattr(req, "task_id", None)
+        if not task_id or not hasattr(self._repo, "set_task_stage"):
+            return
+        try:
+            await self._repo.set_task_stage(task_id=str(task_id), stage=stage)
+        except Exception:
+            logger.debug("set_task_stage failed task_id=%s stage=%s", task_id, stage, exc_info=True)
+
     async def _apply_segment_parent_title(
         self,
         kb_type: str,
@@ -286,13 +370,16 @@ class IngestPipeline:
         extensions: dict,
     ) -> dict:
         ext = dict(extensions or {})
-        if ext.get("segment_index") is None:
+        if ext.get("segment_index") is None and not ext.get("doc_group"):
             return ext
         old_pt = str(ext.get("parent_title") or "").strip()
-        if not old_pt:
+        doc_group = str(ext.get("doc_group") or "").strip()
+        if not old_pt and not doc_group:
             return ext
 
-        siblings = await self._repo.list_segment_group_docs(kb_type=kb_type, parent_title=old_pt)
+        siblings = await self._repo.list_segment_group_docs(
+            kb_type=kb_type, parent_title=old_pt, doc_group=doc_group,
+        )
         titles: list[str] = []
         ids: list[uuid.UUID] = []
         for row in siblings:
@@ -332,6 +419,7 @@ class IngestPipeline:
             content=msg.content,
             source_url=msg.source_url,
             mime_type=msg.mime_type,
+            task_id=msg.task_id,
             generate_qa=msg.generate_qa,
             tags=msg.tags,
             extensions=msg.extensions,

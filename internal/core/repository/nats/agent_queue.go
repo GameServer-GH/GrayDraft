@@ -3,6 +3,7 @@ package nats
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/graydraft/core/service/agent"
 	natsgo "github.com/nats-io/nats.go"
@@ -45,9 +46,15 @@ func (p *Publisher) StartAgentConsumer(ctx context.Context, handle func(context.
 			_ = msg.Term()
 			return
 		}
-		workCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		workCtx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 		defer cancel()
 		if err := handle(workCtx, run); err != nil {
+			// A deadline already burned the run budget. Redelivering it repeats the hang
+			// until the chat client times out.
+			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+				_ = msg.Ack()
+				return
+			}
 			if md, e := msg.Metadata(); e == nil && md.NumDelivered >= 5 {
 				h := natsgo.Header{}
 				h.Set("X-DLQ-Reason", err.Error())
@@ -59,7 +66,7 @@ func (p *Publisher) StartAgentConsumer(ctx context.Context, handle func(context.
 			return
 		}
 		_ = msg.Ack()
-	}, natsgo.Durable("graydraft-agent-runs"), natsgo.ManualAck(), natsgo.AckWait(70*time.Second), natsgo.MaxDeliver(5))
+	}, natsgo.Durable("graydraft-agent-runs"), natsgo.ManualAck(), natsgo.AckWait(100*time.Second), natsgo.MaxDeliver(5))
 	if err != nil {
 		return nil, err
 	}

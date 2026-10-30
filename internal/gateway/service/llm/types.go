@@ -11,8 +11,9 @@ type ChatRequest struct {
 	Model       string    `json:"model"`
 	Messages    []Message `json:"messages"`
 	Stream      bool      `json:"stream"`
-	MaxTokens   int       `json:"max_tokens,omitempty"`
-	Temperature float64   `json:"temperature,omitempty"`
+	MaxTokens       int     `json:"max_tokens,omitempty"`
+	Temperature     float64 `json:"temperature,omitempty"`
+	DisableThinking bool    `json:"disable_thinking,omitempty"`
 }
 
 // StreamDelta is emitted per token/chunk.
