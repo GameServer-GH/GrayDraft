@@ -92,7 +92,7 @@ func StreamChat(
 	maxTokens int,
 	temperature float64,
 	disableThinking bool,
-	emit func(content, reasoning string, done bool) error,
+	emit func(content, reasoning string, done bool, finishReason string) error,
 ) error {
 	if model == "" || model == "default" {
 		return fmt.Errorf("llm model not set")
@@ -132,14 +132,18 @@ func StreamChat(
 	scanner.Buffer(buf, 1024*1024)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if !strings.HasPrefix(line, "data: ") {
+		if !strings.HasPrefix(line, "data:") {
 			continue
 		}
-		payload := strings.TrimPrefix(line, "data: ")
+		payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+		if payload == "" {
+			continue
+		}
 		if payload == "[DONE]" {
-			return emit("", "", true)
+			return emit("", "", true, "")
 		}
 		var chunk struct {
+			Error   json.RawMessage `json:"error"`
 			Choices []struct {
 				Delta struct {
 					Content          string `json:"content"`
@@ -149,7 +153,13 @@ func StreamChat(
 				FinishReason *string `json:"finish_reason"`
 			} `json:"choices"`
 		}
-		if json.Unmarshal([]byte(payload), &chunk) != nil || len(chunk.Choices) == 0 {
+		if err := json.Unmarshal([]byte(payload), &chunk); err != nil {
+			return fmt.Errorf("chat stream: invalid JSON: %w", err)
+		}
+		if len(chunk.Error) > 0 && string(chunk.Error) != "null" {
+			return fmt.Errorf("chat stream upstream error: %s", chunk.Error)
+		}
+		if len(chunk.Choices) == 0 {
 			continue
 		}
 		d := chunk.Choices[0].Delta
@@ -158,17 +168,20 @@ func StreamChat(
 			reasoning = d.Reasoning
 		}
 		if d.Content != "" || reasoning != "" {
-			if err := emit(d.Content, reasoning, false); err != nil {
+			if err := emit(d.Content, reasoning, false, ""); err != nil {
 				return err
 			}
 		}
 		// Intern 等兼容接口会在每个增量里带上空字符串 finish_reason。
 		// 只有非空结束原因才表示流结束，否则会在第一个 token 后截断。
 		if streamFinished(chunk.Choices[0].FinishReason) {
-			return emit("", "", true)
+			return emit("", "", true, strings.TrimSpace(*chunk.Choices[0].FinishReason))
 		}
 	}
-	return scanner.Err()
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+	return io.ErrUnexpectedEOF
 }
 
 // Complete calls OpenAI-compatible POST /v1/chat/completions and returns the assistant text.

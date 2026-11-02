@@ -281,115 +281,109 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 		case DecisionFinal, DecisionClarify:
 			out.State = StateFinalizing
 			out.Answer = decision.Answer
-			isRefuseTemplate := strings.TrimSpace(out.Answer) == refuseNoEvidenceTemplate
-			streamed := false
-			streamAnswer := func() error {
-				if r.streamer == nil || isRefuseTemplate {
-					return nil
+			failFinal := func(err error) (Result, error) {
+				out.Answer = ""
+				out.State = StateFailed
+				event := "run.failed"
+				if errors.Is(err, context.DeadlineExceeded) {
+					out.State, event = StateExpired, "run.expired"
+				} else if errors.Is(err, context.Canceled) {
+					out.State, event = StateCancelled, "run.cancelled"
 				}
-				if !req.DisableThinking {
-					_ = r.emit(ctx, Event{Type: "answer.generating", State: StateFinalizing, Message: "正在生成回答…"}, &seq)
-				}
-				streamCtx := ctx
-				if !req.DisableThinking {
-					streamCtx = WithReasoningSink(ctx, func(delta string) error {
-						if delta == "" {
-							return nil
-						}
-						return r.emit(ctx, Event{Type: "llm.reasoning.delta", State: StateFinalizing, Message: delta, StepID: stepID}, &seq)
-					})
-				}
-				answerCtx, answerCancel := context.WithTimeout(streamCtx, answerStreamTimeout)
-				defer answerCancel()
-				answer, streamErr := StreamFinalAnswer(answerCtx, r.streamer, req.Prompt, out.Observations, out.Answer, func(delta string) error {
-					streamed = true
-					return r.emit(ctx, Event{Type: "answer.delta", State: StateFinalizing, Message: delta}, &seq)
-				})
-				if streamErr != nil && answer == "" {
-					return streamErr
-				}
-				if answer != "" {
-					out.Answer = answer
-				}
-				return nil
+				_ = r.emit(ctx, Event{Type: event, State: out.State, Message: err.Error()}, &seq)
+				return out, err
 			}
-
+			isRefuseTemplate := strings.TrimSpace(out.Answer) == refuseNoEvidenceTemplate
+			catalogOnly := false
 			if decision.Decision == DecisionFinal && !isRefuseTemplate {
-				draftEmpty := strings.TrimSpace(out.Answer) == ""
-				// A catalog-only hop is the overview. Titles are the evidence; do not
-				// ask the answer model to refuse for lack of full text and then retry.
-				if draftEmpty && !hasChunkEvidence(out.Observations) {
+				if isCatalogListQuestion(CurrentUserQuery(string(req.Prompt))) && !hasChunkEvidence(out.Observations) {
 					if overview := catalogOverviewAnswer(out.Observations); overview != "" {
 						out.Answer = overview
-						streamed = true
-						_ = r.emit(ctx, Event{Type: "answer.delta", State: StateFinalizing, Message: overview}, &seq)
+						catalogOnly = true
 					}
 				}
-				// Planner leaves answer empty on purpose; stream from evidence first, then gate.
-				if !streamed && draftEmpty && hasUsefulEvidence(out.Observations) {
-					if err := streamAnswer(); err != nil {
-						out.State = StateFailed
-						_ = r.emit(ctx, Event{Type: "run.failed", State: out.State, Message: err.Error()}, &seq)
-						return out, err
+				// The model produces a candidate only. No answer.delta may be
+				// emitted until transport completion and the answer gate pass.
+				if !catalogOnly && r.streamer != nil {
+					if !req.DisableThinking {
+						if err := r.emit(ctx, Event{Type: "answer.generating", State: StateFinalizing, Message: "正在生成回答…"}, &seq); err != nil {
+							return failFinal(err)
+						}
 					}
+					streamCtx := ctx
+					if !req.DisableThinking {
+						streamCtx = WithReasoningSink(ctx, func(delta string) error {
+							if delta == "" {
+								return nil
+							}
+							return r.emit(ctx, Event{Type: "llm.reasoning.delta", State: StateFinalizing, Message: delta, StepID: stepID}, &seq)
+						})
+					}
+					answerCtx, answerCancel := context.WithTimeout(streamCtx, answerStreamTimeout)
+					answer, streamErr := StreamFinalAnswer(answerCtx, r.streamer, req.Prompt, out.Observations, out.Answer, nil)
+					answerCancel()
+					if streamErr != nil {
+						return failFinal(&AnswerGenerationError{Cause: streamErr})
+					}
+					out.Answer = answer
 				}
-				catalogOverview := !hasChunkEvidence(out.Observations) && catalogOverviewAnswer(out.Observations) != ""
-				if r.validator != nil && !catalogOverview && !(draftEmpty && hasUsefulEvidence(out.Observations) && strings.TrimSpace(out.Answer) == "") {
+				if r.validator != nil && !catalogOnly {
 					vr, err := r.validator.Validate(ctx, out.Answer, out.Observations)
 					if err != nil {
-						return out, err
-					}
-					if vr.Rejected && out.Steps < limits.MaxSteps {
-						gap, _ := json.Marshal(map[string]any{
-							"gap":                vr.Gate.RefuseReason,
-							"hint":               "证据不足。请改用 knowledge.lexical、knowledge.semantic、knowledge.read 或 knowledge.expand。不要用相同参数重复调用。",
-							"required_citations": vr.Gate.RequiredCitations,
-							"citation_count":     vr.Gate.CitationCount,
-						})
-						out.Observations = append(out.Observations, Observation{
-							CallID: "answer_gate", Name: "answer.gap", Output: gap,
-						})
-						msg := vr.Gate.RefuseReason
-						if detail := GateDetailJSON(vr.Gate); len(detail) > 0 {
-							msg = string(detail)
-						}
-						_ = r.emit(ctx, Event{Type: "answer.rejected", State: StateFinalizing, Message: msg, StepID: stepID}, &seq)
-						continue
+						return failFinal(err)
 					}
 					if vr.Rejected {
-						if evidenceIsEmpty(out.Observations) || strings.TrimSpace(vr.Answer) == "" {
+						if err := r.emit(ctx, Event{Type: "answer.rejected", State: StateFinalizing, Message: string(GateDetailJSON(vr.Gate)), StepID: stepID}, &seq); err != nil {
+							return failFinal(err)
+						}
+						evidenceGap := vr.Gate.RefuseReason == "no_evidence" || vr.Gate.RefuseReason == "insufficient_citations"
+						if evidenceGap && !hasToolObservation(out.Observations, "knowledge.read") && out.Steps < limits.MaxSteps {
+							gap, _ := json.Marshal(map[string]any{
+								"gap":                vr.Gate.RefuseReason,
+								"hint":               "证据不足。请改用 knowledge.lexical、knowledge.semantic、knowledge.read 或 knowledge.expand。不要用相同参数重复调用。",
+								"required_citations": vr.Gate.RequiredCitations, "citation_count": vr.Gate.CitationCount,
+							})
+							out.Observations = append(out.Observations, Observation{CallID: "answer_gate", Name: "answer.gap", Output: gap})
+							continue
+						}
+						out.Answer = strings.TrimSpace(vr.Answer)
+						if out.Answer == "" {
 							out.Answer = refuseNoEvidenceTemplate
-						} else {
+						}
+						// The validator's safe replacement is final. Regenerating
+						// it would introduce a second, unvalidated answer.
+					} else {
+						if strings.TrimSpace(vr.Answer) != "" {
 							out.Answer = vr.Answer
 						}
-						streamed = false
-						_ = r.emit(ctx, Event{Type: "answer.rejected", State: StateFinalizing, Message: string(GateDetailJSON(vr.Gate))}, &seq)
-					} else if detail := GateDetailJSON(vr.Gate); len(detail) > 0 {
-						_ = r.emit(ctx, Event{Type: "answer.validated", State: StateFinalizing, Message: string(detail)}, &seq)
-					}
-				}
-				// Non-empty planner draft (legacy / tests): gate first, then stream.
-				if !streamed && !isRefuseTemplate && strings.TrimSpace(out.Answer) != "" && strings.TrimSpace(out.Answer) != refuseNoEvidenceTemplate {
-					if err := streamAnswer(); err != nil {
-						out.State = StateFailed
-						_ = r.emit(ctx, Event{Type: "run.failed", State: out.State, Message: err.Error()}, &seq)
-						return out, err
+						if err := r.emit(ctx, Event{Type: "answer.validated", State: StateFinalizing, Message: string(GateDetailJSON(vr.Gate)), StepID: stepID}, &seq); err != nil {
+							return failFinal(err)
+						}
 					}
 				}
 			}
-			if decision.Decision == DecisionClarify && out.Answer == "" {
+			if decision.Decision == DecisionClarify && strings.TrimSpace(out.Answer) == "" {
 				out.Answer = clarifyAskTemplate
 			}
-			if decision.Decision == DecisionFinal && strings.TrimSpace(out.Answer) == "" && evidenceIsEmpty(out.Observations) {
-				out.Answer = refuseNoEvidenceTemplate
+			if strings.TrimSpace(out.Answer) == "" {
+				if evidenceIsEmpty(out.Observations) {
+					out.Answer = refuseNoEvidenceTemplate
+				} else {
+					return failFinal(errors.New("agent: final answer is empty"))
+				}
 			}
-			// When no token streamer ran, emit one synthetic delta so BFF still gets a chunk.
-			if !streamed && strings.TrimSpace(out.Answer) != "" {
-				_ = r.emit(ctx, Event{Type: "answer.delta", State: StateFinalizing, Message: out.Answer}, &seq)
+			if err := ctx.Err(); err != nil {
+				return failFinal(err)
+			}
+			if err := r.emit(ctx, Event{Type: "answer.delta", State: StateFinalizing, Message: out.Answer}, &seq); err != nil {
+				return failFinal(err)
 			}
 			out.State = StateCompleted
-			_ = r.emit(ctx, Event{Type: "run.completed", State: out.State, Message: out.Answer}, &seq)
+			if err := r.emit(ctx, Event{Type: "run.completed", State: out.State, Message: out.Answer}, &seq); err != nil {
+				return failFinal(err)
+			}
 			return out, nil
+
 		case DecisionTools:
 			if len(decision.ToolCalls) == 0 {
 				out.State = StateFailed

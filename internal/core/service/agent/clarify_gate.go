@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var reCatalogPart = regexp.MustCompile(`[（(]\d+/\d+[）)]`)
+var reCatalogPart = regexp.MustCompile(`[（(](\d+)/\d+[）)]`)
 
 const (
 	refuseNoEvidenceTemplate = "本工作区资料中没有找到相关依据，无法回答该问题。"
@@ -94,6 +94,123 @@ func hasChunkEvidence(obs []Observation) bool {
 	b := CollectEvidence(obs)
 	for _, h := range b.Hits {
 		if strings.TrimSpace(h.Content) != "" || strings.TrimSpace(h.ChunkID) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// isCatalogListQuestion is a directory ask (which documents exist), not a request
+// to explain what each document says.
+func isContentOverview(q string) bool {
+	if isCatalogListQuestion(q) {
+		return false
+	}
+	return strings.Contains(q, "讲什么") || strings.Contains(q, "各自") || strings.Contains(q, "主题")
+}
+
+// openingGroups lists distinct works in catalog order, for reading each opening slice.
+func openingGroups(obs []Observation, limit int) []string {
+	if limit <= 0 {
+		limit = 3
+	}
+	var names []string
+	seen := map[string]bool{}
+	for _, o := range obs {
+		if o.Name != "knowledge.catalog" || len(o.Output) == 0 || o.Err != nil {
+			continue
+		}
+		var payload struct {
+			Documents []struct {
+				Title string `json:"title"`
+			} `json:"documents"`
+		}
+		if json.Unmarshal(o.Output, &payload) != nil {
+			continue
+		}
+		for _, d := range payload.Documents {
+			name := catalogGroupTitle(d.Title)
+			if name == "" || seen[name] {
+				continue
+			}
+			seen[name] = true
+			names = append(names, name)
+			if len(names) >= limit {
+				return names
+			}
+		}
+	}
+	return names
+}
+
+// openingDocIDs picks one slice per work, preferring the first part, for a content overview.
+func openingDocIDs(obs []Observation, limit int) []string {
+	if limit <= 0 {
+		limit = 3
+	}
+	type cand struct {
+		id   string
+		part int
+		ok   bool
+	}
+	best := map[string]cand{}
+	for _, o := range obs {
+		if o.Name != "knowledge.catalog" || len(o.Output) == 0 || o.Err != nil {
+			continue
+		}
+		var payload struct {
+			Documents []struct {
+				DocID string `json:"doc_id"`
+				Title string `json:"title"`
+			} `json:"documents"`
+		}
+		if json.Unmarshal(o.Output, &payload) != nil {
+			continue
+		}
+		for _, d := range payload.Documents {
+			name := catalogGroupTitle(d.Title)
+			if name == "" || d.DocID == "" {
+				continue
+			}
+			part, ok := slicePartNum(d.Title)
+			cur, seen := best[name]
+			if !seen || (ok && (!cur.ok || part < cur.part)) {
+				best[name] = cand{id: d.DocID, part: part, ok: ok}
+			}
+		}
+	}
+	ids := make([]string, 0, len(best))
+	for _, c := range best {
+		ids = append(ids, c.id)
+		if len(ids) >= limit {
+			break
+		}
+	}
+	return ids
+}
+
+func slicePartNum(title string) (int, bool) {
+	m := reCatalogPart.FindStringSubmatch(title)
+	if len(m) < 2 {
+		return 0, false
+	}
+	n := 0
+	for _, r := range m[1] {
+		if r < '0' || r > '9' {
+			return 0, false
+		}
+		n = n*10 + int(r-'0')
+	}
+	return n, true
+}
+
+func isCatalogListQuestion(q string) bool {
+	q = strings.TrimSpace(q)
+	if q == "" {
+		return false
+	}
+	for _, s := range []string{"有哪些", "有什么文档", "哪些论文", "哪些文档", "列出", "目录"} {
+		if strings.Contains(q, s) {
 			return true
 		}
 	}

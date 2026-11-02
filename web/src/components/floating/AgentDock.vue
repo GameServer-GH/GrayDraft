@@ -28,6 +28,7 @@ import { stripEmoji } from '@/utils/stripEmoji'
 import { recognizeAndCleanImage } from '@/services/imageRecognize'
 import { preprocessImage } from '@/utils/imagePreprocess'
 import { useVoiceInput } from '@/composables/useVoiceInput'
+import { useToast } from '@/composables/useToast'
 import type { PendingImage } from '@/stores/agent'
 
 const agent = useAgentStore()
@@ -38,6 +39,7 @@ const { enabled: knowledgePanelEnabled } = useKnowledgePanel()
 const { ask: askKnowledgeChat } = useKnowledgeChat()
 const { search: runKnowledgeSearch, focusDocument } = useKnowledgeRetrieval()
 const { t } = useI18n()
+const { show: showToast } = useToast()
 
 const activeNotebookId = computed(() => canvas.activeNotebookId)
 
@@ -165,6 +167,10 @@ function messageBodyText(m: AgentMessage): string {
   return stripEmoji(m.body || (m.streaming ? '…' : t('agentDock.emptyReply')))
 }
 
+function collapsedPreview(m: AgentMessage): string {
+  return messageBodyText(m).replace(/\s+/g, ' ').trim()
+}
+
 function messageAttachmentNames(m: AgentMessage): string[] {
   if (m.role !== 'user') return []
   return userMessageParts(m).attachments
@@ -225,8 +231,9 @@ function isMessageCollapsed(m: AgentMessage): boolean {
 function toggleMessageCollapsed(m: AgentMessage) {
   const tid = agentThreadId.value
   if (!tid) return
-  agent.patchMessage(tid, m.id, { collapsed: !m.collapsed })
-  scheduleScrollToBottom()
+  const collapsed = !m.collapsed
+  agent.patchMessage(tid, m.id, { collapsed })
+  showToast(collapsed ? t('agentDock.msgCollapsed') : t('agentDock.msgExpanded'))
 }
 
 function toggleThinking(m: AgentMessage) {
@@ -252,7 +259,13 @@ function thinkingStepCount(m: AgentMessage): number {
 function setMessageFeedback(m: AgentMessage, feedback: AgentMessageFeedback) {
   const tid = agentThreadId.value
   if (!tid) return
-  agent.patchMessage(tid, m.id, { feedback: m.feedback === feedback ? null : feedback })
+  const clearing = m.feedback === feedback
+  agent.patchMessage(tid, m.id, { feedback: clearing ? null : feedback })
+  if (feedback === 'up') {
+    showToast(clearing ? t('agentDock.msgLikeCleared') : t('agentDock.msgLikeDone'))
+  } else {
+    showToast(clearing ? t('agentDock.msgDislikeCleared') : t('agentDock.msgDislikeDone'))
+  }
 }
 
 async function copyMessageBody(m: AgentMessage) {
@@ -266,12 +279,13 @@ async function copyMessageBody(m: AgentMessage) {
   try {
     await navigator.clipboard.writeText(text)
     copiedMsgId.value = m.id
+    showToast(t('agentDock.msgCopied'))
     if (copiedResetTimer) clearTimeout(copiedResetTimer)
     copiedResetTimer = setTimeout(() => {
       copiedMsgId.value = null
     }, 1600)
   } catch {
-    /* ignore */
+    showToast(t('agentDock.msgCopyFailed'))
   }
 }
 
@@ -325,19 +339,6 @@ const pendingImages = computed<PendingImage[]>(() => {
   const id = agentThreadId.value
   if (!id) return []
   return agent.threads[id]?.pendingImages ?? []
-})
-
-const mediaUrlDraft = computed({
-  get: () => {
-    const id = agentThreadId.value
-    if (!id) return ''
-    return agent.threads[id]?.mediaUrlDraft ?? ''
-  },
-  set: (v: string) => {
-    const id = agentThreadId.value
-    if (!id) return
-    agent.setMediaUrlDraft(id, v)
-  },
 })
 
 const showImageUploadButton = computed(() => {
@@ -507,22 +508,6 @@ async function generateVideoThumbnail(file: File): Promise<string> {
   })
 }
 
-function onPasteMediaUrl(url: string) {
-  const id = agentThreadId.value
-  if (!id) return
-  let img: PendingImage = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-    base64: '',
-    thumbnail: '',
-    mimeType: '',
-    filename: url.split('/').pop() ?? url,
-    status: 'pending',
-    mediaUrl: url,
-  }
-  agent.addPendingImage(id, img)
-  agent.setMediaUrlDraft(id, '')
-}
-
 function onRemoveImage(imageId: string) {
   const id = agentThreadId.value
   if (!id) return
@@ -678,7 +663,6 @@ async function onSubmit() {
     )
     agent.clearPendingImages(threadId)
     agent.setComposerDraft(threadId, '')
-    agent.clearMediaUrlDraft(threadId)
     if (!img) {
       agent.setLastError(threadId, '媒体数据无效，请重试')
       return
@@ -733,7 +717,6 @@ async function onSubmit() {
     )
     agent.clearPendingImages(threadId)
     agent.setComposerDraft(threadId, '')
-    agent.clearMediaUrlDraft(threadId)
     if (!img) {
       agent.setLastError(threadId, '媒体数据无效，请重试')
       return
@@ -1006,12 +989,15 @@ function onKeydown(e: KeyboardEvent) {
                   <div
                     v-if="markdownContent(m) || (!hasThinking(m) || !m.streaming)"
                     class="agent-dock__msg-body"
-                    :class="{ 'agent-dock__msg-body--md': Boolean(markdownContent(m)) }"
+                    :class="{
+                      'agent-dock__msg-body--md': Boolean(markdownContent(m)),
+                      'agent-dock__msg-body--collapsed': isMessageCollapsed(m),
+                    }"
                   >
-                    <div
-                      class="agent-dock__msg-body-main"
-                      :class="{ 'agent-dock__msg-body--collapsed': isMessageCollapsed(m) }"
-                    >
+                    <p v-if="isMessageCollapsed(m)" class="agent-dock__msg-body-line">
+                      {{ collapsedPreview(m) }}
+                    </p>
+                    <div v-show="!isMessageCollapsed(m)" class="agent-dock__msg-body-main">
                       <MarkdownRender
                         v-if="markdownContent(m)"
                         class="agent-dock__msg-md markstream-vue"
@@ -1028,7 +1014,7 @@ function onKeydown(e: KeyboardEvent) {
                       <template v-else>{{ messageBodyText(m) }}</template>
                     </div>
                     <div
-                      v-if="!m.streaming && hasMessageMeta(m)"
+                      v-if="!isMessageCollapsed(m) && !m.streaming && hasMessageMeta(m)"
                       class="agent-dock__msg-meta"
                       :aria-label="t('agentDock.chatMetaAria')"
                     >
@@ -1119,6 +1105,7 @@ function onKeydown(e: KeyboardEvent) {
                     <button
                       type="button"
                       class="agent-dock__msg-action"
+                      :class="{ 'agent-dock__msg-action--active': isMessageCollapsed(m) }"
                       :aria-label="
                         isMessageCollapsed(m) ? t('agentDock.msgExpandAria') : t('agentDock.msgCollapseAria')
                       "
@@ -1219,7 +1206,6 @@ function onKeydown(e: KeyboardEvent) {
           :has-attachments="pendingAttachments.length > 0"
           :voice-recording="voiceRecording"
           :pending-images="pendingImages"
-          :media-url-draft="mediaUrlDraft"
           :disabled="agent.streaming || !knowledgePanelEnabled"
           :placeholder="knowledgePanelEnabled ? undefined : undefined"
           @keydown="onKeydown"
@@ -1232,8 +1218,6 @@ function onKeydown(e: KeyboardEvent) {
           @start-voice="onStartVoice"
           @stop-voice="onStopVoice"
           @cancel-voice="onCancelVoice"
-          @update:media-url-draft="mediaUrlDraft = $event"
-          @paste-media-url="onPasteMediaUrl"
         />
       </div>
     </Teleport>
@@ -1282,9 +1266,12 @@ function onKeydown(e: KeyboardEvent) {
   border-radius: 16px 0 0 16px;
 }
 
-.agent-dock__resize-handle:hover,
+.agent-dock__resize-handle:hover {
+  background: linear-gradient(135deg, #6366f11a, #6366f10a);
+}
+
 .agent-dock--dragging .agent-dock__resize-handle {
-  background: rgba(0, 122, 255, 0.08);
+  background: linear-gradient(135deg, #6366f11a, #6366f10a);
 }
 
 /* Grip dot indicators */
@@ -1369,10 +1356,10 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 .agent-dock__chat-mode--active {
-  color: var(--color-selected-fg);
-  border-color: var(--color-selected);
-  background: var(--color-selected);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  color: var(--color-accent);
+  border-color: rgba(0, 122, 255, 0.32);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 122, 255, 0.14);
 }
 
 .agent-dock__toolbar-spacer {
@@ -1531,12 +1518,21 @@ function onKeydown(e: KeyboardEvent) {
   word-break: break-word;
 }
 
-.agent-dock__msg-body--collapsed {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
+.agent-dock__msg-body.agent-dock__msg-body--collapsed {
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent-dock__msg-body-line {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  line-height: 1.55;
 }
 
 .agent-dock__msg-body-main {
@@ -1988,7 +1984,8 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 .agent-dock__content {
-  padding: var(--space-2) var(--space-2) var(--space-5) var(--space-1);
+  /* 底部让出固定输入条，避免最后一条消息的操作钮被挡住点不到 */
+  padding: var(--space-2) var(--space-2) 200px var(--space-1);
   min-height: 120px;
 }
 

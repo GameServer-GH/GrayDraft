@@ -28,19 +28,26 @@ func TestFirstHopPlannerSkipsLLMOnStepOne(t *testing.T) {
 	}
 }
 
-func TestFirstHopPlannerFinalizesWhenEvidenceExists(t *testing.T) {
-	inner := &plannerStub{decisions: []Decision{{Decision: DecisionTools, ToolCalls: []ToolCall{{Name: "knowledge.lexical"}}}}}
+func TestFirstHopPlannerAllowsOneFollowUpThenFinalizes(t *testing.T) {
+	inner := &plannerStub{decisions: []Decision{{Decision: DecisionTools, ToolCalls: []ToolCall{{Name: "knowledge.read"}}}}}
 	p := FirstHopPlanner{Inner: inner, Select: func(string, []string) (string, bool) { return "knowledge.semantic", true }}
+	obs := []Observation{{
+		Name:   "knowledge.lexical",
+		Output: json.RawMessage(`{"total":1,"hits":[{"id":"c1","content":"Needle 200k"}]}`),
+	}}
 	d, err := p.Decide(context.Background(), PlannerInput{
-		Prompt: []byte("上下文从 4k 到 32k"),
-		Step:   2,
-		Observations: []Observation{{
-			Name:   "knowledge.lexical",
-			Output: json.RawMessage(`{"total":1,"hits":[{"id":"c1","content":"Needle 200k"}]}`),
-		}},
+		Prompt: []byte("MMMU 分数"), Step: 2, Observations: obs, AuthorizedKBs: []string{"gd_demo"},
 	})
+	if err != nil || d.Decision != DecisionTools || inner.i != 0 || d.ToolCalls[0].Name != "knowledge.read" {
+		t.Fatalf("follow-up decision=%+v inner.i=%d err=%v", d, inner.i, err)
+	}
+	var args map[string]any
+	if err := json.Unmarshal(d.ToolCalls[0].Arguments, &args); err != nil || args["span"] != "group" || args["chunk_id"] != "c1" {
+		t.Fatalf("args=%v err=%v", args, err)
+	}
+	d, err = p.Decide(context.Background(), PlannerInput{Prompt: []byte("MMMU 分数"), Step: 3, Observations: obs})
 	if err != nil || d.Decision != DecisionFinal || inner.i != 0 {
-		t.Fatalf("decision=%+v inner.i=%d err=%v", d, inner.i, err)
+		t.Fatalf("finalize decision=%+v inner.i=%d err=%v", d, inner.i, err)
 	}
 }
 

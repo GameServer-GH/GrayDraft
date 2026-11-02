@@ -51,7 +51,7 @@ func (p *Publisher) StartAgentConsumer(ctx context.Context, handle func(context.
 		if err := handle(workCtx, run); err != nil {
 			// A deadline already burned the run budget. Redelivering it repeats the hang
 			// until the chat client times out.
-			if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			if finalAgentRunError(err) {
 				_ = msg.Ack()
 				return
 			}
@@ -72,4 +72,12 @@ func (p *Publisher) StartAgentConsumer(ctx context.Context, handle func(context.
 	}
 	go func() { <-ctx.Done(); _ = sub.Drain() }()
 	return sub.Drain, nil
+}
+
+// Protocol/model completion failures already produce a terminal run event.
+// Replaying the same run would restart its event sequence after the client saw
+// failure. An explicit client retry creates a new run and has its own budget.
+func finalAgentRunError(err error) bool {
+	var completion interface{ TerminalRunFailure() bool }
+	return errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) || (errors.As(err, &completion) && completion.TerminalRunFailure())
 }

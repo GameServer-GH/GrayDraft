@@ -83,10 +83,8 @@ export interface AgentNotebookThread {
   lastError: string | null
   composerDraft: string
   pendingAttachments: File[]
-  /** Pending images/videos/URLs before recognition (transient, not persisted). */
+  /** Pending images/videos before recognition (transient, not persisted). */
   pendingImages: PendingImage[]
-  /** Draft media URL typed by user */
-  mediaUrlDraft: string
   knowledgeDockMode?: KnowledgeDockMode
   knowledgeChatMode?: KnowledgeChatMode
   thinkingMode?: boolean
@@ -105,7 +103,6 @@ function emptyThread(persisted?: PersistedAgentThread | null): AgentNotebookThre
     composerDraft: '',
     pendingAttachments: [],
     pendingImages: [],
-    mediaUrlDraft: '',
     knowledgeChatMode: persisted?.knowledgeChatMode,
     thinkingMode: persisted?.thinkingMode ?? true,
     knowledgeSearchTopK: persisted?.knowledgeSearchTopK,
@@ -423,16 +420,6 @@ export const useAgentStore = defineStore('agent', {
     clearPendingImages(threadId: string) {
       const t = this.ensureThread(threadId)
       t.pendingImages = []
-    },
-
-    setMediaUrlDraft(threadId: string, url: string) {
-      const t = this.ensureThread(threadId)
-      t.mediaUrlDraft = url
-    },
-
-    clearMediaUrlDraft(threadId: string) {
-      const t = this.ensureThread(threadId)
-      t.mediaUrlDraft = ''
     },
   },
 })

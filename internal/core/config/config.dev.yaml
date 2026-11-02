@@ -63,6 +63,8 @@ model_gateway:
   rerank_model: qwen3-rerank
 
 chat:
+  overview_model: fast
+  overview_hedge_after_ms: 4000
   max_context_chunks: 5
   search_only_fallback: true
   answer_self_check: true

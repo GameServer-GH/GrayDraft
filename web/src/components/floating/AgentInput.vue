@@ -23,8 +23,6 @@ const props = withDefaults(
     showImageUpload?: boolean
     voiceRecording?: boolean
     pendingImages?: PendingImage[]
-    /** Draft media URL typed by user */
-    mediaUrlDraft?: string
   }>(),
   {
     disabled: false,
@@ -35,7 +33,6 @@ const props = withDefaults(
     showImageUpload: false,
     voiceRecording: false,
     pendingImages: () => [],
-    mediaUrlDraft: '',
   },
 )
 
@@ -115,14 +112,11 @@ const emit = defineEmits<{
   startVoice: []
   stopVoice: []
   cancelVoice: []
-  'update:mediaUrlDraft': [url: string]
-  pasteMediaUrl: [url: string]
 }>()
 
 const hasImages = computed(() => props.pendingImages.length > 0)
-const hasUrlText = computed(() => (props.mediaUrlDraft ?? '').trim().length > 0)
 const hasContent = computed(
-  () => model.value.trim().length > 0 || props.hasAttachments || hasImages.value || hasUrlText.value,
+  () => model.value.trim().length > 0 || props.hasAttachments || hasImages.value,
 )
 
 const sendAriaLabel = computed(() => {
@@ -178,12 +172,6 @@ function onVideoInputChange(ev: Event) {
   if (!list?.length) return
   emit('attachVideos', [...list])
   input.value = ''
-}
-
-function onPasteMediaUrl() {
-  const url = (props.mediaUrlDraft ?? '').trim()
-  if (!url) return
-  emit('pasteMediaUrl', url)
 }
 
 function imageStatusLabel(img: PendingImage): string {
@@ -251,28 +239,6 @@ function imagePreviewClass(img: PendingImage): string {
           <Icon name="x" :size="12" />
         </button>
       </div>
-    </div>
-
-    <!-- Media URL input (compact, below thumbnails) -->
-    <div v-if="showImageUpload" class="agent-input__url-row">
-      <input
-        :value="mediaUrlDraft"
-        type="url"
-        class="agent-input__url-field"
-        :placeholder="t('agentInput.mediaUrlPlaceholder')"
-        :disabled="disabled"
-        @input="emit('update:mediaUrlDraft', ($event.target as HTMLInputElement).value)"
-        @keydown.enter.prevent="onPasteMediaUrl()"
-      />
-      <button
-        v-if="(mediaUrlDraft ?? '').trim()"
-        type="button"
-        class="agent-input__url-add"
-        :disabled="disabled"
-        @click="onPasteMediaUrl()"
-      >
-        {{ t('agentInput.mediaUrlAdd') }}
-      </button>
     </div>
 
     <textarea
@@ -391,23 +357,6 @@ function imagePreviewClass(img: PendingImage): string {
   background: rgba(0,0,0,0.5); color: #fff; font-size: 12px; line-height: 1; cursor: pointer; padding: 0;
 }
 .agent-input__image-remove:hover { background: rgba(196,30,30,0.75); }
-
-/* ── URL row ── */
-.agent-input__url-row { display: flex; gap: 6px; margin-bottom: 8px; }
-.agent-input__url-field {
-  flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid rgba(60,60,67,0.14); border-radius: 8px;
-  font-size: 12px; line-height: 1.4; color: var(--color-text); background: rgba(255,255,255,0.6);
-  outline: none;
-}
-.agent-input__url-field::placeholder { color: var(--color-text-secondary); opacity: 0.65; }
-.agent-input__url-field:disabled { opacity: 0.45; }
-.agent-input__url-add {
-  flex-shrink: 0; padding: 6px 10px; border: 1px solid rgba(0,122,255,0.22); border-radius: 8px;
-  background: rgba(0,122,255,0.08); color: var(--color-accent); font-size: 12px; font-weight: 600;
-  cursor: pointer;
-}
-.agent-input__url-add:disabled { opacity: 0.35; cursor: not-allowed; }
-.agent-input__url-add:hover:not(:disabled) { background: rgba(0,122,255,0.14); }
 
 .agent-input__field {
   display: block; width: 100%; box-sizing: border-box; margin: 0; padding: 8px;

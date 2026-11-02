@@ -16,6 +16,13 @@ type ChunkNavigator interface {
 	Expand(ctx context.Context, kbType, entity string, limit int) ([]model.Chunk, error)
 }
 
+// GroupNavigator reads sibling slices of one imported work, and the opening of named documents.
+type GroupNavigator interface {
+	GroupSpan(ctx context.Context, kbType, chunkID, query string, limit int) ([]model.Chunk, error)
+	Openings(ctx context.Context, kbType string, docIDs []string) ([]model.Chunk, error)
+	GroupOpenings(ctx context.Context, kbType string, groups []string) ([]model.Chunk, error)
+}
+
 // DocCatalog lists workspace documents for theme / multi-doc questions (P2-4).
 type DocCatalog interface {
 	ListRecentDocSummaries(ctx context.Context, kbType string, limit int) ([]model.DocSummarySnippet, error)
@@ -40,11 +47,15 @@ func (t EducationTools) Semantic(ctx context.Context, raw json.RawMessage) (json
 
 func (t EducationTools) Read(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 	var in struct {
-		ChunkID string `json:"chunk_id"`
-		KBType  string `json:"kb_type,omitempty"`
+		ChunkID string   `json:"chunk_id"`
+		DocIDs  []string `json:"doc_ids"`
+		Groups  []string `json:"groups"`
+		KBType  string   `json:"kb_type,omitempty"`
+		Span    string   `json:"span,omitempty"`
+		Query   string   `json:"query,omitempty"`
 	}
-	if err := json.Unmarshal(raw, &in); err != nil || strings.TrimSpace(in.ChunkID) == "" {
-		return nil, fmt.Errorf("knowledge.read: chunk_id is required")
+	if err := json.Unmarshal(raw, &in); err != nil {
+		return nil, fmt.Errorf("knowledge.read: invalid arguments")
 	}
 	kb, err := t.resolveKB(in.KBType, "knowledge.read")
 	if err != nil {
@@ -53,7 +64,40 @@ func (t EducationTools) Read(ctx context.Context, raw json.RawMessage) (json.Raw
 	if t.Navigator == nil {
 		return nil, fmt.Errorf("knowledge.read: navigator unavailable")
 	}
-	chunks, err := t.Navigator.Window(ctx, kb, strings.TrimSpace(in.ChunkID))
+	if len(in.Groups) > 0 {
+		opener, ok := t.Navigator.(GroupNavigator)
+		if !ok {
+			return nil, fmt.Errorf("knowledge.read: openings unavailable")
+		}
+		chunks, err := opener.GroupOpenings(ctx, kb, in.Groups)
+		if err != nil {
+			return nil, err
+		}
+		return marshalHits("knowledge.read", "openings", kb, chunks)
+	}
+	if len(in.DocIDs) > 0 {
+		opener, ok := t.Navigator.(GroupNavigator)
+		if !ok {
+			return nil, fmt.Errorf("knowledge.read: openings unavailable")
+		}
+		chunks, err := opener.Openings(ctx, kb, in.DocIDs)
+		if err != nil {
+			return nil, err
+		}
+		return marshalHits("knowledge.read", "openings", kb, chunks)
+	}
+	if strings.TrimSpace(in.ChunkID) == "" {
+		return nil, fmt.Errorf("knowledge.read: chunk_id is required")
+	}
+	var chunks []model.Chunk
+	if in.Span == "group" {
+		if group, ok := t.Navigator.(GroupNavigator); ok {
+			chunks, err = group.GroupSpan(ctx, kb, strings.TrimSpace(in.ChunkID), in.Query, 12)
+		}
+	}
+	if chunks == nil && err == nil {
+		chunks, err = t.Navigator.Window(ctx, kb, strings.TrimSpace(in.ChunkID))
+	}
 	if err != nil {
 		return nil, err
 	}

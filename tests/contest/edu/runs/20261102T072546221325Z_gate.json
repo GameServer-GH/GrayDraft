@@ -1,0 +1,1618 @@
+{
+  "meta": {
+    "started_at": "2026-11-02T07:25:46.221325+00:00",
+    "completed_at": "2026-11-02T07:26:49.143844+00:00",
+    "git": "8dd898c",
+    "bff": "http://localhost:8787",
+    "only": [
+      "paper-25-1",
+      "paper-infra",
+      "paper-isolation",
+      "paper-theme",
+      "scp-isolation",
+      "scp-name-1"
+    ],
+    "protocol": "skip_cache, no query rewrite, no retry",
+    "git_dirty": true,
+    "suite": "upgrade_regression (modified questions; not original S1 acceptance)",
+    "cases_sha256": "b7fe0c05ed185352ccbf780a72407f747ca660740b600b02a69a9f6a125a9979",
+    "source_sha256": {
+      "internal/core/service/agent/answer_stream.go": "9532ec344a80d98fdfc74ef3aa191aebf78191206b9efdbb2f69f9d07959c04d",
+      "internal/core/service/agent/answer_overview.go": "327f03677a07abee7c93672353a33194e537fa4a5ee732e2ba79ac80f6533e43",
+      "internal/core/service/llmclient/complete.go": "b97dc800f08faad27586602ee3dd905cc0c6abc667ce3b34c7cdbb1730bed44f",
+      "tests/contest/edu/retest_after_upgrade.py": "5dad7e6a5d1cd59bbac42c7c61676150f04456c3f5fff642e493087d980e34bc"
+    },
+    "source_changed_during_run": false
+  },
+  "results": [
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-name-1",
+      "expect": "answer",
+      "status": "命中",
+      "question": "species 人类 taxonomy ID 是多少",
+      "answer": "根据证据，人类（human）的 NCBI taxonomy ID 是 **9606**。\n\n依据出自技能 `multiomics_integration`（2/7）中 `get_functional_enrichment`（Origene-STRING）工具的参数说明：\n\n> `species (int, required): NCBI taxonomy ID (e.g., 9606 for human)`",
+      "diagnostics": {
+        "elapsed_ms": 17263,
+        "first_content_ms": 10287,
+        "stream_error": null,
+        "terminal_seen": true,
+        "events": [
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid"
+          },
+          {
+            "type": "thinking",
+            "message": "已接入智能体，正在准备回答…",
+            "thinking_phase": "run"
+          },
+          {
+            "type": "thinking",
+            "message": "第 1 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "按专名检索资料",
+            "thinking_phase": "plan",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「词法检索」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.lexical",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "「词法检索」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.lexical",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "第 2 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "读同一篇材料的相邻段",
+            "thinking_phase": "plan",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「阅读相邻章节」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "「阅读相邻章节」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "第 3 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "已有证据，整理回答",
+            "thinking_phase": "plan",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "正在生成回答…",
+            "thinking_phase": "answer"
+          },
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid",
+            "retrieval_grade": "B",
+            "coverage_score": 0.4
+          },
+          {
+            "type": "done",
+            "message": "根据证据，人类（human）的 NCBI taxonomy ID 是 **9606**。\n\n依据出自技能 `multiomics_integration`（2/7）中 `get_functional_enrichment`（Origene-STRING）工具的参数说明：\n\n> `species (int, required): NCBI taxonomy ID (e.g., 9606 for human)`",
+            "done": true,
+            "chat_mode": "hybrid",
+            "retrieval_grade": "B",
+            "coverage_score": 0.4,
+            "answer_confidence": 0.6553020867316984,
+            "confidence": 0.6553020867316984,
+            "chunks_used": 12,
+            "sources": [
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）"
+              },
+              {
+                "doc_id": "400d2f69-4c7c-46f0-bc08-eb5220a47282",
+                "doc_title": "技能 multiomics_integration（6/7）"
+              },
+              {
+                "doc_id": "a1ecf18c-e9c8-454d-a068-be4480db5924",
+                "doc_title": "工具 Sciverse"
+              },
+              {
+                "doc_id": "4c7fc60d-0314-4a61-a70a-bc30f5044bc9",
+                "doc_title": "技能 sciverse-academic-retrieval（7/7）"
+              },
+              {
+                "doc_id": "a1ecf18c-e9c8-454d-a068-be4480db5924",
+                "doc_title": "工具 Sciverse"
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）"
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）"
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）"
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）"
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）"
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）"
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）"
+              }
+            ],
+            "citations": [
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "6a66ee7f-be99-4813-9eac-b806ca56ad98"
+                ]
+              },
+              {
+                "doc_id": "400d2f69-4c7c-46f0-bc08-eb5220a47282",
+                "doc_title": "技能 multiomics_integration（6/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "84d880ad-82c0-4d67-af4e-941daf2b12ba"
+                ]
+              },
+              {
+                "doc_id": "a1ecf18c-e9c8-454d-a068-be4480db5924",
+                "doc_title": "工具 Sciverse",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "050b7041-dd97-480b-8e9c-c3bb7f93cb02"
+                ]
+              },
+              {
+                "doc_id": "4c7fc60d-0314-4a61-a70a-bc30f5044bc9",
+                "doc_title": "技能 sciverse-academic-retrieval（7/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "20a84e25-0f86-4d1b-bca0-02753c3b8450"
+                ]
+              },
+              {
+                "doc_id": "a1ecf18c-e9c8-454d-a068-be4480db5924",
+                "doc_title": "工具 Sciverse",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "97ed1a3a-f155-4ca6-9afd-6c5e4a94da2f"
+                ]
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "f683b5e0-335c-4270-9c75-61559d688fa8"
+                ]
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "26d9017b-5f68-45c0-93de-9ea18b48f810"
+                ]
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "ce9035e0-0131-41d3-a5ef-3af8e71f5698"
+                ]
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "177ee747-8f55-4ea7-a814-ff2c308c4e25"
+                ]
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "9f69aeaf-da15-4a2f-87bf-018f3c8fef37"
+                ]
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "2f6b10ac-28c0-4d4c-88c6-aac79ff9804a"
+                ]
+              },
+              {
+                "doc_id": "4d83542a-08a2-4435-9717-53fb60767325",
+                "doc_title": "技能 multiomics_integration（2/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "fd9c2d63-fbaf-4ad0-b0d9-e4184041bff3"
+                ]
+              }
+            ],
+            "sentence_labels": [
+              {
+                "sentence": "根据证据，人类（human）的 NCBI taxonomy ID 是 **9606**",
+                "source": "kb"
+              },
+              {
+                "sentence": "依据出自技能 `multiomics_integration`（2/7）中 `get_functional_enrichment`（Origene-STRING）工具的参数说明：",
+                "source": "supplement"
+              },
+              {
+                "sentence": "> `species (int, required): NCBI taxonomy ID (e.g., 9606 for human)`",
+                "source": "kb"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-isolation",
+      "expect": "reject",
+      "status": "正确拒答",
+      "question": "InternVL 视觉模型参数是多少",
+      "answer": "本工作区资料没有 InternVL 视觉模型参数相关内容。\n\n检索到的证据仅包含 Sciverse 学术检索技能的使用说明（如 `search_papers`、`semantic_search` 工具调用示例、服务器地址 `https://scp.intern-ai.org.cn/api/v1/mcp/43/Sciverse` 等），未涉及 InternVL 视觉模型的架构、参数量或训练配置等参数信息。",
+      "diagnostics": {
+        "elapsed_ms": 3972,
+        "first_content_ms": 2498,
+        "stream_error": null,
+        "terminal_seen": true,
+        "events": [
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid"
+          },
+          {
+            "type": "thinking",
+            "message": "已接入智能体，正在准备回答…",
+            "thinking_phase": "run"
+          },
+          {
+            "type": "thinking",
+            "message": "第 1 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "按专名检索资料",
+            "thinking_phase": "plan",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「词法检索」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.lexical",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "「词法检索」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.lexical",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "第 2 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "读同一篇材料的相邻段",
+            "thinking_phase": "plan",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「阅读相邻章节」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "「阅读相邻章节」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "第 3 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "已有证据，整理回答",
+            "thinking_phase": "plan",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "正在生成回答…",
+            "thinking_phase": "answer"
+          },
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid",
+            "retrieval_grade": "B",
+            "coverage_score": 0.4
+          },
+          {
+            "type": "done",
+            "message": "本工作区资料没有 InternVL 视觉模型参数相关内容。\n\n检索到的证据仅包含 Sciverse 学术检索技能的使用说明（如 `search_papers`、`semantic_search` 工具调用示例、服务器地址 `https://scp.intern-ai.org.cn/api/v1/mcp/43/Sciverse` 等），未涉及 InternVL 视觉模型的架构、参数量或训练配置等参数信息。",
+            "done": true,
+            "chat_mode": "hybrid",
+            "retrieval_grade": "B",
+            "coverage_score": 0.4,
+            "answer_confidence": 0.08636943289207928,
+            "confidence": 0.08636943289207928,
+            "chunks_used": 9,
+            "sources": [
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）"
+              },
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）"
+              },
+              {
+                "doc_id": "a1ecf18c-e9c8-454d-a068-be4480db5924",
+                "doc_title": "工具 Sciverse"
+              },
+              {
+                "doc_id": "fdca3c84-9591-4993-a2cf-a3267d52db21",
+                "doc_title": "工具 SCP-Workflow"
+              },
+              {
+                "doc_id": "2c6fe309-5a2b-447d-88e9-e54f86d4134e",
+                "doc_title": "技能 sciverse-academic-retrieval（1/7）"
+              },
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）"
+              },
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）"
+              },
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）"
+              },
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）"
+              }
+            ],
+            "citations": [
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "c1493457-c5da-4563-9542-b2446d5b21a0"
+                ]
+              },
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "fed969c2-00ea-4173-a37c-22710749a02c"
+                ]
+              },
+              {
+                "doc_id": "a1ecf18c-e9c8-454d-a068-be4480db5924",
+                "doc_title": "工具 Sciverse",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "ea3a42ff-2457-40b9-871a-f93d0674d9bb"
+                ]
+              },
+              {
+                "doc_id": "fdca3c84-9591-4993-a2cf-a3267d52db21",
+                "doc_title": "工具 SCP-Workflow",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "32105db1-576f-47a6-acaa-0f10042466f0"
+                ]
+              },
+              {
+                "doc_id": "2c6fe309-5a2b-447d-88e9-e54f86d4134e",
+                "doc_title": "技能 sciverse-academic-retrieval（1/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "48f695b3-6a1f-42db-8350-8dcf69150f90"
+                ]
+              },
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "56bbd212-c84a-4245-8d0b-4a1f9bfef0ad"
+                ]
+              },
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "9ffec6f9-cd70-4f7b-91be-792e0b234533"
+                ]
+              },
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "d3f113b7-5c45-4869-9227-42d19f41167b"
+                ]
+              },
+              {
+                "doc_id": "14684f94-7820-447a-83df-67a86c66b552",
+                "doc_title": "技能 sciverse-academic-retrieval（3/7）",
+                "kb_type": "gd_7286eeb3bce9a0b583c415e695ea3136",
+                "chunk_ids": [
+                  "2bade9db-d98f-44f0-8518-30ff1f3dd151"
+                ]
+              }
+            ],
+            "sentence_labels": [
+              {
+                "sentence": "本工作区资料没有 InternVL 视觉模型参数相关内容",
+                "source": "supplement"
+              },
+              {
+                "sentence": "检索到的证据仅包含 Sciverse 学术检索技能的使用说明（如 `search_papers`、`semantic_search` 工具调用示例、服务器地址 `https://scp.intern-ai.org.cn/api/v1/mcp/43/Sciverse` 等），未涉及 InternVL 视觉模型的架构、参数量或训练配置等参数信息",
+                "source": "supplement"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-25-1",
+      "expect": "answer",
+      "status": "命中",
+      "question": "InternVL2.5 基于 2.0，MMMU 分数与提升",
+      "answer": "根据论文证据，InternVL 2.5 与 MMMU 的相关信息如下：\n\n- **模型基础**：InternVL 2.5 是建立在 InternVL 2.0 基础架构之上的大规模 MLLM 系列。\n- **MMMU 分数**：InternVL2.5-78B 使用 Chain-of-Thought (CoT) 推理在 MMMU 上达到 **70.1%**，是首个在 MMMU 基准上突破 70% 的开源 MLLM。\n- **提升幅度**：相比直接回答（direct response），CoT 推理带来了 **3.7 分**的提升。\n- **进一步提升**：CoT 还可与多数投票（majority voting）结合，带来额外改进。\n\n证据中未给出 InternVL 2.0 在 MMMU 上的具体分数，因此无法计算 2.0 到 2.5 的绝对提升值。证据仅说明了 2.5 相对直接回答的 3.7 分提升。",
+      "diagnostics": {
+        "elapsed_ms": 7804,
+        "first_content_ms": 4328,
+        "stream_error": null,
+        "terminal_seen": true,
+        "events": [
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid"
+          },
+          {
+            "type": "thinking",
+            "message": "已接入智能体，正在准备回答…",
+            "thinking_phase": "run"
+          },
+          {
+            "type": "thinking",
+            "message": "第 1 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "按专名检索资料",
+            "thinking_phase": "plan",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「词法检索」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.lexical",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "「词法检索」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.lexical",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "第 2 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "读同一篇材料的相邻段",
+            "thinking_phase": "plan",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「阅读相邻章节」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "「阅读相邻章节」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "第 3 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "已有证据，整理回答",
+            "thinking_phase": "plan",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "正在生成回答…",
+            "thinking_phase": "answer"
+          },
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid",
+            "retrieval_grade": "B",
+            "coverage_score": 0.4
+          },
+          {
+            "type": "done",
+            "message": "根据论文证据，InternVL 2.5 与 MMMU 的相关信息如下：\n\n- **模型基础**：InternVL 2.5 是建立在 InternVL 2.0 基础架构之上的大规模 MLLM 系列。\n- **MMMU 分数**：InternVL2.5-78B 使用 Chain-of-Thought (CoT) 推理在 MMMU 上达到 **70.1%**，是首个在 MMMU 基准上突破 70% 的开源 MLLM。\n- **提升幅度**：相比直接回答（direct response），CoT 推理带来了 **3.7 分**的提升。\n- **进一步提升**：CoT 还可与多数投票（majority voting）结合，带来额外改进。\n\n证据中未给出 InternVL 2.0 在 MMMU 上的具体分数，因此无法计算 2.0 到 2.5 的绝对提升值。证据仅说明了 2.5 相对直接回答的 3.7 分提升。",
+            "done": true,
+            "chat_mode": "hybrid",
+            "retrieval_grade": "B",
+            "coverage_score": 0.4,
+            "answer_confidence": 0.46768272024706786,
+            "confidence": 0.46768272024706786,
+            "chunks_used": 10,
+            "sources": [
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）"
+              },
+              {
+                "doc_id": "ed1fab97-9fba-46cd-b9b8-7e5401fa31fa",
+                "doc_title": "论文 InternVL 2.5（4/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              },
+              {
+                "doc_id": "9ad18544-3396-4bd8-87ae-88e5751ed52d",
+                "doc_title": "论文 InternVL 2.5（8/14）"
+              },
+              {
+                "doc_id": "3541393f-247b-4438-b3a1-bc63e502979b",
+                "doc_title": "论文 InternVL 2.5（2/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              }
+            ],
+            "citations": [
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "e4d8a53f-86b8-44e1-8837-8680376fe986"
+                ]
+              },
+              {
+                "doc_id": "ed1fab97-9fba-46cd-b9b8-7e5401fa31fa",
+                "doc_title": "论文 InternVL 2.5（4/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "81a3b3c3-f907-4659-89da-67e5d59b0cfc"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "eeb5fba3-b528-4430-a082-145846b53695"
+                ]
+              },
+              {
+                "doc_id": "9ad18544-3396-4bd8-87ae-88e5751ed52d",
+                "doc_title": "论文 InternVL 2.5（8/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "e82468cc-89e3-4fbc-9f7a-8a56bebea3af"
+                ]
+              },
+              {
+                "doc_id": "3541393f-247b-4438-b3a1-bc63e502979b",
+                "doc_title": "论文 InternVL 2.5（2/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "c7c2bbba-d1f3-4d0b-8263-501a8c5aac89"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "cdf8cbf2-eefe-45a4-bd67-b33d97322b40"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "92987a3e-5aa7-4450-9aec-24597be5425e"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "bdc46cba-b1ef-46f8-a9ad-bc3e9893ae8c"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "35169ca5-6688-42ed-b31a-07d5d5cf9238"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "0a43d653-e984-4d6a-bb5c-f26724d7014a"
+                ]
+              }
+            ],
+            "sentence_labels": [
+              {
+                "sentence": "根据论文证据，InternVL 2.5 与 MMMU 的相关信息如下：",
+                "source": "supplement"
+              },
+              {
+                "sentence": "- **模型基础**：InternVL 2.5 是建立在 InternVL 2.0 基础架构之上的大规模 MLLM 系列",
+                "source": "supplement"
+              },
+              {
+                "sentence": "- **MMMU 分数**：InternVL2.5-78B 使用 Chain-of-Thought (CoT) 推理在 MMMU 上达到 **70.1%**，是首个在 MMMU 基准上突破 70% 的开源 MLLM",
+                "source": "kb"
+              },
+              {
+                "sentence": "- **提升幅度**：相比直接回答（direct response），CoT 推理带来了 **3.7 分**的提升",
+                "source": "supplement"
+              },
+              {
+                "sentence": "- **进一步提升**：CoT 还可与多数投票（majority voting）结合，带来额外改进",
+                "source": "supplement"
+              },
+              {
+                "sentence": "证据中未给出 InternVL 2.0 在 MMMU 上的具体分数，因此无法计算 2.0 到 2.5 的绝对提升值",
+                "source": "supplement"
+              },
+              {
+                "sentence": "证据仅说明了 2.5 相对直接回答的 3.7 分提升",
+                "source": "supplement"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-theme",
+      "expect": "answer",
+      "status": "命中",
+      "question": "三篇论文各自讲什么",
+      "answer": "**InternVL 2.5**：该研究介绍基于 InternVL 2.0 架构升级的多模态大模型 InternVL 2.5，核心贡献在于系统探索视觉编码器、语言模型规模、数据集大小与测试时配置对性能的影响，并通过提升训练测试策略及数据质量实现能力跃升。模型在多学科研讨、文档理解、视频理解及多语言等广泛基准测试中表现优异，媲美 GPT-4o 与 Claude-3.5-Sonnet 等商业模型；特别是作为首个开源 MLLM，借助思维链（CoT）推理在 MMMU 基准上突破 70%，提升了 3.7 个百分点，展现了显著的测试时扩展潜力。\n\n**InternVL**：InternVL研究设计了一种大规模视觉-语言基础模型，核心工作是将视觉基础模型扩展至60亿参数，并通过InternViT-6B与大语言模型进行渐进式对齐，利用网络规模的多源图文数据完成训练。该模型具备通用视觉感知与跨模态能力，可应用于图像/像素级识别、零样本视频分类与检索、以及多模态对话系统，在32个通用视觉-语言基准上取得优异表现，并可作为ViT-22B的有效替代方案。\n\n**InternLM2 Technical Report**：该研究提出开源大语言模型 InternLM2，通过创新的预训练与对齐技术提升综合能力。研究重点详述了多类型数据（文本、代码、长上下文）的预训练流程，模型从 4k tokens 逐步进阶至 32k tokens 训练，并在 200k Needle-in-a-Haystack 测试中展现优异长依赖捕捉能力。对齐阶段采用监督微调（SFT）结合新型条件在线人类反馈强化学习（COOL RLHF）策略，有效解决人类偏好冲突与奖励欺骗问题。研究通过发布不同训练阶段与尺寸的模型，为社区提供了模型演化的深入洞察。",
+      "diagnostics": {
+        "elapsed_ms": 22701,
+        "first_content_ms": 22694,
+        "stream_error": null,
+        "terminal_seen": true,
+        "events": [
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid"
+          },
+          {
+            "type": "thinking",
+            "message": "已接入智能体，正在准备回答…",
+            "thinking_phase": "run"
+          },
+          {
+            "type": "thinking",
+            "message": "第 1 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "查看工作区文档目录",
+            "thinking_phase": "plan",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「knowledge.catalog」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.catalog",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "「knowledge.catalog」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.catalog",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "第 2 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "读每篇材料的开头",
+            "thinking_phase": "plan",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「阅读相邻章节」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "「阅读相邻章节」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "第 3 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "已有证据，整理回答",
+            "thinking_phase": "plan",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "正在生成回答…",
+            "thinking_phase": "answer"
+          },
+          {
+            "type": "done",
+            "message": "**InternVL 2.5**：该研究介绍基于 InternVL 2.0 架构升级的多模态大模型 InternVL 2.5，核心贡献在于系统探索视觉编码器、语言模型规模、数据集大小与测试时配置对性能的影响，并通过提升训练测试策略及数据质量实现能力跃升。模型在多学科研讨、文档理解、视频理解及多语言等广泛基准测试中表现优异，媲美 GPT-4o 与 Claude-3.5-Sonnet 等商业模型；特别是作为首个开源 MLLM，借助思维链（CoT）推理在 MMMU 基准上突破 70%，提升了 3.7 个百分点，展现了显著的测试时扩展潜力。\n\n**InternVL**：InternVL研究设计了一种大规模视觉-语言基础模型，核心工作是将视觉基础模型扩展至60亿参数，并通过InternViT-6B与大语言模型进行渐进式对齐，利用网络规模的多源图文数据完成训练。该模型具备通用视觉感知与跨模态能力，可应用于图像/像素级识别、零样本视频分类与检索、以及多模态对话系统，在32个通用视觉-语言基准上取得优异表现，并可作为ViT-22B的有效替代方案。\n\n**InternLM2 Technical Report**：该研究提出开源大语言模型 InternLM2，通过创新的预训练与对齐技术提升综合能力。研究重点详述了多类型数据（文本、代码、长上下文）的预训练流程，模型从 4k tokens 逐步进阶至 32k tokens 训练，并在 200k Needle-in-a-Haystack 测试中展现优异长依赖捕捉能力。对齐阶段采用监督微调（SFT）结合新型条件在线人类反馈强化学习（COOL RLHF）策略，有效解决人类偏好冲突与奖励欺骗问题。研究通过发布不同训练阶段与尺寸的模型，为社区提供了模型演化的深入洞察。",
+            "done": true,
+            "chat_mode": "hybrid",
+            "answer_confidence": 0.24777777777777776,
+            "confidence": 0.24777777777777776,
+            "chunks_used": 12,
+            "sources": [
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）"
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）"
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）"
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）"
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）"
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）"
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）"
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）"
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）"
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）"
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）"
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）"
+              }
+            ],
+            "citations": [
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "45464384-5a4b-4ba7-9eb5-7392264d5cbc"
+                ]
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "b3606d70-78fe-4817-863f-16fa31300c09"
+                ]
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "e4d8a53f-86b8-44e1-8837-8680376fe986"
+                ]
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "1aa777cd-8515-4d3f-8a11-31994245e7cd"
+                ]
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "993a4e54-eece-4ece-b5f2-c103947f1d5c"
+                ]
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "a32430e7-c8ea-4cf8-820e-9c6dc10e8f62"
+                ]
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "e6536ffa-33b4-4ecf-ad99-096a0e5e3419"
+                ]
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "d50f1a3d-863c-4099-be2c-121149e3598e"
+                ]
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "84dbdc87-4f8d-4219-b2c4-c36d4fb08a83"
+                ]
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "28ada34c-d9ed-49c6-8f80-b0d360e72734"
+                ]
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "5bd9740a-7c22-45a0-aaac-d023deba598b"
+                ]
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "62d6461e-9ed2-4aa3-9c00-f69d7ecd8527"
+                ]
+              }
+            ],
+            "sentence_labels": [
+              {
+                "sentence": "**InternVL 2.5**：该研究介绍基于 InternVL 2.0 架构升级的多模态大模型 InternVL 2.5，核心贡献在于系统探索视觉编码器、语言模型规模、数据集大小与测试时配置对性能的影响，并通过提升训练测试策略及数据质量实现能力跃升",
+                "source": "supplement"
+              },
+              {
+                "sentence": "模型在多学科研讨、文档理解、视频理解及多语言等广泛基准测试中表现优异，媲美 GPT-4o 与 Claude-3.5-Sonnet 等商业模型",
+                "source": "supplement"
+              },
+              {
+                "sentence": "特别是作为首个开源 MLLM，借助思维链（CoT）推理在 MMMU 基准上突破 70%，提升了 3.7 个百分点，展现了显著的测试时扩展潜力",
+                "source": "supplement"
+              },
+              {
+                "sentence": "**InternVL**：InternVL研究设计了一种大规模视觉-语言基础模型，核心工作是将视觉基础模型扩展至60亿参数，并通过InternViT-6B与大语言模型进行渐进式对齐，利用网络规模的多源图文数据完成训练",
+                "source": "supplement"
+              },
+              {
+                "sentence": "该模型具备通用视觉感知与跨模态能力，可应用于图像/像素级识别、零样本视频分类与检索、以及多模态对话系统，在32个通用视觉-语言基准上取得优异表现，并可作为ViT-22B的有效替代方案",
+                "source": "supplement"
+              },
+              {
+                "sentence": "**InternLM2 Technical Report**：该研究提出开源大语言模型 InternLM2，通过创新的预训练与对齐技术提升综合能力",
+                "source": "supplement"
+              },
+              {
+                "sentence": "研究重点详述了多类型数据（文本、代码、长上下文）的预训练流程，模型从 4k tokens 逐步进阶至 32k tokens 训练，并在 200k Needle-in-a-Haystack 测试中展现优异长依赖捕捉能力",
+                "source": "kb"
+              },
+              {
+                "sentence": "对齐阶段采用监督微调（SFT）结合新型条件在线人类反馈强化学习（COOL RLHF）策略，有效解决人类偏好冲突与奖励欺骗问题",
+                "source": "supplement"
+              },
+              {
+                "sentence": "研究通过发布不同训练阶段与尺寸的模型，为社区提供了模型演化的深入洞察",
+                "source": "supplement"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-infra",
+      "expect": "answer",
+      "status": "命中",
+      "question": "InternEvo 训练用了哪种注意力实现和哪种浮点精度",
+      "answer": "根据《InternLM2 Technical Report》论文原文，InternEvo 训练采用了 **FlashAttention** 注意力实现和 **BF16** 混合精度训练。\n\n论文原文明确写道：\n\n> \"In addition, to enhance hardware utilization, we incorporate the FlashAttention technique ( Dao, 2023 ) and mixed-precision training ( Narang et al., 2017 ) with BF16.\"",
+      "diagnostics": {
+        "elapsed_ms": 4772,
+        "first_content_ms": 3120,
+        "stream_error": null,
+        "terminal_seen": true,
+        "events": [
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid"
+          },
+          {
+            "type": "thinking",
+            "message": "已接入智能体，正在准备回答…",
+            "thinking_phase": "run"
+          },
+          {
+            "type": "thinking",
+            "message": "第 1 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "按专名检索资料",
+            "thinking_phase": "plan",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「词法检索」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.lexical",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "「词法检索」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.lexical",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "第 2 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "读同一篇材料的相邻段",
+            "thinking_phase": "plan",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「阅读相邻章节」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "「阅读相邻章节」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "第 3 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "已有证据，整理回答",
+            "thinking_phase": "plan",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "正在生成回答…",
+            "thinking_phase": "answer"
+          },
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid",
+            "retrieval_grade": "B",
+            "coverage_score": 0.4
+          },
+          {
+            "type": "done",
+            "message": "根据《InternLM2 Technical Report》论文原文，InternEvo 训练采用了 **FlashAttention** 注意力实现和 **BF16** 混合精度训练。\n\n论文原文明确写道：\n\n> \"In addition, to enhance hardware utilization, we incorporate the FlashAttention technique ( Dao, 2023 ) and mixed-precision training ( Narang et al., 2017 ) with BF16.\"",
+            "done": true,
+            "chat_mode": "hybrid",
+            "retrieval_grade": "B",
+            "coverage_score": 0.4,
+            "answer_confidence": 0.35872234560198707,
+            "confidence": 0.35872234560198707,
+            "chunks_used": 11,
+            "sources": [
+              {
+                "doc_id": "658759e7-e64a-4345-b414-ebd3fdef2a7b",
+                "doc_title": "论文 InternLM2 Technical Report（6/15）"
+              },
+              {
+                "doc_id": "9bd3bbac-abaf-4aad-8438-9a8d3af50ed3",
+                "doc_title": "论文 InternVL 2.5（14/14）"
+              },
+              {
+                "doc_id": "e25e6d3e-47ad-4b04-af7a-771c58e22e71",
+                "doc_title": "论文 InternLM2 Technical Report（10/15）"
+              },
+              {
+                "doc_id": "34b87dca-72f5-45c5-9f16-789c82fc7833",
+                "doc_title": "论文 InternVL 2.5（7/14）"
+              },
+              {
+                "doc_id": "9ad18544-3396-4bd8-87ae-88e5751ed52d",
+                "doc_title": "论文 InternVL 2.5（8/14）"
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）"
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）"
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）"
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）"
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）"
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）"
+              }
+            ],
+            "citations": [
+              {
+                "doc_id": "658759e7-e64a-4345-b414-ebd3fdef2a7b",
+                "doc_title": "论文 InternLM2 Technical Report（6/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "81ca07ca-feb8-4d23-946d-3991d8ca4be9"
+                ]
+              },
+              {
+                "doc_id": "9bd3bbac-abaf-4aad-8438-9a8d3af50ed3",
+                "doc_title": "论文 InternVL 2.5（14/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "6b397c5a-9242-4f7c-8772-f844b6f19397"
+                ]
+              },
+              {
+                "doc_id": "e25e6d3e-47ad-4b04-af7a-771c58e22e71",
+                "doc_title": "论文 InternLM2 Technical Report（10/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "192698ca-e3d4-4d87-8fa9-7f18bab1c064"
+                ]
+              },
+              {
+                "doc_id": "34b87dca-72f5-45c5-9f16-789c82fc7833",
+                "doc_title": "论文 InternVL 2.5（7/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "09813407-0c2b-4c42-a506-70fd83956a4c"
+                ]
+              },
+              {
+                "doc_id": "9ad18544-3396-4bd8-87ae-88e5751ed52d",
+                "doc_title": "论文 InternVL 2.5（8/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "e82468cc-89e3-4fbc-9f7a-8a56bebea3af"
+                ]
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "e67eac0f-0cb5-460a-b3ad-dd9ebb97f368"
+                ]
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "8523a123-f49a-4f91-a4d8-92e7033d68cb"
+                ]
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "fadf44e1-b2a4-4b06-9b86-2cadcd67e1a8"
+                ]
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "0d92dee5-2174-4134-b694-e86a406d20db"
+                ]
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "f6e9987d-2d76-4601-b650-91bb9b4a2e3d"
+                ]
+              },
+              {
+                "doc_id": "180a6737-f307-4473-a6aa-d703fc4fc0da",
+                "doc_title": "论文 InternLM2 Technical Report（5/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "774bd944-8519-4f75-bec1-a64a9da62811"
+                ]
+              }
+            ],
+            "sentence_labels": [
+              {
+                "sentence": "根据《InternLM2 Technical Report》论文原文，InternEvo 训练采用了 **FlashAttention** 注意力实现和 **BF16** 混合精度训练",
+                "source": "supplement"
+              },
+              {
+                "sentence": "论文原文明确写道：",
+                "source": "supplement"
+              },
+              {
+                "sentence": "> \"In addition, to enhance hardware utilization, we incorporate the FlashAttention technique ( Dao, 2023 ) and mixed-precision training ( Narang et al., 2017 ) with BF16.\"",
+                "source": "kb"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-isolation",
+      "expect": "reject",
+      "status": "正确拒答",
+      "question": "CrystalX HKL 上限是多少",
+      "answer": "本工作区资料中没有关于 CrystalX 及其 HKL 上限的内容。提供的证据仅涉及 InternLM2、InternVL、InternVL 2.5 等论文的超参数与训练配置，未提及 CrystalX。",
+      "diagnostics": {
+        "elapsed_ms": 3509,
+        "first_content_ms": 2696,
+        "stream_error": null,
+        "terminal_seen": true,
+        "events": [
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid"
+          },
+          {
+            "type": "thinking",
+            "message": "已接入智能体，正在准备回答…",
+            "thinking_phase": "run"
+          },
+          {
+            "type": "thinking",
+            "message": "第 1 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "按专名检索资料",
+            "thinking_phase": "plan",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「词法检索」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.lexical",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "「词法检索」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.lexical",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "第 2 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "读同一篇材料的相邻段",
+            "thinking_phase": "plan",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「阅读相邻章节」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "「阅读相邻章节」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "第 3 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "已有证据，整理回答",
+            "thinking_phase": "plan",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "正在生成回答…",
+            "thinking_phase": "answer"
+          },
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid",
+            "retrieval_grade": "C",
+            "coverage_score": 0.25
+          },
+          {
+            "type": "done",
+            "message": "本工作区资料中没有关于 CrystalX 及其 HKL 上限的内容。提供的证据仅涉及 InternLM2、InternVL、InternVL 2.5 等论文的超参数与训练配置，未提及 CrystalX。",
+            "done": true,
+            "chat_mode": "hybrid",
+            "retrieval_grade": "C",
+            "coverage_score": 0.25,
+            "answer_confidence": 0.07763659856222394,
+            "confidence": 0.07763659856222394,
+            "chunks_used": 11,
+            "sources": [
+              {
+                "doc_id": "0f9660b2-b505-46c4-b722-48507428b489",
+                "doc_title": "论文 InternVL 2.5（12/14）"
+              },
+              {
+                "doc_id": "134aa014-f78d-4651-8f24-75452d14dadf",
+                "doc_title": "论文 InternVL（10/15）"
+              },
+              {
+                "doc_id": "fa7a333e-304a-49cf-b450-0d2e59aeb6c8",
+                "doc_title": "论文 InternVL 2.5（13/14）"
+              },
+              {
+                "doc_id": "d70af77d-73ae-4bea-966b-5d02ded2bb92",
+                "doc_title": "论文 InternLM2 Technical Report（7/15）"
+              },
+              {
+                "doc_id": "cc40bbca-45ef-43a3-9383-a10e96c395a6",
+                "doc_title": "论文 InternVL（5/15）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）"
+              }
+            ],
+            "citations": [
+              {
+                "doc_id": "0f9660b2-b505-46c4-b722-48507428b489",
+                "doc_title": "论文 InternVL 2.5（12/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "bcd86ba6-4900-493f-bf7d-e28d040ca294"
+                ]
+              },
+              {
+                "doc_id": "134aa014-f78d-4651-8f24-75452d14dadf",
+                "doc_title": "论文 InternVL（10/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "10c12394-68af-4f64-a04a-5957923fa4b1"
+                ]
+              },
+              {
+                "doc_id": "fa7a333e-304a-49cf-b450-0d2e59aeb6c8",
+                "doc_title": "论文 InternVL 2.5（13/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "6a0628e2-d821-4fa4-8e51-b0c4555d140a"
+                ]
+              },
+              {
+                "doc_id": "d70af77d-73ae-4bea-966b-5d02ded2bb92",
+                "doc_title": "论文 InternLM2 Technical Report（7/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "fbb4c0f8-7eb1-460c-aac0-f9b90e3de38e"
+                ]
+              },
+              {
+                "doc_id": "cc40bbca-45ef-43a3-9383-a10e96c395a6",
+                "doc_title": "论文 InternVL（5/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "aa8a6890-cb6f-47be-87e3-ff23561d6553"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "cdf8cbf2-eefe-45a4-bd67-b33d97322b40"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "92987a3e-5aa7-4450-9aec-24597be5425e"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "bdc46cba-b1ef-46f8-a9ad-bc3e9893ae8c"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "35169ca5-6688-42ed-b31a-07d5d5cf9238"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "0a43d653-e984-4d6a-bb5c-f26724d7014a"
+                ]
+              },
+              {
+                "doc_id": "822d43f5-b23d-45fb-a62f-afc4f25b4997",
+                "doc_title": "论文 InternVL 2.5（3/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "eeb5fba3-b528-4430-a082-145846b53695"
+                ]
+              }
+            ],
+            "sentence_labels": [
+              {
+                "sentence": "本工作区资料中没有关于 CrystalX 及其 HKL 上限的内容",
+                "source": "supplement"
+              },
+              {
+                "sentence": "提供的证据仅涉及 InternLM2、InternVL、InternVL 2.5 等论文的超参数与训练配置，未提及 CrystalX",
+                "source": "supplement"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

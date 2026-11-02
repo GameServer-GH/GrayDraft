@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "started_at": "20261102T065349Z",
+    "git": "8dd898c",
+    "bff": "http://localhost:8787",
+    "only": [
+      "paper-theme"
+    ],
+    "protocol": "skip_cache, no query rewrite, no retry"
+  },
+  "results": [
+    {
+      "workspace": "contest-papers",
+      "id": "paper-theme",
+      "expect": "answer",
+      "status": "部分",
+      "answer": "基于工作区资料中的三篇论文摘要，各自内容如下：\n\n**InternVL 2.5**（对应文档 `fc459e35-0b42-4fc4-9299-61f33fa2be5f` 等）：论文介绍 InternVL 2.5 多模态大语言模型系列，其在 InternVL 2.0 基础上保持核心模型架构不变，重点在训练与测试策略以及数据质量上进行了显著提升。该研究系统探索了视觉编码器、语言模型、数据集规模和测试阶段配置之间的性能关系，在多学科推理、文档理解、多图像/视频理解、真实世界理解、多模态幻觉检测、视觉定位、多语言能力和纯语言处理等基准上进行了广泛评估。该模型是首个开源 MLLM 在 MMMU 基准上突破 70%，通过思维链（CoT）推理实现了 3.7 分的提升，展现了在测试阶段扩展的潜力。\n\n**InternLM2 Technical Report**（对应文档 `4877f86a-fb1e-494e-9ede-16f266ea9f00` 等）：论文介绍 InternLM2 开源大语言模型，该模型在 6 个维度和 30 个基准的综合评估、长上下文建模以及开放式主观评估"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "started_at": "20261102T065126Z",
+    "git": "8dd898c",
+    "bff": "http://localhost:8787",
+    "only": [
+      "paper-theme"
+    ],
+    "protocol": "skip_cache, no query rewrite, no retry"
+  },
+  "results": [
+    {
+      "workspace": "contest-papers",
+      "id": "paper-theme",
+      "expect": "answer",
+      "status": "部分",
+      "answer": "- **InternLM2 论文**：介绍开源大语言模型 InternLM2，通过创新预训练与对齐优化技术，在 6 个维度 30 个基准、长上下文建模及开放式主观评估上超越前代；预训练覆盖文本、代码与长上下文数据，并采用 SFT 与 COOL RLHF 对齐策略。\n- **InternVL 论文**：设计大规模视觉语言基础模型 InternVL，将视觉基础模型扩展至 60 亿参数（InternViT-6B），并利用网络规模图文数据逐步与 LLM 对齐，在 32 个通用视觉语言基准上取得当时最优性能。\n- **InternVL 2.5 论文**：介绍多模态大模型 InternVL 2.5，在 InternVL 2.0 核心架构基础上大幅提升训练/测试策略与数据质量，系统研究模型规模与性能关系，并在 MMMU 等基准上达到开源模型领先的 70% 以上成绩。"
+    }
+  ]
+}

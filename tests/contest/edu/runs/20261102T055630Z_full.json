@@ -1,0 +1,130 @@
+{
+  "meta": {
+    "started_at": "20261102T055630Z",
+    "git": "8dd898c",
+    "bff": "http://localhost:8787",
+    "only": [],
+    "protocol": "skip_cache, no query rewrite, no retry"
+  },
+  "results": [
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-concept-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "multiomics_integration 整合的四层组学为：\n\n1. **转录组学（Transcriptomics）** — 基于 TCGA 的跨癌种基因表达数据\n2. **蛋白质组学（Proteomics）** — 基于 UniProt 的蛋白质结构、功能与注释\n3. **通路富集（Pathway Enrichment）** — 基于 STRING 的功能富集分析\n4. **代谢通路（Metabolic Pathway）** — 基于 KEGG 的详细通路信息"
+    },
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-name-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据证据 [1] 中技能 **multiomics_integration** 的接口说明：\n\n> `species` (int, required): NCBI taxonomy ID (e.g., **9606 for human**)\n\n人类的 taxonomy ID 是 **9606**。"
+    },
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-name-2",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "Sciverse 密钥请求头名是 **`SCP-HUB-API-KEY`**。\n\n**证据来源：**\n\n- 证据 [1] 中 `SciverseClient` 类的文档说明：*\"Authentication uses the SCP-HUB-API-KEY header (your SCP Platform key).\"*\n- 证据 [1] 的 `connect` 方法代码片段中：`headers={\"SCP-HUB-API-KEY\": \"sk-xxx\"}`"
+    },
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-step-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "本地上传时先调用 **crystalx_prepare_input_upload**。\n\n文件上限：\n\n- **INS**：最大 10 MiB（10,485,760 字节）\n- **HKL**：最大 100 MiB（104,857,600 字节）"
+    },
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-param-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据证据 [1] 中 `OceanGSW-Tool` 的文档内容，`gsw_example_dynamic_height` 的参数说明为：\n\n> **p_ref**: 参考压力 (dbar)，**默认 0 dbar**\n\n因此，`p_ref` 的默认值为 **0 dbar**。"
+    },
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-use-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据证据，`query_and_filter_tools` 的必填参数与用途如下：\n\n- **参数名**：`prompt`\n- **类型**：string（必填）\n- **用途**：用户描述所需工具的查询提示（User's query describing what tools they need）\n\n该工具根据用户提示查询并筛选相关工具，返回识别出的任务类型及所需工具列表（包含工具前缀名、服务器地址、原始名称和描述等信息）。"
+    },
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-reject-1",
+      "expect": "reject",
+      "status": "正确拒答",
+      "answer": "本工作区资料没有 InternLM2 预训练 token 精确配比的相关内容。\n\n提供的证据主要涉及书生 SCP 广场的科研技能与工具（如 multiomics_integration、Sciverse、SCP-Workflow 等）的 API 配置、调用参数和使用示例，未包含 InternLM2 模型预训练语料构成或 token 配比的信息。"
+    },
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-isolation",
+      "expect": "reject",
+      "status": "正确拒答",
+      "answer": "本工作区资料没有 InternVL 视觉模型参数的相关内容。\n\n现有证据仅涉及 Sciverse 学术检索技能及工具的连接配置（如服务器地址 `https://scp.intern-ai.org.cn/api/v1/mcp/43/Sciverse` 和 API Key 格式），未包含任何关于 InternVL 视觉模型的具体参数、版本或技术规格。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-concept-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据证据，COOL RLHF 处理的两类问题是：\n\n1. **冲突的人类偏好**（conflicting human preferences / diverse but potentially conflicting preferences）\n2. **奖励劫持**（reward hacking）\n\n证据来源：InternLM2 Technical Report 中提到 COOL RLHF \"addresses conflicting human preferences and reward hacking\"，以及 \"adopts a conditional reward model to reconcile diverse but potentially conflicting\" 偏好。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-name-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "是的。根据 InternLM2 Technical Report 原文，上海人工智能实验室已开源 1.8B、7B 和 20B 三种规模的 InternLM2 模型，并开放了不同训练阶段（含 SFT 后与 RLHF 后）的版本供社区分析。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-name-2",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据工作区资料，InternVL 视觉编码器（InternViT-6B）与 ViT-22B 的关系如下：\n\n**功能定位关系**\n论文明确指出 InternViT-6B 具有强大的视觉能力，可以作为 **ViT-22B 的替代方案**（\"can be a good alternative to the ViT-22B\"）。\n\n**规模参数对比**\n根据论文中的模型规格表：\n\n| 模型 | width | depth | MLP | #heads | 参数量 (M) |\n|------|-------|-------|-----|--------|------------|\n| ViT-22B | 6144 | 48 | 24576 | 48 | 21743 |\n| ViT-6.5B（InternViT-6B 对应架构） | 4096 | 32 | 16384 | 32 | 6440 |\n\n可见 InternViT-6B 的视觉编码器规模（约 6.5B）显著小于 ViT-22B（约 21.7B）。论文在零样本图像/视频分类、零样本图像/视频文本检索以及多模态对话等任务上验证了其能力，认为其可以替代 ViT-22B。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-step-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据证据，InternLM2 论文在 \"Needle-in-a-Haystack\" 测试中明确提到了 **200k** 上下文窗口。\n\n具体出处：\n- InternLM2 通过位置编码外推（positional encoding extrapolation），在 200k 上下文的 \"Needle-in-a-Haystack\" 测试中取得了不错的表现（\"commensurable performance\"）。\n- 论文另一处描述其 200k 上下文窗口设计：InternLM2 展现出令人印象深刻的长上下文表现，在 200k 上下文的 \"Needle-in-a-Haystack\" 实验中几乎完美地识别出所有 \"needles\"。\n\n因此，上下文确实提到了 **200k**，而非仅限于 4k 到 32k。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-25-1",
+      "expect": "answer",
+      "status": "部分",
+      "answer": "根据证据，InternVL 2.5 基于 InternVL 2.0，在 MMMU 基准上的表现为：\n\n- **MMMU 分数**：首个在 MMMU 基准上突破 **70%** 的开源多模态大模型（MLLM）。\n- **提升幅度**：通过思维链（Chain-of-Thought, CoT）推理，实现了 **3.7 分** 的提升。\n\n以上数值均来自论文原文（arxiv.org/abs/2412.05271）。资料中未提及 MMMU 验证集之外的具体分项分数或更多训练阶段细节。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-25-2",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据论文 InternVL 2.5 原文记载：配备 6B 视觉编码器的 InternVL2.5-78B 相比配备 600M 视觉编码器的 Qwen2-VL-72B，仅需 **1/10** 的训练 token 即可实现更好的性能。\n\n因此，6B 相比 600M，训练 token 大约是 **十分之一**。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-theme",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "工作区里的材料按标题分为：\n- InternVL 2.5\n- InternLM2 Technical Report\n- InternVL"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-reject",
+      "expect": "reject",
+      "status": "正确拒答",
+      "answer": "本工作区资料没有 2027 财年营收的相关信息。\n\n提供的证据均为上海人工智能实验室与 OpenGVLab 的技术论文（InternLM2、InternVL 等），内容涉及模型架构、训练框架和参数规模，不包含任何财务营收数据。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-isolation",
+      "expect": "reject",
+      "status": "正确拒答",
+      "answer": "本工作区资料没有 CrystalX HKL 上限的内容。检索到的证据仅包含 InternLM2、InternVL、InternVL 2.5 等论文的训练参数（如 Context Length 16384、Image Tile Threshold 48、Learning Rate 等），未涉及 CrystalX 及其 HKL 上限的任何信息。"
+    }
+  ]
+}

@@ -29,10 +29,14 @@ type FirstHopPlanner struct {
 }
 
 func (p FirstHopPlanner) Decide(ctx context.Context, in PlannerInput) (Decision, error) {
-	// A retrieval hop that already returned chunk text should be written up.
-	// Another planner call here is what stalls the run until the client times out.
-	if in.Step > 1 && hasUsefulEvidence(in.Observations) {
+	// After the first retrieval, allow one planner step so a missing number or a
+	// second document can still be read. Further steps write up what was found.
+	// A hung planner is bounded elsewhere and falls back to the evidence in hand.
+	if in.Step > 2 && hasUsefulEvidence(in.Observations) {
 		return Decision{Decision: DecisionFinal, ThoughtNote: "已有证据，整理回答"}, nil
+	}
+	if d, ok := followUpDecision(in); ok {
+		return d, nil
 	}
 	if p.Select != nil && in.Step == 1 && !hasKnowledgeObservation(in.Observations) {
 		query := CurrentUserQuery(string(in.Prompt))
@@ -74,6 +78,67 @@ func (p FirstHopPlanner) Decide(ctx context.Context, in PlannerInput) (Decision,
 		return Decision{}, fmt.Errorf("agent: first-hop inner planner unavailable")
 	}
 	return p.Inner.Decide(ctx, in)
+}
+
+func followUpDecision(in PlannerInput) (Decision, bool) {
+	if in.Step != 2 {
+		return Decision{}, false
+	}
+	q := CurrentUserQuery(string(in.Prompt))
+	kb := ""
+	if len(in.AuthorizedKBs) > 0 {
+		kb = in.AuthorizedKBs[0]
+	}
+	if isCatalogListQuestion(q) && catalogHasDocs(in.Observations) {
+		return Decision{Decision: DecisionFinal, ThoughtNote: "已有证据，整理回答"}, true
+	}
+	if isContentOverview(q) && !hasChunkEvidence(in.Observations) {
+		groups := openingGroups(in.Observations, 3)
+		if len(groups) > 0 {
+			raw, _ := json.Marshal(map[string]any{"kb_type": kb, "chunk_id": "openings", "groups": groups})
+			return Decision{
+				Decision:    DecisionTools,
+				ThoughtNote: "读每篇材料的开头",
+				ToolCalls: []ToolCall{{
+					CallID: "group_read_1", Name: "knowledge.read", Arguments: raw,
+				}},
+			}, true
+		}
+	}
+	if hasChunkEvidence(in.Observations) && !hasToolObservation(in.Observations, "knowledge.read") {
+		id := topChunkID(in.Observations)
+		if id != "" {
+			raw, _ := json.Marshal(map[string]any{
+				"kb_type": kb, "chunk_id": id, "span": "group", "query": q,
+			})
+			return Decision{
+				Decision:    DecisionTools,
+				ThoughtNote: "读同一篇材料的相邻段",
+				ToolCalls: []ToolCall{{
+					CallID: "group_read_1", Name: "knowledge.read", Arguments: raw,
+				}},
+			}, true
+		}
+	}
+	return Decision{}, false
+}
+
+func hasToolObservation(obs []Observation, name string) bool {
+	for _, o := range obs {
+		if o.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func topChunkID(obs []Observation) string {
+	for _, h := range CollectEvidence(obs).Hits {
+		if strings.TrimSpace(h.ChunkID) != "" {
+			return h.ChunkID
+		}
+	}
+	return ""
 }
 
 func hasKnowledgeObservation(obs []Observation) bool {

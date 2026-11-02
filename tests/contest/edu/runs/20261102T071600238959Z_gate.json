@@ -1,0 +1,118 @@
+{
+  "meta": {
+    "started_at": "2026-11-02T07:16:00.238959+00:00",
+    "completed_at": "2026-11-02T07:16:23.820363+00:00",
+    "git": "8dd898c",
+    "bff": "http://localhost:8787",
+    "only": [
+      "paper-theme"
+    ],
+    "protocol": "skip_cache, no query rewrite, no retry",
+    "git_dirty": true,
+    "suite": "upgrade_regression (modified questions; not original S1 acceptance)"
+  },
+  "results": [
+    {
+      "workspace": "contest-papers",
+      "id": "paper-theme",
+      "expect": "answer",
+      "status": "错误",
+      "question": "三篇论文各自讲什么",
+      "answer": "[error] nexus: agent run run.failed: overview \"InternLM2 Technical Report\": missing evidence names: GPT-4",
+      "diagnostics": {
+        "elapsed_ms": 22229,
+        "first_content_ms": null,
+        "stream_error": "nexus: agent run run.failed: overview \"InternLM2 Technical Report\": missing evidence names: GPT-4",
+        "events": [
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid"
+          },
+          {
+            "type": "thinking",
+            "message": "已接入智能体，正在准备回答…",
+            "thinking_phase": "run"
+          },
+          {
+            "type": "thinking",
+            "message": "第 1 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "查看工作区文档目录",
+            "thinking_phase": "plan",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「knowledge.catalog」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.catalog",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "「knowledge.catalog」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.catalog",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "第 2 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "读每篇材料的开头",
+            "thinking_phase": "plan",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「阅读相邻章节」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "「阅读相邻章节」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "第 3 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "已有证据，整理回答",
+            "thinking_phase": "plan",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "正在生成回答…",
+            "thinking_phase": "answer"
+          },
+          {
+            "type": "error",
+            "message": "overview \"InternLM2 Technical Report\": missing evidence names: GPT-4"
+          },
+          {
+            "type": "error",
+            "message": "nexus: agent run run.failed: overview \"InternLM2 Technical Report\": missing evidence names: GPT-4"
+          }
+        ]
+      }
+    }
+  ]
+}

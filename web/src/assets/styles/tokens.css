@@ -7,9 +7,9 @@
   --color-text-secondary: #8e8e93;
   --color-accent: #007aff;
   --color-accent-muted: rgba(0, 122, 255, 0.12);
-  /* 选中态：石墨色，和灰底玻璃面同一套，避免浅蓝铺底 */
-  --color-selected: #1c1c1e;
-  --color-selected-fg: #f5f5f7;
+  /* 选中标记用主题蓝；大面积仍走 selected-soft，避免黑条和黑底药丸 */
+  --color-selected: #007aff;
+  --color-selected-fg: #ffffff;
   --color-selected-soft: rgba(28, 28, 30, 0.07);
   --color-selected-line: rgba(28, 28, 30, 0.4);
   --color-border: rgba(60, 60, 67, 0.12);

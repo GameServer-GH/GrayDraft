@@ -1,7 +1,7 @@
 # GrayDraft 架构升级优化方案（赛事联调驱动）
 
 > **基线日期**：2026-10-29  
-> **实现状态**：S0/S1 已落（2026-10-29）。**P2 已落第一刀**：长叙述自动折叠/分段 + `doc_group`、`knowledge.catalog`、QA 默认关闭、任务 `current_stage` 观测；完整多 subject JetStream 消费者仍待做（`stage_streams_enabled` 默认关，避免无消费者断链）。  
+> **实现与验收要分开看**（2026-11-02）。S0/S1 热路径、长文分段、`doc_group`、目录与按篇内容总览、`accepted`/`qa` 消费者已接入开发环境。本轮 24 题升级回归自动评分为 SCP 可答 9/9、论文可答 10/10（含新增目录题）、拒答/隔离 5/5；之后补强目录缺篇检测的最终镜像又通过 6 题定向复测。部分回归问法与原基线不同，**不等于原题集 S1 通过**。新入库与 QA 故障恢复仍未验收，完整多阶段 subject 拆分仍未做。过程见 [测试总结](upgrade-optimization-test-summary-2026-10-29.md) §2.12–§2.13 与 [下一步](upgrade-next-steps-2026-11-02.md)。
 > **测试依据**：[赛事双工作区联调报告](../../tests/contest/edu/REPORT-scp-papers-2026-10-29.md)  
 > **相关文档**：[设计理念](设计理念.md)、[Agent 实现说明](Agent流程技术实现方案.md)、[问答可靠性治理](agent-import-chat-reliability.md)、[性能优化 1.0](performance-optimization-v1.md)、[语义驱动检索方案](semantic-driven-retrieval-scheme.md)
 
@@ -310,7 +310,8 @@ P2-3 与设计理念一致：不确定则收束或丢弃，不把行号交给人
 | 文档 | 关系 |
 | --- | --- |
 | [REPORT-scp-papers-2026-10-29.md](../../tests/contest/edu/REPORT-scp-papers-2026-10-29.md) | 本方案的实测基线；本文不重复复现步骤全文 |
-| [upgrade-optimization-test-summary-2026-10-29.md](upgrade-optimization-test-summary-2026-10-29.md) | 2026-10-29 优化测试的过程与各轮分数 |
+| [upgrade-optimization-test-summary-2026-10-29.md](upgrade-optimization-test-summary-2026-10-29.md) | 2026-10-29 至 11-02 优化测试的过程与各轮分数 |
+| [upgrade-next-steps-2026-11-02.md](upgrade-next-steps-2026-11-02.md) | 11 月 2 日下午之后的下一步建议 |
 | [agent-import-chat-reliability.md](agent-import-chat-reliability.md) | Query4D 收口、禁 L3 跨 query、ready barrier；P1-2/P0 与之同向 |
 | [performance-optimization-v1.md](performance-optimization-v1.md) | 分阶段入库、微批 Embedding；纳入 P2-1/P2-2 |
 | [semantic-driven-retrieval-scheme.md](semantic-driven-retrieval-scheme.md) | Blueprint/进化保留在导入后异步；**检索热路径不再依赖 4D WHERE** |

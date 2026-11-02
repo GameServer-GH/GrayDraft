@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "case": "paper-theme",
+    "protocol": "skip_cache, same question, no client retry",
+    "note": "Sequential small-sample comparison; no population P95 or causal guarantee.",
+    "benchmark_sha256": "dd251f6cd45b32e26a9d3085e5a5e76586354eab743cd3413eb568db092cd4fe"
+  },
+  "baseline": {
+    "summary": {
+      "samples": 3,
+      "passed": 3,
+      "failures": 0,
+      "missing_latency": 0,
+      "mean_ms": 9713,
+      "median_ms": 8090,
+      "observed_max_ms": 17138
+    },
+    "samples": [
+      {
+        "record": "/Users/gameserver/code/CloudGameGhost/GrayDraft/tests/contest/edu/runs/20261102T083302030088Z_gate.json",
+        "sha256": "bc48211e5360e584c097688c77524c5061c1ead41c628c712a3ae7621ec3d640",
+        "elapsed_ms": 17138,
+        "first_content_ms": 17137,
+        "passed": true,
+        "status": "命中"
+      },
+      {
+        "record": "/Users/gameserver/code/CloudGameGhost/GrayDraft/tests/contest/edu/runs/20261102T083306110835Z_gate.json",
+        "sha256": "3de7a4c3ab41b5d54a4c39140349028fd04da784970983508d214f20ea5ce50d",
+        "elapsed_ms": 3911,
+        "first_content_ms": 3908,
+        "passed": true,
+        "status": "命中"
+      },
+      {
+        "record": "/Users/gameserver/code/CloudGameGhost/GrayDraft/tests/contest/edu/runs/20261102T083314374554Z_gate.json",
+        "sha256": "8d0051ceb23e2390326c92c32216a4b3eebbc0e7521516e5ec171c1c322b3977",
+        "elapsed_ms": 8090,
+        "first_content_ms": 8088,
+        "passed": true,
+        "status": "命中"
+      }
+    ]
+  },
+  "candidate": {
+    "summary": {
+      "samples": 5,
+      "passed": 5,
+      "failures": 0,
+      "missing_latency": 0,
+      "mean_ms": 9210,
+      "median_ms": 4549,
+      "observed_max_ms": 29272
+    },
+    "samples": [
+      {
+        "record": "/Users/gameserver/code/CloudGameGhost/GrayDraft/tests/contest/edu/runs/20261102T091120402759Z_gate.json",
+        "sha256": "b056c86d82a93e62c3c6a6aa947fa3ed47ab82682b74353fefb876a6a8f8e218",
+        "elapsed_ms": 3376,
+        "first_content_ms": 3375,
+        "passed": true,
+        "status": "命中"
+      },
+      {
+        "record": "/Users/gameserver/code/CloudGameGhost/GrayDraft/tests/contest/edu/runs/20261102T091126580892Z_gate.json",
+        "sha256": "48e67efbb4b0a48e4b57bfbeb2d34c613719471cc3169a4e4447b42822f81e3e",
+        "elapsed_ms": 6019,
+        "first_content_ms": 6018,
+        "passed": true,
+        "status": "命中"
+      },
+      {
+        "record": "/Users/gameserver/code/CloudGameGhost/GrayDraft/tests/contest/edu/runs/20261102T091131296857Z_gate.json",
+        "sha256": "0641cb5fecf3862a2163dd02a0fb13ab0bc50bb583b51cd07366a12720216eb5",
+        "elapsed_ms": 4549,
+        "first_content_ms": 4549,
+        "passed": true,
+        "status": "命中"
+      },
+      {
+        "record": "/Users/gameserver/code/CloudGameGhost/GrayDraft/tests/contest/edu/runs/20261102T091200743534Z_gate.json",
+        "sha256": "3f27fef5c41bc1ce45f67c765a7e357d0d7839dd6ab2a8a729c155bb1dea7f71",
+        "elapsed_ms": 29272,
+        "first_content_ms": 29271,
+        "passed": true,
+        "status": "命中"
+      },
+      {
+        "record": "/Users/gameserver/code/CloudGameGhost/GrayDraft/tests/contest/edu/runs/20261102T091203736990Z_gate.json",
+        "sha256": "31ebccf87113cc90ad6d5ba75252a347c20e35649c88ffc058d6ed8a1d0b9724",
+        "elapsed_ms": 2832,
+        "first_content_ms": 2831,
+        "passed": true,
+        "status": "命中"
+      }
+    ]
+  }
+}

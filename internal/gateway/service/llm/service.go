@@ -25,17 +25,31 @@ func (s *Service) StreamCompletion(ctx context.Context, req ChatRequest, emit fu
 	}
 
 	binding, model, complexTier := resolveBinding(s.cfg, req.Model)
-	err := s.streamWithBinding(ctx, req, binding, model, !complexTier || req.DisableThinking, emit)
+	started := false
+	forward := func(d StreamDelta) error {
+		// Once any delta is attempted, a fallback would splice two completions.
+		started = true
+		return emit(d)
+	}
+	err := s.streamWithBinding(ctx, req, binding, model, !complexTier || req.DisableThinking, forward)
 	if err == nil {
 		return nil
+	}
+	if started || ctx.Err() != nil {
+		return err
 	}
 
 	// Complex tier: fall back to fast model when pro API fails.
 	if complexTier {
 		fast := s.cfg.Models.LLMFast
 		if fast.Model != "" && !strings.EqualFold(fast.Model, model) {
-			if fbErr := s.streamWithBinding(ctx, req, fast, fast.Model, true, emit); fbErr == nil {
+			if fbErr := s.streamWithBinding(ctx, req, fast, fast.Model, true, forward); fbErr == nil {
 				return nil
+			} else {
+				err = fbErr
+				if started || ctx.Err() != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -72,8 +86,8 @@ func (s *Service) streamWithBinding(
 	if disableThinking && !strings.EqualFold(binding.Provider, "intern") {
 		disableThinking = false
 	}
-	return provider.StreamChat(ctx, p, model, msgs, req.MaxTokens, temp, disableThinking, func(content, reasoning string, done bool) error {
-		return emit(StreamDelta{Content: content, Reasoning: reasoning, Done: done})
+	return provider.StreamChat(ctx, p, model, msgs, req.MaxTokens, temp, disableThinking, func(content, reasoning string, done bool, finishReason string) error {
+		return emit(StreamDelta{Content: content, Reasoning: reasoning, Done: done, FinishReason: finishReason})
 	})
 }
 

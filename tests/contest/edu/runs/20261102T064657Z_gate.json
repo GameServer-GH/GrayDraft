@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "started_at": "20261102T064657Z",
+    "git": "8dd898c",
+    "bff": "http://localhost:8787",
+    "only": [
+      "paper-infra",
+      "paper-theme"
+    ],
+    "protocol": "skip_cache, no query rewrite, no retry"
+  },
+  "results": [
+    {
+      "workspace": "contest-papers",
+      "id": "paper-theme",
+      "expect": "answer",
+      "status": "部分",
+      "answer": "- **InternLM2 论文**：该论文介绍了 InternLM2 开源大语言模型，通过创新的预训练与优化技术，在 6 个维度共 30 项基准评测、长上下文建模及开放主观评估中超越前代；预训练涵盖文本、代码与长上下文数据（从 4k 推进至 32k tokens），并采用 SFT 与 COOL RLHF 策略进行对齐。\n- **InternVL 论文**：该论文设计了大规模视觉 - 语言基础模型 InternVL，将视觉基础模型扩展至 60 亿参数（InternViT-6B），并利用网络规模图像 - 文本数据逐步与 LLM 对齐，在 32 个通用视觉 - 语言基准上取得当时最优性能。\n- **InternVL 2.5 论文**：该论文介绍了在 InternVL 2.0 基础上改进的多模态大模型 InternVL 2.5，核心架构保持不变，重点增强了训练与测试策略及数据质量，系统探索了模型扩展与性能的关系，并在 MMMU 基准上成为首个开源突破 70% 的 MLLM。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-infra",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据 InternLM2 Technical Report（第 5/15 部分）原文：InternEvo 在训练中采用了 **FlashAttention** 注意力实现，并使用 **BF16** 混合精度训练。\n\n（证据原文：\"we incorporate the FlashAttention technique ( Dao, 2023 ) and mixed-precision training ( Narang et al., 2017 ) with BF16.\"）"
+    }
+  ]
+}

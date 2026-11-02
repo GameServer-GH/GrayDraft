@@ -30,8 +30,23 @@ func (v GroundedAnswerValidator) Validate(ctx context.Context, answer string, ob
 	gate.ThresholdUsed = threshold
 	gate.HitSummaries = summarizeHits(bundle.Hits)
 
-	evidenceGap := gate.ShouldRefuse && (gate.RefuseReason == "no_evidence" || gate.RefuseReason == "insufficient_citations")
-	if evidenceGap {
+	// Hard policy checks must run before the non-empty-answer fast path.
+	// Lexical overlap remains diagnostic for cross-language evidence; it is not
+	// sufficient to override missing sources, version conflicts or risk policy.
+	if len(bundle.texts()) == 0 {
+		gate.ShouldRefuse = true
+		gate.RefuseReason = "no_evidence"
+	}
+	if gate.HighRisk && lacksOfficialSource(bundle) {
+		gate.ShouldRefuse = true
+		gate.RefuseReason = "high_risk_no_official_source"
+	}
+	if VersionConflict(answer, v.ActiveVersion, bundle.texts()) {
+		gate.ShouldRefuse = true
+		gate.RefuseReason = "version_conflict"
+	}
+	hardRefusal := gate.ShouldRefuse && (gate.RefuseReason == "no_evidence" || gate.RefuseReason == "insufficient_citations" || gate.RefuseReason == "high_risk_no_official_source" || gate.RefuseReason == "version_conflict")
+	if hardRefusal {
 		RecordAnswerMetric(gate.Groundedness, true)
 		return ValidationResult{Answer: refusalMessage(gate), Rejected: true, Gate: gate}, nil
 	}
@@ -46,14 +61,6 @@ func (v GroundedAnswerValidator) Validate(ctx context.Context, answer string, ob
 	}
 
 	gate.SentenceLabels = BuildSentenceLabelsWithNLI(ctx, answer, bundle.Hits, v.NLI)
-	if gate.HighRisk && lacksOfficialSource(bundle) {
-		gate.ShouldRefuse = true
-		gate.RefuseReason = "high_risk_no_official_source"
-	}
-	if VersionConflict(answer, v.ActiveVersion, bundle.texts()) {
-		gate.ShouldRefuse = true
-		gate.RefuseReason = "version_conflict"
-	}
 	RecordAnswerMetric(gate.Groundedness, gate.ShouldRefuse)
 	if gate.ShouldRefuse {
 		return ValidationResult{Answer: refusalMessage(gate), Rejected: true, Gate: gate}, nil

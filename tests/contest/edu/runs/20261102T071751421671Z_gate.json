@@ -1,0 +1,312 @@
+{
+  "meta": {
+    "started_at": "2026-11-02T07:17:51.421671+00:00",
+    "completed_at": "2026-11-02T07:18:07.500578+00:00",
+    "git": "8dd898c",
+    "bff": "http://localhost:8787",
+    "only": [
+      "paper-theme"
+    ],
+    "protocol": "skip_cache, no query rewrite, no retry",
+    "git_dirty": true,
+    "suite": "upgrade_regression (modified questions; not original S1 acceptance)",
+    "cases_sha256": "b7fe0c05ed185352ccbf780a72407f747ca660740b600b02a69a9f6a125a9979",
+    "source_sha256": {
+      "internal/core/service/agent/answer_stream.go": "280462872289e8bd42f540bf90653978b8735334dba5d1fb40ed204497578747",
+      "internal/core/service/agent/answer_overview.go": "7d4c591835d37af7662b316085fbc251935c7c0d57a0fa414464ba55c123e580",
+      "internal/core/service/llmclient/complete.go": "e9ac4e184baa672da67fb559bb4a8bdad89d198729ece031bf610b498df13496",
+      "tests/contest/edu/retest_after_upgrade.py": "d920cf8d1e02c55598ab3c111735cd5e32079cf90074ab87dc50691802f5b026"
+    }
+  },
+  "results": [
+    {
+      "workspace": "contest-papers",
+      "id": "paper-theme",
+      "expect": "answer",
+      "status": "命中",
+      "question": "三篇论文各自讲什么",
+      "answer": "**InternVL 2.5**：该研究介绍 InternVL 2.5 多模态大语言模型系列，它在 InternVL 2.0 基础上保持核心架构，重点改进训练与测试策略及数据质量。研究系统探索视觉编码器、语言模型、数据集规模及测试时配置与性能的关系，并在多学科推理、文档理解、多图像/视频理解、真实世界理解、多模态幻觉检测、视觉定位、多语言及纯语言处理等基准上评估。主要贡献包括：开源模型首次在 MMMU 上突破 70%，并通过 Chain-of-Thought 推理提升 3.7 分，展现出测试时扩展潜力。\n\n**InternLM2 Technical Report**：InternLM2 Technical Report 介绍开源大语言模型 InternLM2，其通过创新的预训练与对齐技术实现综合评测、长上下文建模及主观评价的提升。研究重点覆盖文本、代码和长上下文数据准备，采用从 4k tokens 到 32k tokens 的分阶段训练并在 200k Needle-in-a-Haystack 测试中表现优异；对齐阶段使用 Supervised Fine-Tuning（SFT）结合新提出的 Conditional Online Reinforcement Learning from Human Feedback（COOL RLHF）以缓解偏好冲突与奖励劫持。作者还发布不同训练阶段与规模的模型，供社区追踪模型演化。\n\n**InternVL**：InternVL 研究提出大规模视觉-语言基础模型，将视觉基础模型扩展至 60 亿参数（InternViT-6B），并通过网络规模多源图文数据与大语言模型渐进对齐。该模型支持图像/视频级与像素级视觉感知、零样本分类检索及多模态对话等 32 项基准任务，在通用视觉-语言场景中取得领先性能，并可作为 ViT-22B 的有效替代方案。",
+      "diagnostics": {
+        "elapsed_ms": 14704,
+        "first_content_ms": 14697,
+        "stream_error": null,
+        "events": [
+          {
+            "type": "meta",
+            "strategy": "agent_v2",
+            "chat_mode": "hybrid"
+          },
+          {
+            "type": "thinking",
+            "message": "已接入智能体，正在准备回答…",
+            "thinking_phase": "run"
+          },
+          {
+            "type": "thinking",
+            "message": "第 1 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "查看工作区文档目录",
+            "thinking_phase": "plan",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「knowledge.catalog」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.catalog",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "「knowledge.catalog」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.catalog",
+            "step_id": 1
+          },
+          {
+            "type": "thinking",
+            "message": "第 2 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "读每篇材料的开头",
+            "thinking_phase": "plan",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "正在调用「阅读相邻章节」…",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "「阅读相邻章节」完成",
+            "thinking_phase": "tool",
+            "tool_name": "knowledge.read",
+            "step_id": 2
+          },
+          {
+            "type": "thinking",
+            "message": "第 3 步：分析问题并规划下一步…",
+            "thinking_phase": "step",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "已有证据，整理回答",
+            "thinking_phase": "plan",
+            "step_id": 3
+          },
+          {
+            "type": "thinking",
+            "message": "正在生成回答…",
+            "thinking_phase": "answer"
+          },
+          {
+            "type": "done",
+            "message": "**InternVL 2.5**：该研究介绍 InternVL 2.5 多模态大语言模型系列，它在 InternVL 2.0 基础上保持核心架构，重点改进训练与测试策略及数据质量。研究系统探索视觉编码器、语言模型、数据集规模及测试时配置与性能的关系，并在多学科推理、文档理解、多图像/视频理解、真实世界理解、多模态幻觉检测、视觉定位、多语言及纯语言处理等基准上评估。主要贡献包括：开源模型首次在 MMMU 上突破 70%，并通过 Chain-of-Thought 推理提升 3.7 分，展现出测试时扩展潜力。\n\n**InternLM2 Technical Report**：InternLM2 Technical Report 介绍开源大语言模型 InternLM2，其通过创新的预训练与对齐技术实现综合评测、长上下文建模及主观评价的提升。研究重点覆盖文本、代码和长上下文数据准备，采用从 4k tokens 到 32k tokens 的分阶段训练并在 200k Needle-in-a-Haystack 测试中表现优异；对齐阶段使用 Supervised Fine-Tuning（SFT）结合新提出的 Conditional Online Reinforcement Learning from Human Feedback（COOL RLHF）以缓解偏好冲突与奖励劫持。作者还发布不同训练阶段与规模的模型，供社区追踪模型演化。\n\n**InternVL**：InternVL 研究提出大规模视觉-语言基础模型，将视觉基础模型扩展至 60 亿参数（InternViT-6B），并通过网络规模多源图文数据与大语言模型渐进对齐。该模型支持图像/视频级与像素级视觉感知、零样本分类检索及多模态对话等 32 项基准任务，在通用视觉-语言场景中取得领先性能，并可作为 ViT-22B 的有效替代方案。",
+            "done": true,
+            "chat_mode": "hybrid",
+            "answer_confidence": 0.33666666666666667,
+            "confidence": 0.33666666666666667,
+            "chunks_used": 12,
+            "sources": [
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）"
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）"
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）"
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）"
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）"
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）"
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）"
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）"
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）"
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）"
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）"
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）"
+              }
+            ],
+            "citations": [
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "45464384-5a4b-4ba7-9eb5-7392264d5cbc"
+                ]
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "b3606d70-78fe-4817-863f-16fa31300c09"
+                ]
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "e4d8a53f-86b8-44e1-8837-8680376fe986"
+                ]
+              },
+              {
+                "doc_id": "fc459e35-0b42-4fc4-9299-61f33fa2be5f",
+                "doc_title": "论文 InternVL 2.5（1/14）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "1aa777cd-8515-4d3f-8a11-31994245e7cd"
+                ]
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "84dbdc87-4f8d-4219-b2c4-c36d4fb08a83"
+                ]
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "28ada34c-d9ed-49c6-8f80-b0d360e72734"
+                ]
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "5bd9740a-7c22-45a0-aaac-d023deba598b"
+                ]
+              },
+              {
+                "doc_id": "4877f86a-fb1e-494e-9ede-16f266ea9f00",
+                "doc_title": "论文 InternLM2 Technical Report（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "62d6461e-9ed2-4aa3-9c00-f69d7ecd8527"
+                ]
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "993a4e54-eece-4ece-b5f2-c103947f1d5c"
+                ]
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "a32430e7-c8ea-4cf8-820e-9c6dc10e8f62"
+                ]
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "e6536ffa-33b4-4ecf-ad99-096a0e5e3419"
+                ]
+              },
+              {
+                "doc_id": "127f01d5-d3bb-44b4-875c-7e1d95c26a6e",
+                "doc_title": "论文 InternVL（1/15）",
+                "kb_type": "gd_d80578abf6ecde9eff367293c4d1edde",
+                "chunk_ids": [
+                  "d50f1a3d-863c-4099-be2c-121149e3598e"
+                ]
+              }
+            ],
+            "sentence_labels": [
+              {
+                "sentence": "**InternVL 2.5**：该研究介绍 InternVL 2.5 多模态大语言模型系列，它在 InternVL 2.0 基础上保持核心架构，重点改进训练与测试策略及数据质量",
+                "source": "supplement"
+              },
+              {
+                "sentence": "研究系统探索视觉编码器、语言模型、数据集规模及测试时配置与性能的关系，并在多学科推理、文档理解、多图像/视频理解、真实世界理解、多模态幻觉检测、视觉定位、多语言及纯语言处理等基准上评估",
+                "source": "supplement"
+              },
+              {
+                "sentence": "主要贡献包括：开源模型首次在 MMMU 上突破 70%，并通过 Chain-of-Thought 推理提升 3.7 分，展现出测试时扩展潜力",
+                "source": "supplement"
+              },
+              {
+                "sentence": "**InternLM2 Technical Report**：InternLM2 Technical Report 介绍开源大语言模型 InternLM2，其通过创新的预训练与对齐技术实现综合评测、长上下文建模及主观评价的提升",
+                "source": "supplement"
+              },
+              {
+                "sentence": "研究重点覆盖文本、代码和长上下文数据准备，采用从 4k tokens 到 32k tokens 的分阶段训练并在 200k Needle-in-a-Haystack 测试中表现优异",
+                "source": "kb"
+              },
+              {
+                "sentence": "对齐阶段使用 Supervised Fine-Tuning（SFT）结合新提出的 Conditional Online Reinforcement Learning from Human Feedback（COOL RLHF）以缓解偏好冲突与奖励劫持",
+                "source": "kb"
+              },
+              {
+                "sentence": "作者还发布不同训练阶段与规模的模型，供社区追踪模型演化",
+                "source": "supplement"
+              },
+              {
+                "sentence": "**InternVL**：InternVL 研究提出大规模视觉-语言基础模型，将视觉基础模型扩展至 60 亿参数（InternViT-6B），并通过网络规模多源图文数据与大语言模型渐进对齐",
+                "source": "supplement"
+              },
+              {
+                "sentence": "该模型支持图像/视频级与像素级视觉感知、零样本分类检索及多模态对话等 32 项基准任务，在通用视觉-语言场景中取得领先性能，并可作为 ViT-22B 的有效替代方案",
+                "source": "kb"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

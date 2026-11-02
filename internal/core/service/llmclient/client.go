@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -18,10 +19,12 @@ import (
 
 // Client streams chat completions from the model gateway.
 type Client struct {
-	baseURL      string
-	fastModel    string
-	complexModel string
-	http         *http.Client
+	baseURL            string
+	fastModel          string
+	complexModel       string
+	overviewTier       string
+	overviewHedgeDelay time.Duration
+	http               *http.Client
 }
 
 // Message is a chat message.
@@ -34,6 +37,7 @@ type Message struct {
 type StreamHooks struct {
 	OnContent   func(string) error
 	OnReasoning func(string) error
+	OnFinish    func(string)
 }
 
 // NewClient creates a gateway LLM client.
@@ -46,10 +50,12 @@ func NewClient(cfg *config.Config) *Client {
 		timeout = 5 * time.Minute
 	}
 	return &Client{
-		baseURL:      cfg.ModelGateway.URL,
-		fastModel:    cfg.ModelGateway.LLMModelFast,
-		complexModel: cfg.ModelGateway.LLMModel,
-		http:         &http.Client{Timeout: timeout},
+		baseURL:            cfg.ModelGateway.URL,
+		fastModel:          cfg.ModelGateway.LLMModelFast,
+		complexModel:       cfg.ModelGateway.LLMModel,
+		overviewTier:       cfg.Chat.OverviewModel,
+		overviewHedgeDelay: time.Duration(cfg.Chat.OverviewHedgeAfterMS) * time.Millisecond,
+		http:               &http.Client{Timeout: timeout},
 	}
 }
 
@@ -63,12 +69,14 @@ type chatRequest struct {
 }
 
 type streamChunk struct {
+	Error   json.RawMessage `json:"error"`
 	Choices []struct {
 		Delta struct {
 			Content          string `json:"content"`
 			ReasoningContent string `json:"reasoning_content"`
 			Reasoning        string `json:"reasoning"`
 		} `json:"delta"`
+		FinishReason *string `json:"finish_reason"`
 	} `json:"choices"`
 	Usage *struct {
 		PromptTokens     int `json:"prompt_tokens"`
@@ -83,8 +91,15 @@ func (c *Client) streamWithModel(ctx context.Context, messages []Message, model 
 func (c *Client) streamWithModelHooks(ctx context.Context, messages []Message, model string, hooks StreamHooks, opts ...streamOpts) error {
 	start := time.Now()
 	var out strings.Builder
+	finishReason := ""
 	contentHook := hooks.OnContent
 	wrap := StreamHooks{
+		OnFinish: func(reason string) {
+			finishReason = reason
+			if hooks.OnFinish != nil {
+				hooks.OnFinish(reason)
+			}
+		},
 		OnReasoning: hooks.OnReasoning,
 		OnContent: func(delta string) error {
 			out.WriteString(delta)
@@ -100,6 +115,8 @@ func (c *Client) streamWithModelHooks(ctx context.Context, messages []Message, m
 	}
 	inTok, outTok, err := c.streamWithModelRaw(ctx, messages, model, wrap, opt)
 	lat := time.Since(start)
+	slog.InfoContext(ctx, "llm stream ended", "model", model, "finish_reason", finishReason,
+		"elapsed_ms", lat.Milliseconds(), "output_bytes", out.Len(), "error", err, "context_error", ctx.Err())
 	observability.RecordLLMLatency("gateway", model, "total", lat.Seconds())
 	if inTok == 0 {
 		for _, m := range messages {
@@ -112,6 +129,9 @@ func (c *Client) streamWithModelHooks(ctx context.Context, messages []Message, m
 	status := "ok"
 	if err != nil {
 		status = "error"
+		if ctx.Err() == context.Canceled {
+			status = "cancelled"
+		}
 	}
 	cost.RecordAsync(ctx, cost.Event{
 		Provider: "gateway", Model: model, Operation: "llm",
@@ -184,21 +204,28 @@ func (c *Client) streamWithModelRaw(ctx context.Context, messages []Message, mod
 
 func parseSSE(r io.Reader, hooks StreamHooks) (int64, int64, error) {
 	var inTok, outTok int64
+	finished := false
 	scanner := bufio.NewScanner(r)
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if !strings.HasPrefix(line, "data: ") {
+		if !strings.HasPrefix(line, "data:") {
 			continue
 		}
-		payload := strings.TrimPrefix(line, "data: ")
+		payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+		if payload == "" {
+			continue
+		}
 		if payload == "[DONE]" {
 			return inTok, outTok, nil
 		}
 		var chunk streamChunk
 		if err := json.Unmarshal([]byte(payload), &chunk); err != nil {
-			continue
+			return inTok, outTok, &StreamError{Code: "invalid_json", Message: err.Error()}
+		}
+		if len(chunk.Error) > 0 && string(chunk.Error) != "null" {
+			return inTok, outTok, &StreamError{Code: "upstream_error", Message: string(chunk.Error)}
 		}
 		if chunk.Usage != nil {
 			if chunk.Usage.PromptTokens > 0 {
@@ -226,9 +253,46 @@ func parseSSE(r io.Reader, hooks StreamHooks) (int64, int64, error) {
 				return inTok, outTok, err
 			}
 		}
+		if reason := chunk.Choices[0].FinishReason; reason != nil && strings.TrimSpace(*reason) != "" {
+			value := strings.TrimSpace(*reason)
+			if hooks.OnFinish != nil {
+				hooks.OnFinish(value)
+			}
+			if value != "stop" {
+				return inTok, outTok, &StreamError{Code: "incomplete_completion", FinishReason: value}
+			}
+			finished = true
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		return inTok, outTok, err
 	}
-	return inTok, outTok, nil
+	if finished {
+		return inTok, outTok, nil
+	}
+	return inTok, outTok, &StreamError{Code: "unexpected_eof", Message: "missing completion marker"}
+}
+
+// StreamError preserves a machine-readable failure even if content arrived first.
+// A length/content-filter finish is not interchangeable with a completed answer.
+type StreamError struct {
+	Code         string
+	FinishReason string
+	Message      string
+}
+
+func (e *StreamError) Error() string {
+	return fmt.Sprintf("llm stream %s (finish_reason=%q): %s", e.Code, e.FinishReason, e.Message)
+}
+
+// TerminalRunFailure tells the queue not to replay a run whose failure has
+// already been reported. A fresh client attempt may still succeed.
+func (e *StreamError) TerminalRunFailure() bool { return true }
+
+// OverviewHedgeDelay is opt-in; zero leaves production behavior unchanged.
+func (c *Client) OverviewHedgeDelay() time.Duration {
+	if c == nil {
+		return 0
+	}
+	return c.overviewHedgeDelay
 }

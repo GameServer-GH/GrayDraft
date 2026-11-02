@@ -151,6 +151,40 @@ func (c *Client) StreamTokensWithReasoning(ctx context.Context, system, user str
 	}, streamOpts{DisableThinking: true})
 }
 
+// StreamAnswerBounded generates a short answer on the same complex model, with
+// thinking disabled and an explicit output budget. It never uses the fast planner.
+func (c *Client) StreamAnswerBounded(ctx context.Context, system, user string, maxTokens int, onContent func(string) error) error {
+	if c == nil {
+		return ErrNotConfigured
+	}
+	model := c.complexModel
+	if model == "" {
+		model = "complex"
+	}
+	return c.streamWithModelHooks(ctx, []Message{
+		{Role: "system", Content: system}, {Role: "user", Content: user},
+	}, model, StreamHooks{OnContent: onContent}, streamOpts{MaxTokens: maxTokens, DisableThinking: true})
+}
+
+// StreamOverviewBounded is restricted to short summaries whose evidence is
+// already selected. It honors the configured tier; ordinary answers are unchanged.
+func (c *Client) StreamOverviewBounded(ctx context.Context, system, user string, maxTokens int, onContent func(string) error) error {
+	if c == nil {
+		return ErrNotConfigured
+	}
+	model := c.complexModel
+	if c.overviewTier == "fast" {
+		model = c.fastModel
+		if model == "" {
+			model = "fast"
+		}
+	}
+	if model == "" {
+		model = "complex"
+	}
+	return c.streamWithModelHooks(ctx, []Message{{Role: "system", Content: system}, {Role: "user", Content: user}}, model, StreamHooks{OnContent: onContent}, streamOpts{MaxTokens: maxTokens, DisableThinking: true})
+}
+
 // ErrNotConfigured indicates the LLM client is nil.
 var ErrNotConfigured = errNotConfigured{}
 

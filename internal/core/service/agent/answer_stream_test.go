@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -9,6 +10,26 @@ import (
 type stubStreamer struct {
 	deltas []string
 	err    error
+}
+
+func TestAnswerDoesNotCommitPartialOrEmptyGeneration(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		deltas []string
+		err    error
+	}{
+		{"partial_timeout", []string{"半截正文"}, context.DeadlineExceeded},
+		{"partial_upstream_error", []string{"半截正文"}, errors.New("upstream failed")},
+		{"empty", nil, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			emitted := false
+			out, err := StreamFinalAnswer(context.Background(), stubStreamer{deltas: tc.deltas, err: tc.err}, []byte("q"), nil, "旧草稿", func(string) error { emitted = true; return nil })
+			if err == nil || out != "" || emitted {
+				t.Fatalf("out=%q err=%v emitted=%v", out, err, emitted)
+			}
+		})
+	}
 }
 
 func (s stubStreamer) StreamTokens(_ context.Context, _, _ string, onDelta func(string) error) error {

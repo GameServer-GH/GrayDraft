@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "started_at": "20261102T063224Z",
+    "git": "8dd898c",
+    "bff": "http://localhost:8787",
+    "only": [
+      "paper-25-1",
+      "paper-infra",
+      "paper-theme",
+      "scp-name-1"
+    ],
+    "protocol": "skip_cache, no query rewrite, no retry"
+  },
+  "results": [
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-name-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据证据中 `multiomics_integration` 技能的 `get_functional_enrichment` 工具参数说明：\n\n> `species (int, required): NCBI taxonomy ID (e.g., 9606 for human)`\n\n人类的 NCBI taxonomy ID 是 **9606**。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-25-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据论文原文（InternVL 2.5，arXiv:2412.05271）：\n\n- **模型基础**：InternVL 2.5 是建立在 InternVL 2.0 基础架构之上的先进大规模 MLLM 系列。\n- **MMMU 成绩**：InternVL2.5-78B 在 MMMU 基准上通过思维链（CoT）推理达到 **70.1%**，相比直接回答（direct response）提升了 **3.7 个百分点**。论文同时指出，这是首个在 MMMU 上突破 70% 的开源 MLLM。\n- **提升来源**：该提升主要来自 CoT 推理；论文还提到 CoT 可进一步与多数投票（majority voting）结合带来额外改进。\n\n因此，MMMU 分数为 **70.1%**，相对直接回答的提升为 **3.7 分**。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-theme",
+      "expect": "answer",
+      "status": "部分",
+      "answer": "根据工作区资料，三篇论文各自的核心内容如下：\n\n**1. InternLM2（书生·浦语大模型）**\n该论文介绍了 InternLM2，一个开源的大语言模型（LLM）。研究团队通过创新的预训练与优化技术，使该模型在 6 个维度、30 项基准评测、长上下文建模以及开放式主观评估中，表现优于其前代模型。论文旨在应对在开源模型中复现类似 ChatGPT、GPT-4 等先进模型进展的挑战。\n\n**"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-infra",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "本工作区资料没有 InternEvo 训练所用的具体注意力实现（如 FlashAttention 等）和浮点精度（如 bf16、fp16 等）的记载。\n\n现有证据仅提到 InternEvo 采用了自适应分片技术（Full-Replica、Full-Sharding、Partial-Sharding）、通信-计算重叠以及用于"
+    }
+  ]
+}

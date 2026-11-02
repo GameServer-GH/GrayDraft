@@ -30,9 +30,9 @@ type streamChunkJSON struct {
 	ID      string `json:"id"`
 	Object  string `json:"object"`
 	Choices []struct {
-		Index int             `json:"index"`
-		Delta streamDeltaJSON `json:"delta"`
-		FinishReason *string  `json:"finish_reason,omitempty"`
+		Index        int             `json:"index"`
+		Delta        streamDeltaJSON `json:"delta"`
+		FinishReason *string         `json:"finish_reason,omitempty"`
 	} `json:"choices"`
 }
 
@@ -68,12 +68,12 @@ func (h *ChatHandler) Completions(c *gin.Context) {
 	id := "chatcmpl-" + uuid.New().String()
 
 	err := h.svc.StreamCompletion(c.Request.Context(), req, func(d llm.StreamDelta) error {
-		if d.Done {
-			_, _ = c.Writer.Write([]byte("data: [DONE]\n\n"))
+		if d.Done && d.FinishReason == "" {
+			_, err := c.Writer.Write([]byte("data: [DONE]\n\n"))
 			flusher.Flush()
-			return nil
+			return err
 		}
-		if d.Content == "" && d.Reasoning == "" {
+		if !d.Done && d.Content == "" && d.Reasoning == "" {
 			return nil
 		}
 		chunk := streamChunkJSON{
@@ -90,8 +90,18 @@ func (h *ChatHandler) Completions(c *gin.Context) {
 				},
 			}},
 		}
+		if d.FinishReason != "" {
+			chunk.Choices[0].FinishReason = &d.FinishReason
+		}
 		data, _ := json.Marshal(chunk)
-		_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", data)
+		if _, err := fmt.Fprintf(c.Writer, "data: %s\n\n", data); err != nil {
+			return err
+		}
+		if d.Done {
+			if _, err := c.Writer.Write([]byte("data: [DONE]\n\n")); err != nil {
+				return err
+			}
+		}
 		flusher.Flush()
 		return nil
 	})

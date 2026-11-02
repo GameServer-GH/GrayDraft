@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/graydraft/core/model"
+	"github.com/jackc/pgx/v5"
 	"github.com/pgvector/pgvector-go"
 )
 
@@ -456,6 +456,122 @@ func (r *ChunkRepo) Expand(ctx context.Context, kbType, entity string, limit int
 	}
 	defer rows.Close()
 	return scanChunks(rows, "expand")
+}
+
+// GroupSpan returns chunks from the anchor document and the next two slices that
+// share its title group. Slice markers such as （3/14） are not a separate work.
+// Query tokens that already appear in the group title are ignored so the paper
+// name does not crowd out the later section that holds the figure.
+func (r *ChunkRepo) GroupSpan(ctx context.Context, kbType, chunkID, query string, limit int) ([]model.Chunk, error) {
+	if limit <= 0 || limit > 12 {
+		limit = 8
+	}
+	rows, err := r.client.pool.Query(ctx, `
+		WITH cur AS (
+			SELECT c.id, c.doc_id, c.kb_type, d.title AS doc_title,
+				btrim(regexp_replace(regexp_replace(d.title, '^论文[[:space:]]*', ''), '[（(][0-9]+/[0-9]+[）)]', '', 'g')) AS g
+			FROM kb_chunks c
+			JOIN kb_documents d ON d.id = c.doc_id
+			WHERE c.id = $1::uuid AND ($2 = '' OR c.kb_type = $2)
+		)
+		SELECT
+			c.id::text, c.doc_id::text, c.kb_type, c.content, c.chunk_index, c.quality_score,
+			COALESCE(d.title, '') AS doc_title,
+			`+chunkExtensionsSelect+`,
+			`+docExtensionsSelect+`,
+			1.0 AS score,
+			cur.doc_title AS anchor_title,
+			cur.id::text AS anchor_id
+		FROM kb_chunks c
+		JOIN kb_documents d ON d.id = c.doc_id
+		JOIN cur ON c.kb_type = cur.kb_type
+			AND btrim(regexp_replace(regexp_replace(d.title, '^论文[[:space:]]*', ''), '[（(][0-9]+/[0-9]+[）)]', '', 'g')) = cur.g
+		ORDER BY d.title, c.chunk_index
+	`, chunkID, kbType)
+	if err != nil {
+		return nil, fmt.Errorf("group span: %w", err)
+	}
+	defer rows.Close()
+	var all []model.Chunk
+	var anchorTitle, anchorID string
+	for rows.Next() {
+		var c model.Chunk
+		var extRaw, docExtRaw []byte
+		var aTitle, aID string
+		if err := rows.Scan(
+			&c.ID, &c.DocID, &c.KBType, &c.Content,
+			&c.ChunkIndex, &c.QualityScore, &c.DocTitle, &extRaw, &docExtRaw, &c.Score,
+			&aTitle, &aID,
+		); err != nil {
+			return nil, fmt.Errorf("group span scan: %w", err)
+		}
+		c.Extensions = parseExtensions(extRaw)
+		c.DocExtensions = parseExtensions(docExtRaw)
+		c.Source = "group"
+		if anchorID == "" {
+			anchorTitle, anchorID = aTitle, aID
+		}
+		all = append(all, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return pickGroupSpan(all, anchorTitle, anchorID, query, limit), nil
+}
+
+// GroupOpenings returns the first body chunk of the first slice in each title group.
+func (r *ChunkRepo) GroupOpenings(ctx context.Context, kbType string, groups []string) ([]model.Chunk, error) {
+	if len(groups) == 0 {
+		return nil, nil
+	}
+	rows, err := r.client.pool.Query(ctx, `
+		SELECT
+			c.id::text, c.doc_id::text, c.kb_type, c.content, c.chunk_index, c.quality_score,
+			COALESCE(d.title, '') AS doc_title,
+			`+chunkExtensionsSelect+`,
+			`+docExtensionsSelect+`,
+			1.0 AS score
+		FROM kb_chunks c
+		JOIN kb_documents d ON d.id = c.doc_id
+		WHERE ($1 = '' OR c.kb_type = $1)
+		  AND c.chunk_index BETWEEN 1 AND 4
+		ORDER BY d.title, c.chunk_index
+	`, kbType)
+	if err != nil {
+		return nil, fmt.Errorf("group openings: %w", err)
+	}
+	defer rows.Close()
+	all, err := scanChunks(rows, "opening")
+	if err != nil {
+		return nil, err
+	}
+	return pickGroupOpenings(all, groups), nil
+}
+
+// Openings returns the first body chunk of each document (skipping the slice banner).
+func (r *ChunkRepo) Openings(ctx context.Context, kbType string, docIDs []string) ([]model.Chunk, error) {
+	if len(docIDs) == 0 {
+		return nil, nil
+	}
+	rows, err := r.client.pool.Query(ctx, `
+		SELECT DISTINCT ON (d.id)
+			c.id::text, c.doc_id::text, c.kb_type, c.content, c.chunk_index, c.quality_score,
+			COALESCE(d.title, '') AS doc_title,
+			`+chunkExtensionsSelect+`,
+			`+docExtensionsSelect+`,
+			1.0 AS score
+		FROM kb_chunks c
+		JOIN kb_documents d ON d.id = c.doc_id
+		WHERE ($1 = '' OR c.kb_type = $1)
+		  AND d.id::text = ANY($2)
+		  AND c.chunk_index > 0
+		ORDER BY d.id, c.chunk_index
+	`, kbType, docIDs)
+	if err != nil {
+		return nil, fmt.Errorf("openings: %w", err)
+	}
+	defer rows.Close()
+	return scanChunks(rows, "opening")
 }
 
 func scanChunks(rows pgx.Rows, source string) ([]model.Chunk, error) {

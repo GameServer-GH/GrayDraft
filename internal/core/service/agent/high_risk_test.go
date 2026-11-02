@@ -50,7 +50,7 @@ func TestLacksOfficialSource(t *testing.T) {
 	}
 }
 
-func TestHighRiskKeepsNonEmptyAnswer(t *testing.T) {
+func TestHighRiskNonEmptyAnswerStillRequiresOfficialSource(t *testing.T) {
 	payload := jsonMarshalKnowledgeSearch("充值问题", "B", 0.7, []EvidenceHit{{
 		ChunkID: "c1", Content: "充值一般 1-3 分钟到账。",
 	}})
@@ -59,8 +59,8 @@ func TestHighRiskKeepsNonEmptyAnswer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Rejected || res.Answer != "充值可能稍慢。" {
-		t.Fatalf("expected keep non-empty answer, gate=%+v rejected=%v", res.Gate, res.Rejected)
+	if !res.Rejected || res.Gate.RefuseReason != "high_risk_no_official_source" {
+		t.Fatalf("expected source policy refusal, gate=%+v rejected=%v", res.Gate, res.Rejected)
 	}
 }
 

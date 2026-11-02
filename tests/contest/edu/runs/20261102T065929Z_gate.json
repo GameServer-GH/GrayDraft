@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "started_at": "20261102T065929Z",
+    "git": "8dd898c",
+    "bff": "http://localhost:8787",
+    "only": [
+      "paper-theme"
+    ],
+    "protocol": "skip_cache, no query rewrite, no retry"
+  },
+  "results": [
+    {
+      "workspace": "contest-papers",
+      "id": "paper-theme",
+      "expect": "answer",
+      "status": "部分",
+      "answer": "基于工作区文档的摘要内容，三篇论文各自的核心内容如下：\n\n**1. InternLM2 论文**（对应 doc_id 如 `e25e6d3e-47ad-4b04-af7a-771c58e22e71`、`658759e7-e64a-4345-b414-ebd3fdef2a7b` 等）\n该论文介绍了 InternLM2，一个开源大语言模型。其核心内容包括：通过创新的预训练与优化技术，在 6 个维度 30 个基准评测、长上下文建模及开放式主观评估中超越前代；详细披露了涵盖文本、代码及长上下文数据的预训练流程；模型从 4k tokens 起步，预训练与微调阶段推进至 32k tokens，并在 200k \"Needle-in-a-Haystack\" 测试中表现优异；对齐阶段采用了监督微调（SFT）与一种名为 COOL RLHF 的新策略，以解决人类偏好冲突与奖励劫持问题。\n\n**2. InternVL 论文**（对应 doc_id 如 `134aa014-f78d-4651-8f24-75452d14dadf`、`cc40bbca-45ef-43a3-9383-a10e96c395a6` 等）\n该论文设计了大规模视觉 - 语言基础模型 InternVL。其核心内容包括：将视觉基础模型扩展至 60 亿参数（InternViT-6B），并利用来自网络多源的大规模图像 - 文本数据与大语言模型进行渐进式对齐；该模型可广泛应用于 32 个通用视觉 - 语言基准测试并取得最先进（SOTA）性能，涵盖视觉感知、零样本图像/视频分类、检索及多模态对话系统；研究旨在为多模态大模型的发展做出贡献。\n\n**3. InternVL 2.5 论文**（对应 doc_id 如 `fc459e35-0b42-4fc4-9299-61f33fa2be5f`、`3541393f-247b-4438-b3a1-bc63e502979b` 等）\n该论文介绍了 InternVL 2.5，一个基于 InternVL 2.0 构建的先进多模态大语言模型系列。其核心内容包括：保持核心模型架构不变，在训练与测试策略及数据质量上进行了重大增强；深入研究了模型规模与性能之间的关系，系统探索了视觉编码器、语言模型、数据集规模及测试时配置的性能趋势；在跨学科推理、文档理解、多图像/视频理解、真实世界理解、多模态幻觉检测、视觉接地、多语言能力及纯语言处理等广泛基准上具备竞争力，媲美 GPT-4o 和 Claude-3.5-Sonnet；该模型是首个开源 MLLM 在 MMMU 基准上突破 70%，并通过思维链（CoT）推理实现了 3.7 分的提升。InternLM2 achieves state-of-the-art performance among models of comparable size across 6 dimensions and 30 benchmarks while supporting context windows up to 200k tokens.\n\n## Introduction"
+    }
+  ]
+}

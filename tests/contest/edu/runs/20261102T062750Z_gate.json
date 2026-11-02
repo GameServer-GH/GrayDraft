@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "started_at": "20261102T062750Z",
+    "git": "8dd898c",
+    "bff": "http://localhost:8787",
+    "only": [
+      "paper-25-1",
+      "paper-infra",
+      "paper-theme",
+      "scp-name-1"
+    ],
+    "protocol": "skip_cache, no query rewrite, no retry"
+  },
+  "results": [
+    {
+      "workspace": "contest-scp-skills",
+      "id": "scp-name-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据证据中的 `multiomics_integration` 技能文档，在 `get_functional_enrichment` 工具的参数说明里明确写明：\n\n`species (int, required): NCBI taxonomy ID (e.g., 9606 for human)`\n\n因此，人类的 taxonomy ID 是 **9606**。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-25-1",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据工作区资料，InternVL 2.5 在 MMMU 基准上的分数与提升情况如下：\n\n- **MMMU 分数**：InternVL2.5-78B 使用 Chain-of-Thought (CoT) 推理达到 **70.1%**，成为首个在 MMMU 基准上突破 70% 的开源多模态大模型（MLLM）。\n- **提升幅度**：相比直接回答（direct response），CoT 带来了 **3.7 个百分点**的提升。\n- **版本演进**：从 InternVL 2.0 升级到 2.5 后，数据集规模扩大了一倍，但通过严格过滤（例如剔除重复模式等异常样本）显著提升了数据质量，从而在 MMMU 等 CoT 推理任务上取得实质性进步。\n\n以上数值均来自论文原文（InternVL 2.5，arXiv:2412.05271）。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-theme",
+      "expect": "answer",
+      "status": "未命中",
+      "answer": "本工作区资料仅提供了三篇论文的文档索引（分片标题）和核心实体列表，未包含论文正文、摘要、目录或引言等可直接说明“各自讲什么”的内容。因此，无法根据现有证据准确描述 InternLM2、InternVL、InternVL 2.5 三篇论文各自的研究内容。\n\n若需回答该问题，需要补充对应的论文原文或摘要文本。根据工作区目录信息，本工作区收录了上海人工智能实验室与 OpenGVLab 的三篇论文的部分章节，但**目录元数据本身不包含论文摘要或正文内容**，因此无法据此说明“三篇论文各自讲什么”。\n\n现有证据仅能确认：\n\n- **《InternVL 2.5》**：工作区存有第 1–5、7、8、12–14 页（共 14 页）的索引。\n- **《InternLM2 Technical Report》**：工作区存有第 3–7、10、12 页（共 15 页）的索引。\n- **《InternVL》**：工作区存有第 5、9、10 页（共 15 页）的索引。\n\n要回答三篇论文各自的研究内容、模型规模与训练阶段，需要调用 `knowledge.read` 或 `knowledge.lexical` 读取上述文档的正文。当前证据不足，**不能凭目录推断论文内容，也不能用常识补写数值或结论**。本工作区资料中，仅提供了三篇论文的文档目录索引（doc_id 和分片标题），**没有包含论文正文或摘要内容**。因此，无法根据现有证据说明 InternLM2、InternVL、InternVL 2.5 三篇论文各自讲什么。\n\n现有证据只确认了上海人工智能实验室与 OpenGVLab 公开了这三篇论文，以及核心实体包括 InternLM2、InternVL、InternViT-6B、COOL RLHF、InternEvo、MMMU、Shanghai AI Laboratory。若需回答该问题，需要补充论文原文或摘要内容。本工作区资料目前仅提供了**文档目录索引**（knowledge.catalog 检索结果），列出了 InternVL 2.5、InternLM2 Technical Report、InternVL 三篇论文的分页文档 ID 与标题，但**未提供任何论文正文或摘要内容**。后续多次检索均返回 `insufficient_citations`，说明证据不足以支撑\"三篇论文各自讲什么\"的实质性回答。\n\n因此，**依据现有资料无法说明三篇论文各自的研究内容**。若需作答，须通过 knowledge.read / knowledge.lexical / knowledge.semantic 等工具调取对应文档的实际文本。本工作区资料仅包含论文的文档索引（doc_id 与标题），未包含论文正文内容，因此无法直接回答三篇论文各自讲什么。\n\n已知文档涉及：\n- **InternVL 2.5**（14 篇文档）\n- **InternLM2 Technical Report**（多篇文档）\n- **InternVL**（多篇文档）\n\n要获取论文内容，需要使用 `knowledge.lexical`、`knowledge.semantic`、`knowledge.read` 或 `knowledge.expand` 等工具读取具体文档，当前证据不足以作答。本工作区资料中仅有三篇论文的文档目录索引（doc_id 与标题），未包含论文正文或摘要内容，因此无法根据证据说明 InternLM2、InternVL、InternVL 2.5 三篇论文各自的研究内容。\n\n如需继续，请调用 knowledge.read、knowledge.lexical 或 knowledge.semantic 等工具读取对应文档内容后再作答。本工作区资料中，三篇论文（InternLM2、InternVL、InternVL 2.5）的文档索引已存在，但当前证据仅包含目录检索结果，**没有提供论文正文内容**，因此无法依据原文说明三篇论文各自的研究内容。\n\n如需回答，请指定具体文档（如 `论文 InternLM2 Technical Report（3/15）`）或章节，我将基于原文内容作答。"
+    },
+    {
+      "workspace": "contest-papers",
+      "id": "paper-infra",
+      "expect": "answer",
+      "status": "命中",
+      "answer": "根据提供的证据，资料中**没有**提到 InternEvo 训练使用了哪种具体的注意力实现（如 FlashAttention 等）和哪种浮点精度（如 BF16、FP16 等）。\n\n现有证据仅描述了 InternEvo 的以下特性：\n- 自适应分片技术（Full-Replica、Full-Sharding、Partial-Sharding）\n- 通信与计算重叠策略\n- 分层并行空间管理（数据、张量、序列、流水线四个维度）\n- 内存碎片管理技术\n- 可处理长达 100 万 token 的训练上下文\n\n关于注意力实现和浮点精度的具体信息，在当前的 InternLM2 Technical Report 检索片段中未涉及，无法从资料中提取。"
+    }
+  ]
+}

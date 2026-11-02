@@ -82,6 +82,8 @@ type Config struct {
 		RerankModel          string `yaml:"rerank_model"`
 	} `yaml:"model_gateway"`
 	Chat struct {
+		OverviewModel           string  `yaml:"overview_model"`
+		OverviewHedgeAfterMS    int     `yaml:"overview_hedge_after_ms"`
 		MaxContextChunks        int     `yaml:"max_context_chunks"`
 		SearchOnlyFallback      bool    `yaml:"search_only_fallback"`
 		FeedbackDownvotePenalty float64 `yaml:"feedback_downvote_penalty"`
@@ -253,10 +255,19 @@ func Load(path string) (*Config, error) {
 	}
 	overlayEnv(&cfg)
 	applyDefaults(&cfg)
+	if cfg.Chat.OverviewHedgeAfterMS < 0 {
+		return nil, fmt.Errorf("chat.overview_hedge_after_ms must be nonnegative")
+	}
+	if cfg.Chat.OverviewModel != "fast" && cfg.Chat.OverviewModel != "complex" {
+		return nil, fmt.Errorf("chat.overview_model must be fast or complex")
+	}
 	return &cfg, nil
 }
 
 func applyDefaults(cfg *Config) {
+	if cfg.Chat.OverviewModel == "" {
+		cfg.Chat.OverviewModel = "complex"
+	}
 	if cfg.Retrieval.DefaultTopK == 0 {
 		cfg.Retrieval.DefaultTopK = 10
 	}
@@ -478,6 +489,17 @@ func applyDefaults(cfg *Config) {
 }
 
 func overlayEnv(cfg *Config) {
+	if v, ok := os.LookupEnv("OVERVIEW_HEDGE_AFTER_MS"); ok {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.Chat.OverviewHedgeAfterMS = n
+		} else {
+			cfg.Chat.OverviewHedgeAfterMS = -1
+		}
+	}
+	if v, ok := os.LookupEnv("OVERVIEW_MODEL"); ok {
+		cfg.Chat.OverviewModel = strings.ToLower(strings.TrimSpace(v))
+	}
+
 	if v := os.Getenv("HTTP_PORT"); v != "" {
 		if p, err := strconv.Atoi(v); err == nil {
 			cfg.HTTP.Port = p

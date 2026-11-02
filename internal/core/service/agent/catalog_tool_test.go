@@ -85,6 +85,15 @@ func TestCatalogOverviewGroupsPaperSlices(t *testing.T) {
 	}
 }
 
+func TestCatalogListQuestionIsNotContentAsk(t *testing.T) {
+	if !isCatalogListQuestion("工作区里有哪些论文") {
+		t.Fatal("list")
+	}
+	if isCatalogListQuestion("三篇论文各自讲什么") {
+		t.Fatal("content ask must not use the title list")
+	}
+}
+
 func TestFirstHopFromIntentHybridUsesCatalog(t *testing.T) {
 	if FirstHopFromIntent("hybrid") != "knowledge.catalog" {
 		t.Fatal(FirstHopFromIntent("hybrid"))

@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from '@/composables/useI18n'
 import Workspace from '@/views/Workspace.vue'
 import WorkspaceKeyGate from '@/components/workspace/WorkspaceKeyGate.vue'
+import ToastBar from '@/components/common/ToastBar.vue'
 import { useUiStore } from '@/stores/ui'
 import { getIsDesktop } from '@/services/bridge'
 import { useWorkspaceSessionStore } from '@/stores/workspaceSession'
@@ -64,6 +65,7 @@ const composeZ = computed(() => ui.floatingZBase + 15)
     />
     <Workspace />
   </template>
+  <ToastBar />
 </template>
 
 <style scoped>
