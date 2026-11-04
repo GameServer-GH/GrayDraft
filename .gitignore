@@ -75,3 +75,33 @@ temp/
 pgdata*/
 redisdata*/
 
+
+# 本地教育回归数据、运行产物和诊断工具
+/tests/contest/edu/runs/
+/tests/contest/edu/generalization_astro_v1/baselines/
+/tests/contest/edu/generalization_astro_v1/runs/
+/tests/contest/edu/generalization_astro_v1/ingest/
+/tests/contest/edu/generalization_astro_v1/diagnostics/
+/tests/contest/edu/generalization_astro_v1/sources/
+/tests/contest/edu/generalization_astro_v1/corpus_zh_excerpt/
+/tests/contest/edu/generalization_astro_v1/workspace*.json
+/tests/contest/edu/generalization_astro_v1/*-content-snapshot.json
+/tests/contest/edu/generalization_astro_v1/old_workspace_content_unchanged.json
+/tests/contest/edu/generalization_astro_v1/remediation/*.json
+/tests/contest/edu/generalization_astro_v1/remediation/claim_review_fixtures/
+/tests/contest/edu/generalization_astro_v1/remediation/claim_review_probe.go.txt
+/tests/contest/edu/generalization_astro_v1/remediation/reconcile_dead_letter.py
+/tests/contest/edu/generalization_astro_v1/remediation/verify_pdf_integrity.py
+/tests/contest/edu/generalization_astro_v1/import_corpus.py
+/tests/contest/edu/generalization_astro_v1/README.md
+
+# 本地阶段报告
+/docs/architecture/claim-review-and-numeric-audit-2026-11-04.md
+/docs/architecture/correctness-baseline-2026-11-03.md
+/docs/architecture/generalization-astro-test-report-2026-11-03.md
+/docs/architecture/generalization-numeric-consistency-2026-11-03.md
+/docs/architecture/generalization-remediation-results-2026-11-03.md
+/docs/architecture/generalization-root-cause-and-remediation-plan-2026-11-03.md
+/docs/architecture/generalization-source-retrieval-remediation-2026-11-03.md
+/docs/architecture/question-and-evidence-packet-2026-11-03.md
+/docs/architecture/recent-optimization-summary-2026-11-02.md
