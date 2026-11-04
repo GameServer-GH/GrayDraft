@@ -1,5 +1,7 @@
 # 智能导入方案
 
+> **文档类型：设计方案与计划。** 正文含设计目标或待办，实际交付以架构、接口文档和代码为准。 [当前文档入口](../README.md)
+
 > 代码：`internal/core/service/smartimport/`、`internal/core/service/multimodal/`
 > API：[smart-import.md](../api/smart-import.md)
 

@@ -11,7 +11,7 @@
 | 导入 | `ComposePromptWithContext` + `InferTitleLLM` 背景块；UGC `extensions.workspace_context_profile` |
 | 向量化 | Worker `contextual_embed.py` 前缀 `【描述】实体 | 正文` |
 | 检索 | `workspace_context` + `context_profile`；实体命中加权 |
-| 问答 | Agent v2 Run + BFF SSE 映射；工作区背景注入 prompt |
+| 问答 | Agent v2 Run + BFF SSE 映射；工作区背景单独随 Run 配置传递 |
 | 配置 | GrayDraft **设置 → Agent 配置** 结构化表单；保存同步 Core |
 
 ## 1. 价值与问题定位
@@ -162,7 +162,7 @@ if wc := strings.TrimSpace(req.WorkspaceContext); wc != "" {
 
 **Agent v2（当前）**：
 
-- BFF / Launcher 将 `context_profile` 注入 Run prompt；`knowledge.semantic` 检索时可附带 workspace 上下文
+- BFF 通过 `input_config.workspace_context` 传递工作区背景。Runtime 读取配置并按需提供给检索与成文
 - 实体 bonus 仍由 `confidence/` 与工作区 profile 计算
 
 **历史（v1 Chat，已下线）**：

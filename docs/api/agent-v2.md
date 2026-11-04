@@ -1,6 +1,6 @@
 # Agent v2 Run API
 
-> **基线日期**：2026-10-28
+> **基线日期**：2026-11-04
 
 新对话统一进入 Agent Runtime。`POST /api/v1/chat/stream` 已下线，请使用本文档的控制面 + SSE 事件流。
 
@@ -29,15 +29,18 @@ GrayDraft BFF 通过 `internal/graydraft/pkg/nexus/chat_stream.go` 将 v2 事件
   "idempotency_key": "edu:session:1730000000:abc",
   "conversation_id": "sess-optional",
   "deadline_seconds": 90,
-  "prompt": "top_k=5\nchat_mode=hybrid\nInternVL 在这条链路里负责什么？"
+  "prompt": "InternVL 在这条链路里负责什么？",
+  "input_config": {"top_k": 5, "chat_mode": "hybrid"}
 }
 ```
 
 | 字段 | 说明 |
 |------|------|
-| `policy_version` | 不可变策略版本，默认 `edu_workspace_v1` |
+| `agent_id` | 必填，Agent 标识 |
+| `policy_version` | 必填，策略版本，例如 `edu_workspace_v1` |
 | `idempotency_key` | 幂等键，同键重复创建返回已有 Run |
-| `prompt` | 用户问题；BFF 会在前部注入 `top_k` / `chat_mode` 提示 |
+| `prompt` | 必填，用户问题正文 |
+| `input_config` | 可选，包含 `top_k`、`chat_mode`、`workspace_context`。BFF 分开传递问题和配置，Core 兼容旧输入。 |
 
 ### 响应 `202 Accepted`
 
@@ -47,7 +50,7 @@ GrayDraft BFF 通过 `internal/graydraft/pkg/nexus/chat_stream.go` 将 v2 事件
   "trace_id": "uuid",
   "status": "queued",
   "policy_version": "edu_workspace_v1",
-  "deadline_at": "2026-10-28T12:00:00Z"
+  "deadline_at": "2026-11-04T12:00:00Z"
 }
 ```
 
@@ -62,6 +65,7 @@ SSE 回放 + 实时推送。Query：`after_seq=0`。
 | `run.started` | Run 入队 |
 | `step.started` | Loop 步开始 |
 | `tool.started` / `tool.completed` | 工具调用 |
+| `answer.evidence.prepared` | 成文前记录证据包摘要及可见来源范围 |
 | `answer.generating` | 开始生成最终答案 |
 | `planner.thought` | **面向用户的短规划摘要**（已脱敏，来自 `thought_summary`） |
 | `llm.reasoning.delta` | 模型原始思考链（仅审计/Trace，**不**映射到前端） |
@@ -71,8 +75,11 @@ SSE 回放 + 实时推送。Query：`after_seq=0`。
 | `run.completed` | 终态成功，`payload.message` 为最终答案 |
 | `run.failed` / `run.cancelled` / … | 终态失败 |
 
+`answer.evidence.prepared` 的 `payload.message` 是审计 JSON，包含 `evidence_packet_sha256` 和 `references`。来源记录包含 `chunk_id`、可见内容的 `content_sha256`、`start_rune`、`end_rune` 和 `truncated`，并可含原文或版本摘要。目录直答可能绕过成文步骤，执行失败也可能只有证据准备事件。该事件由 Core 提供，BFF 前端事件没有独立映射。
+
 Gate JSON 字段（`answer.validated` / `answer.rejected`）：
 
+- `evidence_packet_sha256`、`claim_review`、`numeric_consistency_issues` 在适用时记录证据摘要、角色复核和数值矛盾。
 - `answer_confidence`, `retrieval_grade`, `coverage_score`
 - `high_risk`, `threshold_used`
 - `sentence_labels[]` — `{sentence, source: kb|supplement}`（优先 NLI entailment，失败回退词重叠）

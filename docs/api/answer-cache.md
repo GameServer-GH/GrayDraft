@@ -73,7 +73,7 @@ curl -sS -X POST http://localhost:18080/api/v2/agent-runs \
   -H 'X-Tenant-ID: demo' \
   -H 'X-Actor-ID: learner' \
   -H 'X-Authorized-KBs: tutorial' \
-  -d '{"agent_id":"edu","policy_version":"edu_workspace_v1","idempotency_key":"cache-test-1","prompt":"top_k=5\n什么是 index_ready"}'
+  -d '{"agent_id":"edu","policy_version":"edu_workspace_v1","idempotency_key":"cache-test-1","prompt":"什么是 index_ready","input_config":{"top_k":5,"chat_mode":"hybrid"}}'
 ```
 
 ## 相关

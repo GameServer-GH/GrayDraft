@@ -1,5 +1,7 @@
 # 问答模式优化方案
 
+> **文档类型：历史记录。** 正文保留当时的上下文与结论。 [当前文档入口](../README.md)
+
 > 现状：[chat-qa-design.md](./chat-qa-design.md)
 > 代码：`internal/core/service/chat/`、`internal/core/service/confidence/`、`internal/core/service/answercache/`
 > 架构：[semantic-driven-retrieval.md](../architecture/semantic-driven-retrieval.md)

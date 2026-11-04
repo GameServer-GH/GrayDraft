@@ -1,0 +1,73 @@
+# 文档状态索引
+
+按用途区分实现参考、历史记录和设计方案。实现参考用于定位现有入口与代码，接口细节以对应 handler 和当前配置为准。
+
+## 当前实现与操作参考
+
+- [项目目录结构（速查）](PROJECT_STRUCTURE.md)
+- [GrayDraft 文档中心](README.md)
+- [Agent Evaluation & Cost APIs](api/agent-eval.md)
+- [Agent v2 Run API](api/agent-v2.md)
+- [对话答案缓存（Answer Cache）](api/answer-cache.md)
+- [三级缓存](api/cache.md)
+- [查询分类器](api/classifier.md)
+- [Console 管理面](api/console.md)
+- [DLQ 运维 API](api/dlq.md)
+- [Embedding（O-13 · 百炼 DashScope / Qwen）](api/embedding.md)
+- [业务扩展字段 `extensions`](api/extensions.md)
+- [Gateway API](api/gateway.md)
+- [NATS JetStream（UGC 持久化）](api/jetstream.md)
+- [模型配置](api/models.md)
+- [面板文档 CRUD API（GrayDraft 前置）](api/panel-documents.md)
+- [RAGOps 可观测性与自愈（O-19）](api/ragops.md)
+- [检索 API](api/retrieval.md)
+- [Agent 快速导入](api/smart-import.md)
+- [多租户与知识库（PaaS API · Phase A）](api/tenants.md)
+- [UGC 回调 API](api/ugc.md)
+- [Worker API](api/worker.md)
+- [Agent 实现说明](architecture/Agent流程技术实现方案.md)
+- [架构决策记录 (ADR)](architecture/README.md)
+- [Agent 导入与问答可靠性治理方案](architecture/agent-import-chat-reliability.md)
+- [正确性架构与验收边界](architecture/correctness-architecture.md)
+- [semantic-driven-retrieval](architecture/semantic-driven-retrieval.md)
+- [GrayDraft 系统逻辑总览](architecture/系统逻辑总览.md)
+- [GrayDraft 设计理念](architecture/设计理念.md)
+- [NATS JetStream 高可用（O-04）](deploy/runbooks/nats-ha.md)
+- [部署手册](deployment.md)
+- [本地开发指南](development.md)
+- [多模态内容处理（4.0 实现说明）](features/multimodal.md)
+- [检索与 Agent v2 对话（实现说明）](features/retrieval-and-chat.md)
+- [智能快速导入（实现说明）](features/smart-import.md)
+- [工作区背景（Workspace Background / Context）实现方案](features/workspace-background.md)
+- [工作区自适应 4D 语义蓝图](features/workspace-dynamic-taxonomy.md)
+- [GrayDraft 集成（BFF + Web）](integrations/graydraft.md)
+- [存量文档 semantic 4D 回填](ops/backfill-semantic-4d.md)
+- [Agent 可靠性黄金用例](testing/agent-reliability-golden-cases.md)
+
+## 历史记录
+
+- [Chat 流式 API（RAG）— 已下线](api/chat.md)
+- [52 题复跑与旁路接入决策](architecture/correctness-rebaseline-shadow-decision-2026-11-04.md)
+- [GrayDraft 优化与验证工作流（2026-11-02）](architecture/optimization-workflow-2026-11-02.md)
+- [总览尾延迟优化与验证（2026-11-02）](architecture/tail-latency-optimization-2026-11-02.md)
+- [升级优化落实与下一步（2026-11-02）](architecture/upgrade-next-steps-2026-11-02.md)
+- [升级优化测试过程与结果](architecture/upgrade-optimization-test-summary-2026-10-29.md)
+- [问答模式优化方案](features/chat-qa-optimization.md)
+- [星系图缩放闪烁问题修复记录](galaxy-zoom-flicker-fix.md)
+- [GrayDraft 性能瓶颈分析报告](plan/performance-bottleneck-analysis.md)
+- [Smart Import 导入阻断点全景分析](smart-import-blocking-points.md)
+
+## 设计方案与计划
+
+- [Agent Markdown 输出规范 & 前端渲染方案](agent-md-rendering-proposal.md)
+- [Agent 问答模式语音 & 图片输入支持方案（历史提案）](agent-multimodal-input-proposal.md)
+- [GrayDraft 性能优化 1.0 方案](architecture/performance-optimization-v1.md)
+- [GrayDraft 智能语义驱动检索 — 完整方案（已实现逻辑 + 待办）](architecture/semantic-driven-retrieval-scheme.md)
+- [GrayDraft 架构升级优化方案（赛事联调驱动）](architecture/upgrade-optimization-contest-2026-10-29.md)
+- [问答模式方案（历史设计 · v1 Chat）](features/chat-qa-design.md)
+- [智能导入方案](features/smart-import-design.md)
+- [智能导入最终优化方案](features/smart-import-optimization-plan.md)
+- [GrayDraft：语义中轴 + 动态切片（4.1）](plan/GrayDraft-语义中轴与动态切片.md)
+- [GrayDraft 实施路线图与下一步建议](roadmap.md)
+- [Agent 导入/问答日志记录方案](testing/agent-logging-scheme.md)
+

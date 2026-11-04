@@ -1,5 +1,7 @@
 # Smart Import 导入阻断点全景分析
 
+> **文档类型：历史记录。** 正文保留当时的上下文与结论。 [当前文档入口](README.md)
+
 > 分析范围：`/api/AgentSmartImport` → Core `/api/v1/ugc/smart-import` 完整调用链路  
 > 更新日期：2026-10-28  
 > 基于源码：`internal/core/service/smartimport/`, `internal/core/service/ugc/`, `internal/graydraft/internal/server/nexus.go`

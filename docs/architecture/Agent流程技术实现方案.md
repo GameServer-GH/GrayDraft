@@ -59,27 +59,9 @@ flowchart LR
 
 ### 2.2 Agent Profile
 
-每个 Agent 由租户配置而非代码决定：
+工作台默认使用教育场景策略 `edu_workspace_v1`。Run 创建时记录 Agent 和策略版本，工具仍受授权范围约束。核心工具为 `knowledge.lexical`、`knowledge.semantic`、`knowledge.read`、`knowledge.expand` 和 `note.draft`。工作台默认最多 8 步，运行时预算和工具绑定以实际配置为准。
 
-```yaml
-agent_id: edu
-tenant_id: tenant_edu
-policy_version: edu_workspace_v1
-knowledge_scope: [tutorial, paper, note]
-model_policy: intern
-max_steps: 8
-allowed_tools: [knowledge.lexical, knowledge.semantic, knowledge.read, knowledge.expand, note.draft]
-memory_policy:
-  short_term_messages: 20
-  long_term_write: consent_or_high_confidence
-  ttl_days: 180
-answer_policy:
-  require_citation: true
-  no_answer_threshold: 0.62
-  max_claims: 8
-```
-
-配置发布生成不可变 `policy_version`，Run 固定该版本，保证回放一致。
+`0.62` 是 `answer_gate.go` 中的默认门禁阈值。接入方通过 [Run API](../api/agent-v2.md) 提交问题和可选运行配置，门禁阈值由 Core 决定。
 
 ### 2.3 证据与查法
 

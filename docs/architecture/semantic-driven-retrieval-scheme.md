@@ -1,5 +1,7 @@
 # GrayDraft 智能语义驱动检索 — 完整方案（已实现逻辑 + 待办）
 
+> **文档类型：设计方案与计划。** 正文含设计目标或待办，实际交付以架构、接口文档和代码为准。 [当前文档入口](../README.md)
+
 > 本文档汇总「从程序员规则到语义驱动」的**目标架构、已落地逻辑、残留项与运维**。  
 > 精简对照与 Roadmap 勾选见：[semantic-driven-retrieval.md](./semantic-driven-retrieval.md)  
 > 工作区 Blueprint 运维见：[../features/workspace-dynamic-taxonomy.md](../features/workspace-dynamic-taxonomy.md)

@@ -157,7 +157,7 @@ RUN_ID=$(curl -sS -X POST http://localhost:18080/api/v2/agent-runs \
   -H 'X-Tenant-ID: demo' \
   -H 'X-Actor-ID: learner' \
   -H 'X-Authorized-KBs: tutorial' \
-  -d '{"agent_id":"edu","policy_version":"edu_workspace_v1","idempotency_key":"dev-1","prompt":"top_k=5\nchat_mode=hybrid\n什么是 index_ready"}' \
+  -d '{"agent_id":"edu","policy_version":"edu_workspace_v1","idempotency_key":"dev-1","prompt":"什么是 index_ready","input_config":{"top_k":5,"chat_mode":"hybrid"}}' \
   | python3 -c 'import json,sys; print(json.load(sys.stdin)["run_id"])')
 
 curl -N "http://localhost:18080/api/v2/agent-runs/${RUN_ID}/events/stream?after_seq=0" \

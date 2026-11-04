@@ -1,5 +1,7 @@
 # Chat 流式 API（RAG）— 已下线
 
+> **文档类型：历史记录。** 正文保留当时的上下文与结论。 [当前文档入口](../README.md)
+
 > **基线日期**：2026-10-28  
 > **状态**：`POST /api/v1/chat/stream` 已从 Core Gateway 移除。新对话请使用 **[Agent v2 Run API](agent-v2.md)**。  
 > GrayDraft 经 BFF `/ai/chat/stream` 自动路由至 v2；多模态仍走 GrayDraft BFF。

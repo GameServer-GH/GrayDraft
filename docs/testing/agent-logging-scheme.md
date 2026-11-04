@@ -1,5 +1,7 @@
 # Agent 导入/问答日志记录方案
 
+> **文档类型：设计方案与计划。** 正文含设计目标或待办，实际交付以架构、接口文档和代码为准。 [当前文档入口](../README.md)
+
 > 目标：完整记录 smart-import 和 Agent v2 问答的流转流程，支撑准确率与召回率验证。  
 > 日志输出至 `logs/` 目录；Core v2 事件与 BFF legacy SSE 均可按 `trace_id` 关联。  
 > 状态：**已实施**（2026-10-28），Agent v2 Trace 见 `api/agent-v2.md`。

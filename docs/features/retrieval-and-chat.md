@@ -61,7 +61,7 @@ flowchart LR
 |------|------|
 | `edu_workspace_v1` | 唯一 policy。Planner 选择词法、语义、相邻章节、实体扩展或 `note.draft` |
 
-`chat_mode`（`hybrid` / `kb_only`）由 BFF 注入 prompt 前缀，Launcher 解析后影响注入与拒答策略。
+BFF 通过 `input_config.chat_mode` 传递 `hybrid` 或 `kb_only`，Launcher 解码后用于上下文和拒答策略。
 
 ### 可靠性
 

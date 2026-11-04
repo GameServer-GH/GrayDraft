@@ -1,5 +1,7 @@
 # 问答模式方案（历史设计 · v1 Chat）
 
+> **文档类型：设计方案与计划。** 正文含设计目标或待办，实际交付以架构、接口文档和代码为准。 [当前文档入口](../README.md)
+
 > **状态**：本文描述旧 `chat/stream` 时代的问答设计，**当前实现已迁移至 Agent v2**。以 [retrieval-and-chat.md](retrieval-and-chat.md)、[agent-v2.md](../api/agent-v2.md)、[系统逻辑总览 §7](../architecture/系统逻辑总览.md#7-流程-dagent-v2-对话run--sse) 为准。  
 > 代码：`internal/core/service/agent/`（Runtime）；检索仍见 `retriever/`、`classifier/`
 > 架构：[semantic-driven-retrieval.md](../architecture/semantic-driven-retrieval.md)

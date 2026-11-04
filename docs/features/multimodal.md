@@ -3,6 +3,8 @@
 > 实现代码：`internal/core/service/multimodal/`、`internal/core/service/smartimport/preprocess.go`  
 > 迁移：`deploy/migrations/000001_init.up.sql`（`multimodal_content_cache`）
 
+PDF 先尝试用 `pdftotext` 提取文本层，成功时记录 `pdf_text`。失败时使用已配置的文档 OCR，缺少 OCR 能力时返回 `unsupported_media`。PDF 路由优先于仅图像使用的强制 VLM 设置。[处理入口](../../internal/core/service/multimodal/processor.go)
+
 ## 1. 设计目标
 
 - **Workspace 分层 Prompt**：系统 Base + 工作区 Override（GrayDraft `settings.json`）。
@@ -42,7 +44,7 @@ flowchart TD
 |------|------|
 | MD5 | 表 `multimodal_content_cache`，命中跳过 VL/OCR |
 | pHash | 汉明距离 ≤6 复用相似图缓存 |
-| OCR | `doc_intel_enabled` 时走百炼文档处理 API，失败回退 VL |
+| OCR | `doc_intel_enabled` 时走百炼文档处理 API。图像可回退 VL，PDF 文档 OCR 失败时返回错误 |
 | VLM | `qwen-vl-max`；输出经 `FormatExtractionText` 去 JSON 围栏与视觉噪声 |
 | 多图合并 | ≥2 张图时 `FinalizeIngestText`：要点表 + 分图详情；标题由 **LLM** 推断（见 [smart-import.md](smart-import.md)） |
 
