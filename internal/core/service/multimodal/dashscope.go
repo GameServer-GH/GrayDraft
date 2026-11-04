@@ -61,13 +61,17 @@ func (c *dashscopeClient) chat(ctx context.Context, model, prompt, mediaDataURL 
 	if mediaDataURL != "" {
 		if isVideo {
 			content = append([]visionPart{{
-				Type:     "video_url",
-				VideoURL: &struct{ URL string `json:"url"` }{URL: mediaDataURL},
+				Type: "video_url",
+				VideoURL: &struct {
+					URL string `json:"url"`
+				}{URL: mediaDataURL},
 			}}, content...)
 		} else {
 			content = append([]visionPart{{
-				Type:     "image_url",
-				ImageURL: &struct{ URL string `json:"url"` }{URL: mediaDataURL},
+				Type: "image_url",
+				ImageURL: &struct {
+					URL string `json:"url"`
+				}{URL: mediaDataURL},
 			}}, content...)
 		}
 	}
@@ -110,7 +114,10 @@ func (c *dashscopeClient) chat(ctx context.Context, model, prompt, mediaDataURL 
 
 func (c *dashscopeClient) chatCompletionsURL() string {
 	base := strings.TrimRight(c.baseURL, "/")
-	if strings.Contains(base, "ark.cn-beijing.volces.com") || strings.HasSuffix(base, "/api/v3") {
+	if strings.HasSuffix(base, "/chat/completions") {
+		return base
+	}
+	if strings.Contains(base, "ark.cn-beijing.volces.com") || strings.HasSuffix(base, "/api/v3") || strings.HasSuffix(base, "/v1") {
 		return base + "/chat/completions"
 	}
 	return base + "/v1/chat/completions"
@@ -122,4 +129,3 @@ func truncate(s string, n int) string {
 	}
 	return s[:n] + "..."
 }
-

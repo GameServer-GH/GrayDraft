@@ -67,3 +67,20 @@ func TestAgentHandlerCreatesQueuedRunAndEvent(t *testing.T) {
 		t.Fatalf("status=%d events=%d body=%s", rec.Code, len(store.events), rec.Body.String())
 	}
 }
+
+func TestAgentHandlerPersistsQuestionAndConfigSeparately(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	store := &agentStoreStub{}
+	router := gin.New()
+	router.POST("/api/v2/agent-runs", NewAgentHandler(store).WithLauncher(launcherStub{}).CreateRun)
+	req := httptest.NewRequest(http.MethodPost, "/api/v2/agent-runs", strings.NewReader(`{"agent_id":"guide","policy_version":"p1","idempotency_key":"structured","prompt":"第一行\n第二行","input_config":{"top_k":9,"chat_mode":"hybrid","workspace_context":"背景"}}`))
+	req.Header.Set("X-Tenant-ID", "t1")
+	req.Header.Set("X-Actor-ID", "u1")
+	req.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, req)
+	q, cfg := agent.DecodeRunInput(store.run.Prompt)
+	if response.Code != http.StatusAccepted || q != "第一行\n第二行" || cfg.TopK != 9 || cfg.WorkspaceContext != "背景" {
+		t.Fatalf("status=%d q=%q config=%+v", response.Code, q, cfg)
+	}
+}

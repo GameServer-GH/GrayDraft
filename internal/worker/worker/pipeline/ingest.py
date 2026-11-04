@@ -144,7 +144,8 @@ class IngestPipeline:
             })
 
         text, title = parse_content(req.content, req.mime_type, req.title)
-        text = strip_emojis(text)
+        # Pictograph ranges include scientific symbols. Preserve canonical body;
+        # presentation-only title cleanup must not rewrite source evidence.
         title = strip_emojis(title or req.title)
         title = title or req.title
         merged_ext_early = req.extensions if isinstance(req.extensions, dict) else {}

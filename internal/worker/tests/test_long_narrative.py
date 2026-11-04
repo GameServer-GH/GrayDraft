@@ -36,3 +36,10 @@ def test_prepare_for_ingest_single_short():
     parts = prepare_for_ingest("短说明足够一次入库。参数 p_ref 默认 0。", title="Tool", max_length=50000)
     assert len(parts) == 1
     assert parts[0].doc_group.startswith("dg_")
+
+
+def test_prepare_preserves_repeated_formula_symbols_and_pictographs():
+    source = "# Measurement\nformula = " + "ﬃ" * 35 + "\nSymbols: ☉ ⌖ 🧪\nThe original measurement must remain intact."
+    parts = prepare_for_ingest(source, title="Independent measurement")
+    assert len(parts) == 1
+    assert parts[0].content == source

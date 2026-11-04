@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -68,6 +69,9 @@ func (l *Launcher) Run(parent context.Context, run RunRecord, limits Limits) (Re
 	}
 	ctx, cancel := context.WithDeadline(parent, deadline)
 	defer cancel()
+	question, config := DecodeRunInput(run.Prompt)
+	run.UserQuestion, run.InputConfig = question, config
+	run.Prompt = []byte(question)
 	var tools ToolExecutor
 	if l.Tools != nil {
 		tools = l.Tools(run)
@@ -91,13 +95,21 @@ func (l *Launcher) Run(parent context.Context, run RunRecord, limits Limits) (Re
 		}
 	}
 	if l.VectorMemory != nil && l.Embedder != nil {
-		if vec, err := l.Embedder(run).EmbedQuery(ctx, string(run.Prompt)); err == nil {
+		if vec, err := l.Embedder(run).EmbedQuery(ctx, question); err == nil {
 			if memories, err := l.VectorMemory(run).SearchSimilar(ctx, run.TenantID, run.ActorID, vec, 8); err == nil {
 				semantic = memories
 			}
 		}
 	}
 	var seed []Observation
+	if string(run.Prompt) != question {
+		body, _ := json.Marshal(string(run.Prompt))
+		seed = append(seed, Observation{Name: "memory.history", Output: body})
+	}
+	if config.WorkspaceContext != "" {
+		body, _ := json.Marshal(config.WorkspaceContext)
+		seed = append(seed, Observation{Name: "workspace.context", Output: body})
+	}
 	if memories := FuseMemoryResults(relational, semantic, 8); len(memories) > 0 {
 		var b strings.Builder
 		for _, m := range memories {
@@ -111,7 +123,7 @@ func (l *Launcher) Run(parent context.Context, run RunRecord, limits Limits) (Re
 		seed = append(seed, Observation{
 			CallID: "long_memory",
 			Name:   "memory.long_term",
-			Output: []byte(b.String()),
+			Output: contextObservationJSON(b.String()),
 		})
 	}
 	result, err := ExecuteRunWith(ctx, l.Store, run, l.Planner, tools, limits, l.Streamer, l.Validator, seed...)
@@ -126,3 +138,5 @@ func (l *Launcher) Run(parent context.Context, run RunRecord, limits Limits) (Re
 	}
 	return result, err
 }
+
+func contextObservationJSON(value string) []byte { b, _ := json.Marshal(value); return b }

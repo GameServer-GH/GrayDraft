@@ -82,9 +82,10 @@ type Decision struct {
 }
 
 type Observation struct {
-	CallID, Name string
-	Output       json.RawMessage
-	Err          error
+	AnswerPrepared bool `json:"-"`
+	CallID, Name   string
+	Output         json.RawMessage
+	Err            error
 }
 
 type Event struct {
@@ -107,6 +108,7 @@ type Event struct {
 }
 
 type PlannerInput struct {
+	TopK          int
 	Prompt        []byte
 	Step          int
 	Observations  []Observation
@@ -133,6 +135,8 @@ type ValidationResult struct {
 }
 
 type Request struct {
+	UserQuestion  string
+	InputConfig   InputConfig
 	Prompt        []byte
 	Limits        Limits
 	AuthorizedKBs []string
@@ -152,16 +156,18 @@ type Result struct {
 }
 
 type RunRecord struct {
-	RunID          string    `json:"run_id"`
-	TenantID       string    `json:"tenant_id"`
-	ActorID        string    `json:"actor_id"`
-	AgentID        string    `json:"agent_id"`
-	ConversationID string    `json:"conversation_id,omitempty"`
-	Status         State     `json:"status"`
-	PolicyVersion  string    `json:"policy_version"`
-	Deadline       time.Time `json:"deadline_at"`
-	IdempotencyKey string    `json:"-"`
-	TraceID        string    `json:"trace_id,omitempty"`
+	UserQuestion   string      `json:"user_question,omitempty"`
+	InputConfig    InputConfig `json:"input_config,omitempty"`
+	RunID          string      `json:"run_id"`
+	TenantID       string      `json:"tenant_id"`
+	ActorID        string      `json:"actor_id"`
+	AgentID        string      `json:"agent_id"`
+	ConversationID string      `json:"conversation_id,omitempty"`
+	Status         State       `json:"status"`
+	PolicyVersion  string      `json:"policy_version"`
+	Deadline       time.Time   `json:"deadline_at"`
+	IdempotencyKey string      `json:"-"`
+	TraceID        string      `json:"trace_id,omitempty"`
 	// Prompt/AuthorizedKBs must serialize for JetStream workers (QueueLauncher).
 	Prompt        []byte   `json:"prompt,omitempty"`
 	AuthorizedKBs []string `json:"authorized_kbs,omitempty"`
@@ -208,6 +214,9 @@ func (r *Runtime) emit(ctx context.Context, ev Event, seq *int64) error {
 }
 
 func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
+	if req.UserQuestion != "" {
+		req.Prompt = []byte(literalQuestionPrefix + req.UserQuestion)
+	}
 	if len(req.Prompt) == 0 {
 		return Result{State: StateFailed}, errors.New("agent: prompt is empty")
 	}
@@ -259,7 +268,7 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 			})
 		}
 		decision, err := r.planner.Decide(decideCtx, PlannerInput{
-			Prompt: req.Prompt, Step: out.Steps, Observations: out.Observations, AuthorizedKBs: req.AuthorizedKBs,
+			Prompt: req.Prompt, TopK: req.InputConfig.TopK, Step: out.Steps, Observations: out.Observations, AuthorizedKBs: req.AuthorizedKBs,
 		})
 		if err != nil && hasUsefulEvidence(out.Observations) && (errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)) {
 			decision = Decision{Decision: DecisionFinal, ThoughtNote: "已有证据，整理回答"}
@@ -302,6 +311,12 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 						catalogOnly = true
 					}
 				}
+				answerObs, packetSHA := prepareAnswerEvidence(req.Prompt, out.Observations)
+				if !catalogOnly {
+					if err := r.emit(ctx, Event{Type: "answer.evidence.prepared", State: StateFinalizing, Message: answerEvidenceAudit(answerObs, packetSHA), StepID: stepID}, &seq); err != nil {
+						return failFinal(err)
+					}
+				}
 				// The model produces a candidate only. No answer.delta may be
 				// emitted until transport completion and the answer gate pass.
 				if !catalogOnly && r.streamer != nil {
@@ -320,7 +335,7 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 						})
 					}
 					answerCtx, answerCancel := context.WithTimeout(streamCtx, answerStreamTimeout)
-					answer, streamErr := StreamFinalAnswer(answerCtx, r.streamer, req.Prompt, out.Observations, out.Answer, nil)
+					answer, streamErr := StreamFinalAnswer(answerCtx, r.streamer, req.Prompt, answerObs, out.Answer, nil)
 					answerCancel()
 					if streamErr != nil {
 						return failFinal(&AnswerGenerationError{Cause: streamErr})
@@ -328,9 +343,15 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 					out.Answer = answer
 				}
 				if r.validator != nil && !catalogOnly {
-					vr, err := r.validator.Validate(ctx, out.Answer, out.Observations)
+					vr, err := r.validator.Validate(ctx, out.Answer, answerObs)
 					if err != nil {
 						return failFinal(err)
+					}
+					if vr.Gate.EvidencePacketSHA256 != "" && vr.Gate.EvidencePacketSHA256 != packetSHA {
+						return failFinal(errors.New("agent: validator evidence packet mismatch"))
+					}
+					if vr.Gate.EvidencePacketSHA256 == "" {
+						vr.Gate.EvidencePacketSHA256 = packetSHA
 					}
 					if vr.Rejected {
 						if err := r.emit(ctx, Event{Type: "answer.rejected", State: StateFinalizing, Message: string(GateDetailJSON(vr.Gate)), StepID: stepID}, &seq); err != nil {

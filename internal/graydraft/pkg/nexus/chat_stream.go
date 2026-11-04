@@ -34,13 +34,14 @@ type ChatStreamRequest struct {
 }
 
 type createAgentRunRequest struct {
-	AgentID         string `json:"agent_id"`
-	ConversationID  string `json:"conversation_id,omitempty"`
-	PolicyVersion   string `json:"policy_version"`
-	IdempotencyKey  string `json:"idempotency_key"`
-	DeadlineSeconds int    `json:"deadline_seconds,omitempty"`
-	Prompt          string `json:"prompt"`
-	ThinkingMode    *bool  `json:"thinking_mode,omitempty"`
+	AgentID         string         `json:"agent_id"`
+	ConversationID  string         `json:"conversation_id,omitempty"`
+	PolicyVersion   string         `json:"policy_version"`
+	IdempotencyKey  string         `json:"idempotency_key"`
+	DeadlineSeconds int            `json:"deadline_seconds,omitempty"`
+	Prompt          string         `json:"prompt"`
+	ThinkingMode    *bool          `json:"thinking_mode,omitempty"`
+	InputConfig     map[string]any `json:"input_config,omitempty"`
 }
 
 type createAgentRunResponse struct {
@@ -196,6 +197,7 @@ func (c *Client) createAgentRun(ctx context.Context, req ChatStreamRequest) (str
 		IdempotencyKey:  newIdempotencyKey(req.SessionID),
 		DeadlineSeconds: 90,
 		Prompt:          buildAgentRunPrompt(req),
+		InputConfig:     map[string]any{"top_k": req.TopK, "chat_mode": req.ChatMode, "workspace_context": req.WorkspaceContext},
 		ThinkingMode:    req.ThinkingMode,
 	})
 	if err != nil {
@@ -231,20 +233,7 @@ func (c *Client) createAgentRun(ctx context.Context, req ChatStreamRequest) (str
 }
 
 func buildAgentRunPrompt(req ChatStreamRequest) string {
-	var b strings.Builder
-	if req.TopK > 0 {
-		fmt.Fprintf(&b, "top_k=%d\n", req.TopK)
-	}
-	if mode := strings.TrimSpace(req.ChatMode); mode != "" {
-		fmt.Fprintf(&b, "chat_mode=%s\n", mode)
-	}
-	if wc := strings.TrimSpace(req.WorkspaceContext); wc != "" {
-		b.WriteString("workspace_context:\n")
-		b.WriteString(wc)
-		b.WriteString("\n")
-	}
-	b.WriteString(req.Query)
-	return b.String()
+	return req.Query
 }
 
 func (c *Client) streamAgentRunEvents(ctx context.Context, req ChatStreamRequest, runID string, emit func(legacySSEEvent) error) error {

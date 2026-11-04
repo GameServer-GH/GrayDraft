@@ -107,11 +107,18 @@ func ExecuteRunWith(ctx context.Context, store RunStore, run RunRecord, planner 
 	if validator == nil {
 		validator = GroundedAnswerValidator{RequiredCitations: 1}
 	}
+	if run.UserQuestion == "" {
+		question, config := DecodeRunInput(run.Prompt)
+		run.UserQuestion = question
+		run.InputConfig = config
+	}
 	rt := NewRuntime(planner, tools, persistedSink{store: store, run: run}).
 		WithAnswerValidator(validator).
 		WithAnswerStreamer(streamer)
 	result, err := rt.Run(ctx, Request{
 		Prompt:           run.Prompt,
+		UserQuestion:     run.UserQuestion,
+		InputConfig:      run.InputConfig,
 		Limits:           limits,
 		AuthorizedKBs:    run.AuthorizedKBs,
 		DisableThinking:  run.DisableThinking,

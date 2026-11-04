@@ -17,10 +17,10 @@ import (
 )
 
 const (
-	extImportLLMUnified    = "import_llm_unified"
-	extImportLLMUnifiedOK       = "import_llm_unified_ok"
-	extImportLLMUnifiedFailCnt  = "import_llm_unified_fail_count"
-	extImportLLMBodyHash        = "import_llm_body_hash"
+	extImportLLMUnified        = "import_llm_unified"
+	extImportLLMUnifiedOK      = "import_llm_unified_ok"
+	extImportLLMUnifiedFailCnt = "import_llm_unified_fail_count"
+	extImportLLMBodyHash       = "import_llm_body_hash"
 )
 
 // UnifiedImportParams is input for the single combined Fast LLM call per import.
@@ -125,7 +125,7 @@ func RunUnifiedImportLLM(p UnifiedImportParams, complete func(string) (string, e
 【任务 1 标题】8–48 字；禁止空泛汇总标题；须符合工作区领域实体。
 【任务 2 语义 4D】domain, entities(≤8), scene, style；entities 须为正文或工作区中出现的专名。
 另输出 key_phrases：最多 3 个正文专有检索词（接口名、术语等），勿用泛词。
-` + tax.GeneratePromptBlock() + `
+`+tax.GeneratePromptBlock()+`
 【任务 3 global_summary】80–200 字。
 【任务 4 结构】优先 structured_markdown；否则 outline。
 %s
@@ -475,22 +475,8 @@ func applyUnifiedTitleToRaw(req *model.SmartImportRequest, title string) {
 		req.Extensions = model.Extensions{}
 	}
 	req.Extensions["import_title_hint"] = title
-	raw := req.RawText
-	if md := multimodal.ExtractMarkdownH1(raw); md != "" {
-		if strings.TrimSpace(md) == title {
-			return
-		}
-		lines := strings.Split(raw, "\n")
-		for i, line := range lines {
-			trim := strings.TrimSpace(line)
-			if strings.HasPrefix(trim, "# ") {
-				lines[i] = "# " + title
-				req.RawText = strings.TrimSpace(strings.Join(lines, "\n"))
-				return
-			}
-		}
-	}
-	req.RawText = strings.TrimSpace("# " + title + "\n\n" + raw)
+	// Title is metadata; keep the source revision and its line coordinates immutable.
+
 }
 
 // repairCoreFieldsFromLLMOutput attempts to salvage core fields from malformed JSON.
@@ -516,4 +502,3 @@ func repairCoreFieldsFromLLMOutput(out string) coreFieldRepair {
 	}
 	return r
 }
-

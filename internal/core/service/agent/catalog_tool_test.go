@@ -13,6 +13,19 @@ type stubCatalog struct {
 	docs []model.DocSummarySnippet
 }
 
+func TestCatalogQuestionDoesNotCaptureEntityAttributes(t *testing.T) {
+	for _, q := range []string{"未导入的 unseen-cli 有哪些子命令", "工具 A101 有哪些参数", "请列出模型的训练精度", "论文里有哪些实验参数"} {
+		if isCatalogListQuestion(q) {
+			t.Fatalf("content question captured as catalog: %q", q)
+		}
+	}
+	for _, q := range []string{"工作区里有哪些论文", "这个工作区收录了哪些论文", "列出所有文档", "资料目录"} {
+		if !isCatalogListQuestion(q) {
+			t.Fatalf("missed explicit catalog question: %q", q)
+		}
+	}
+}
+
 func (s stubCatalog) ListRecentDocSummaries(context.Context, string, int) ([]model.DocSummarySnippet, error) {
 	return s.docs, nil
 }
@@ -94,8 +107,8 @@ func TestCatalogListQuestionIsNotContentAsk(t *testing.T) {
 	}
 }
 
-func TestFirstHopFromIntentHybridUsesCatalog(t *testing.T) {
-	if FirstHopFromIntent("hybrid") != "knowledge.catalog" {
+func TestFirstHopFromIntentHybridUsesContentSearch(t *testing.T) {
+	if FirstHopFromIntent("hybrid") != "knowledge.semantic" {
 		t.Fatal(FirstHopFromIntent("hybrid"))
 	}
 }

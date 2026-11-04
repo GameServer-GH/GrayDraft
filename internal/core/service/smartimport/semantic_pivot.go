@@ -28,13 +28,13 @@ type VirtualOutlineSection struct {
 }
 
 type semanticPivotLLMResponse struct {
-	Domain              string                  `json:"domain"`
-	Entities            []string                `json:"entities"`
-	Scene               string                  `json:"scene"`
-	Style               string                  `json:"style"`
-	GlobalSummary       string                  `json:"global_summary"`
-	StructuredMarkdown  string                  `json:"structured_markdown"`
-	Outline             []VirtualOutlineSection `json:"outline"`
+	Domain             string                  `json:"domain"`
+	Entities           []string                `json:"entities"`
+	Scene              string                  `json:"scene"`
+	Style              string                  `json:"style"`
+	GlobalSummary      string                  `json:"global_summary"`
+	StructuredMarkdown string                  `json:"structured_markdown"`
+	Outline            []VirtualOutlineSection `json:"outline"`
 }
 
 // SemanticPivotResult is the semantic restructuring output for one import body.
@@ -162,18 +162,10 @@ func ApplySemanticPivot(req *model.SmartImportRequest, pivot SemanticPivotResult
 	if pivot.GlobalSummary != "" {
 		req.Extensions["global_summary"] = pivot.GlobalSummary
 	}
-	body := strings.TrimSpace(req.RawText)
-	if md := strings.TrimSpace(pivot.StructuredMarkdown); len([]rune(md)) >= 24 {
-		req.RawText = md
-		req.Extensions["semantic_pivot"] = "structured_markdown"
-	} else if len(pivot.Outline) > 0 && body != "" {
-		req.RawText = injectVirtualOutline(body, pivot.Outline)
-		req.Extensions["semantic_pivot"] = "virtual_outline"
-	}
-	if _, ok := req.Extensions["semantic_pivot"]; ok {
-		if len(pivot.Outline) > 0 {
-			req.Extensions["virtual_outline"] = pivot.Outline
-		}
+	// Derived summaries must never replace the source or invalidate its coordinates.
+	req.Extensions["semantic_pivot"] = "metadata_only"
+	if len(pivot.Outline) > 0 {
+		req.Extensions["virtual_outline"] = pivot.Outline
 	}
 	applyIngestChunkStrategyAfterPivot(req)
 }

@@ -2,6 +2,8 @@ package smartimport
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"strings"
 
 	"github.com/graydraft/core/model"
@@ -29,6 +31,9 @@ func (s *Service) runUnifiedImportLLM(ctx context.Context, req *model.SmartImpor
 		return
 	}
 
+	sourceHash := sha256.Sum256([]byte(content))
+	req.Extensions["source_revision_sha256"] = hex.EncodeToString(sourceHash[:])
+	req.Extensions["source_line_count"] = len(strings.Split(content, "\n"))
 	sk := ScanSkeleton(content)
 
 	rulesKB, rulesConf, rulesReason := ResolveKBType(req.HintKBType)

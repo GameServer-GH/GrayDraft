@@ -137,7 +137,8 @@ func generateOverviewGroup(ctx context.Context, streamer TokenStreamer, prompt [
 型号和版本按证据原文保留。names_to_preserve 中的名称必须在解释事实关系的句子中出现，不能只列名称。
 区分研究对象、对比对象、替代关系和版本继承，不要把它们当成同一个模型。只能写证据支持的关系。
 优先概括研究方法、训练工作或主要用途，不要花篇幅罗列全部评测指标。
-不要照抄英文，不要添加资料以外的结论。`
+不要照抄英文，不要添加资料以外的结论。
+truncated表示正文经过截取，不得将截取范围外的信息说成整篇不存在。`
 	if len(names) > 0 {
 		system += "\n本篇必须保留的完整型号：" + strings.Join(names, "、") + "。必须逐字使用这些完整名称表达原文中的关系；不能仅用参数量、简称或泛称代替完整型号。"
 	}

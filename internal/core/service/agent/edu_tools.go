@@ -219,7 +219,7 @@ func (t EducationTools) search(ctx context.Context, name string, raw json.RawMes
 	hits := make([]EvidenceHit, 0, len(resp.Chunks))
 	for _, c := range resp.Chunks {
 		hits = append(hits, EvidenceHit{
-			ChunkID: c.ID, DocID: c.DocID, Title: c.DocTitle, Content: c.Content, MediaURL: chunkMediaURL(c),
+			SourceRevision: chunkSourceRevision(c), ChunkID: c.ID, DocID: c.DocID, Title: c.DocTitle, Content: c.Content, MediaURL: chunkMediaURL(c),
 			Score: c.Score, RerankScore: c.RerankScore, Source: c.Source, RecallLane: normalizeRecallLane(c.Source),
 		})
 	}
@@ -263,7 +263,7 @@ func marshalHits(tool, query, kb string, chunks []model.Chunk) (json.RawMessage,
 	hits := make([]EvidenceHit, 0, len(chunks))
 	for _, c := range chunks {
 		hits = append(hits, EvidenceHit{
-			ChunkID: c.ID, DocID: c.DocID, Title: c.DocTitle, Content: c.Content, MediaURL: chunkMediaURL(c),
+			SourceRevision: chunkSourceRevision(c), ChunkID: c.ID, DocID: c.DocID, Title: c.DocTitle, Content: c.Content, MediaURL: chunkMediaURL(c),
 			Score: c.Score, Source: c.Source, RecallLane: normalizeRecallLane(c.Source),
 		})
 	}
@@ -313,4 +313,9 @@ func mediaURLFromExtensions(ext model.Extensions) string {
 	}
 	u, _ := first["media_url"].(string)
 	return strings.TrimSpace(u)
+}
+
+func chunkSourceRevision(c model.Chunk) string {
+	v, _ := c.DocExtensions["source_revision_sha256"].(string)
+	return v
 }

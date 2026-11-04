@@ -4,6 +4,7 @@
 package smartimport
 
 import (
+	"regexp"
 	"strings"
 )
 
@@ -21,15 +22,15 @@ const (
 
 // ConfidenceCheckResult holds results for all five quality checks.
 type ConfidenceCheckResult struct {
-	Label          ConfidenceLabel `json:"label"`
-	StructureOk    bool            `json:"structure_ok"`
-	EntityOk       bool            `json:"entity_ok"`
-	NoiseOk        bool            `json:"noise_ok"`
-	TitleOk        bool            `json:"title_ok"`
-	EntityTraceOk  bool            `json:"entity_trace_ok"`
-	ShortExempt    bool            `json:"short_exempt"`
-	FailedChecks   []string        `json:"failed_checks,omitempty"`
-	Explain        string          `json:"explain"`
+	Label         ConfidenceLabel `json:"label"`
+	StructureOk   bool            `json:"structure_ok"`
+	EntityOk      bool            `json:"entity_ok"`
+	NoiseOk       bool            `json:"noise_ok"`
+	TitleOk       bool            `json:"title_ok"`
+	EntityTraceOk bool            `json:"entity_trace_ok"`
+	ShortExempt   bool            `json:"short_exempt"`
+	FailedChecks  []string        `json:"failed_checks,omitempty"`
+	Explain       string          `json:"explain"`
 }
 
 // EvaluateConfidence runs all five rule-based checks and returns a label.
@@ -227,7 +228,27 @@ func minInt3(a, b, c int) int {
 
 // NgramRepeatRate computes the n-gram repeat rate as a signal for OCR error loops.
 // Uses bigrams; rate above 0.5 suggests repetitive garbage text.
+var latinNoiseWords = regexp.MustCompile(`[A-Za-z]+(?:['-][A-Za-z]+)*`)
+
 func NgramRepeatRate(content string) float64 {
+	words := latinNoiseWords.FindAllString(strings.ToLower(content), -1)
+	letters := 0
+	for _, w := range words {
+		letters += len(w)
+	}
+	if len(words) >= 20 && letters*2 > len([]rune(content)) {
+		counts := map[string]int{}
+		repeated := 0
+		for i := 0; i+2 < len(words); i++ {
+			key := strings.Join(words[i:i+3], " ")
+			if counts[key] > 0 {
+				repeated++
+			}
+			counts[key]++
+		}
+		return float64(repeated) / float64(len(words)-2)
+	}
+
 	runes := []rune(strings.TrimSpace(content))
 	if len(runes) < 4 {
 		return 0

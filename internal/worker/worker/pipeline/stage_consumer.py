@@ -12,6 +12,7 @@ import asyncio
 import json
 import logging
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from nats.aio.client import Client as NATS
@@ -150,15 +151,44 @@ class StageConsumer:
                 if msg.metadata:
                     delivered = msg.metadata.num_delivered
                 try:
-                    await handler(msg.data)
+                    await self._execute_stage(handler, msg.data, stage=stage)
                     await msg.ack()
-                except Exception:
+                except Exception as exc:
                     logger.exception("stage handler failed stage=%s", stage)
-                    if delivered >= self._settings.nats_js_max_deliver:
-                        await self._publish_dlq(msg.data, stage=stage, reason="max_deliver_exceeded")
-                        await msg.ack()
-                    else:
-                        await msg.nak(delay=min(30 * delivered, 300))
+                    try:
+                        await self._handle_failure(msg, stage, exc, delivered)
+                    except Exception:
+                        logger.exception("stage failure persistence or DLQ failed stage=%s", stage)
+                        await msg.nak(delay=30)
+
+    async def _execute_stage(self, handler, data: bytes, *, stage: str | None = None) -> None:
+        payload = json.loads(data)
+        if stage == STAGE_ACCEPTED and payload.get("task_id") and await self._repo.is_ugc_task_completed(payload["task_id"]):
+            return
+        deadline = payload.get("deadline_at")
+        if not deadline:
+            await handler(data)
+            return
+        remaining = (datetime.fromisoformat(deadline.replace("Z", "+00:00")) - datetime.now(timezone.utc)).total_seconds()
+        if remaining <= 0:
+            raise TimeoutError("ingest deadline exceeded")
+        await asyncio.wait_for(handler(data), timeout=remaining)
+
+    async def _handle_failure(self, msg, stage: str, exc: Exception, delivered: int) -> None:
+        payload = json.loads(msg.data)
+        deadline = payload.get("deadline_at")
+        expired = False
+        if deadline:
+            expired = datetime.fromisoformat(deadline.replace("Z", "+00:00")) <= datetime.now(timezone.utc)
+        permanent = isinstance(exc, ValueError) and str(exc).startswith("quality_gate_rejected:")
+        if permanent or expired or delivered >= self._settings.nats_js_max_deliver:
+            reason = "quality_gate_rejected" if permanent else ("deadline_exceeded" if expired else "max_deliver_exceeded")
+            if stage == STAGE_ACCEPTED and payload.get("task_id"):
+                await self._repo.update_ugc_task_failed(task_id=uuid.UUID(payload["task_id"]), error_message=f"{reason}: {exc}")
+            await self._publish_dlq(msg.data, stage=stage, reason=reason)
+            await msg.ack()
+        else:
+            await msg.nak(delay=min(30 * delivered, 300))
 
     async def _handle_accepted(self, data: bytes) -> None:
         payload = json.loads(data.decode("utf-8"))
@@ -312,3 +342,4 @@ class StageConsumer:
             await self._js.publish(subject, data, headers={"X-DLQ-Reason": reason})
         except Exception:
             logger.exception("stage DLQ publish failed stage=%s", stage)
+            raise

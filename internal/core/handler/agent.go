@@ -62,15 +62,16 @@ func (h *AgentHandler) WithBudget(g *agent.GlobalBudgetGuard) *AgentHandler {
 }
 
 type createAgentRunRequest struct {
-	AgentID         string   `json:"agent_id" binding:"required"`
-	ConversationID  string   `json:"conversation_id,omitempty"`
-	PolicyVersion   string   `json:"policy_version" binding:"required"`
-	IdempotencyKey  string   `json:"idempotency_key" binding:"required"`
-	DeadlineSeconds int      `json:"deadline_seconds,omitempty"`
-	Prompt          string   `json:"prompt" binding:"required"`
-	ThinkingMode    *bool    `json:"thinking_mode,omitempty"`
-	Collaborative   bool     `json:"collaborative,omitempty"`
-	SubAgents       []string `json:"sub_agents,omitempty"`
+	AgentID         string             `json:"agent_id" binding:"required"`
+	ConversationID  string             `json:"conversation_id,omitempty"`
+	PolicyVersion   string             `json:"policy_version" binding:"required"`
+	IdempotencyKey  string             `json:"idempotency_key" binding:"required"`
+	DeadlineSeconds int                `json:"deadline_seconds,omitempty"`
+	Prompt          string             `json:"prompt" binding:"required"`
+	InputConfig     *agent.InputConfig `json:"input_config,omitempty"`
+	ThinkingMode    *bool              `json:"thinking_mode,omitempty"`
+	Collaborative   bool               `json:"collaborative,omitempty"`
+	SubAgents       []string           `json:"sub_agents,omitempty"`
 }
 
 func (h *AgentHandler) tenant(c *gin.Context) (string, string, bool) {
@@ -128,12 +129,15 @@ func (h *AgentHandler) CreateRun(c *gin.Context) {
 	if req.DeadlineSeconds > 0 && req.DeadlineSeconds < 300 {
 		deadline = time.Now().Add(time.Duration(req.DeadlineSeconds) * time.Second)
 	}
-	prompt := req.Prompt
+	prompt := []byte(req.Prompt)
+	if req.InputConfig != nil {
+		prompt = agent.EncodeRunInput(req.Prompt, *req.InputConfig)
+	}
 	req.PolicyVersion = agent.EduPolicyVersion
 	run, err := h.runs.CreateRun(c.Request.Context(), agent.RunRecord{
 		RunID: uuid.NewString(), TenantID: tenant, ActorID: actor, AgentID: req.AgentID,
 		ConversationID: agent.NormalizeConversationID(req.ConversationID), PolicyVersion: req.PolicyVersion, Deadline: deadline,
-		IdempotencyKey: req.IdempotencyKey, TraceID: traceID, Prompt: []byte(prompt), AuthorizedKBs: authorizedKBs(c),
+		IdempotencyKey: req.IdempotencyKey, TraceID: traceID, Prompt: prompt, AuthorizedKBs: authorizedKBs(c),
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

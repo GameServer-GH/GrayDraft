@@ -140,7 +140,37 @@ func TestFirstHopFromIntent(t *testing.T) {
 	if FirstHopFromIntent("concept") != "knowledge.semantic" {
 		t.Fatal("concept")
 	}
-	if FirstHopFromIntent("hybrid") != "knowledge.catalog" {
+	if FirstHopFromIntent("hybrid") != "knowledge.semantic" {
 		t.Fatal("hybrid")
+	}
+}
+
+func TestScientificIdentifiersPreferContentRetrieval(t *testing.T) {
+	if !PrefersLexical("GW150914 的两个初始质量分别是多少？") {
+		t.Fatal("scientific identifier missed")
+	}
+	if FirstHopFromIntent("hybrid") == "knowledge.catalog" {
+		t.Fatal("hybrid facts routed to directory")
+	}
+}
+
+func TestFollowUpRetrievesMissingNamedSource(t *testing.T) {
+	raw, _ := json.Marshal(map[string]any{"hits": []EvidenceHit{{ChunkID: "a", Title: "source A101", Content: "measured data"}}})
+	d, ok := followUpDecision(PlannerInput{Step: 2, Prompt: []byte("比较 A101 与 B202 的观测对象"), AuthorizedKBs: []string{"kb"}, Observations: []Observation{{Name: "knowledge.lexical", Output: raw}}})
+	if !ok || len(d.ToolCalls) != 1 || d.ToolCalls[0].Name != "knowledge.lexical" {
+		t.Fatalf("%+v", d)
+	}
+	var args map[string]any
+	json.Unmarshal(d.ToolCalls[0].Arguments, &args)
+	if args["query"] != "B202" || args["kb_type"] != "kb" {
+		t.Fatal(args)
+	}
+}
+
+func TestIdentifierQueryAddsBoundedSemanticEvidence(t *testing.T) {
+	raw, _ := json.Marshal(map[string]any{"hits": []EvidenceHit{{ChunkID: "a", Title: "source A101", Content: "measurement introduction"}}})
+	d, ok := followUpDecision(PlannerInput{Step: 2, Prompt: []byte("A101 的质量误差区间是多少？"), AuthorizedKBs: []string{"kb"}, Observations: []Observation{{Name: "knowledge.lexical", Output: raw}}})
+	if !ok || len(d.ToolCalls) != 2 || d.ToolCalls[0].Name != "knowledge.read" || d.ToolCalls[1].Name != "knowledge.semantic" {
+		t.Fatal(d)
 	}
 }

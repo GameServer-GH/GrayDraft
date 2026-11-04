@@ -10,6 +10,9 @@ const defaultNoAnswerThreshold = 0.62
 
 // AnswerGateResult is the composite refusal decision for a final answer.
 type AnswerGateResult struct {
+	ClaimReview              *ClaimReview `json:"claim_review,omitempty"`
+	EvidencePacketSHA256     string       `json:"evidence_packet_sha256,omitempty"`
+	NumericConsistencyIssues []string     `json:"numeric_consistency_issues,omitempty"`
 	GroundednessResult
 	ClaimCoverage     float64               `json:"claim_coverage"`
 	AnswerConfidence  float64               `json:"answer_confidence"`

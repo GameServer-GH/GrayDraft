@@ -209,10 +209,20 @@ func isCatalogListQuestion(q string) bool {
 	if q == "" {
 		return false
 	}
-	for _, s := range []string{"有哪些", "有什么文档", "哪些论文", "哪些文档", "列出", "目录"} {
-		if strings.Contains(q, s) {
+	// Listing an entity's attributes or commands is a content question. Only
+	// explicit document/material enumeration may take the catalog shortcut.
+	for _, noun := range []string{"论文", "文档", "资料", "材料", "文章"} {
+		for _, prefix := range []string{"哪些", "有什么", "列出所有", "列出全部"} {
+			if strings.Contains(q, prefix+noun) {
+				return true
+			}
+		}
+		if strings.Contains(q, noun+"目录") || strings.Contains(q, noun+"列表") {
 			return true
 		}
+	}
+	if q == "目录" {
+		return true
 	}
 	return false
 }

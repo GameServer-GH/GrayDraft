@@ -1,0 +1,30 @@
+package main
+
+import (
+ "context"
+ "encoding/json"
+ "os"
+ "github.com/graydraft/core/service/agent"
+)
+
+type input struct {
+ Key string `json:"key"`
+ Question string `json:"question"`
+ Candidate string `json:"candidate"`
+ Hits []agent.EvidenceHit `json:"hits"`
+}
+func main(){
+ var cases []input
+ if err:=json.NewDecoder(os.Stdin).Decode(&cases);err!=nil {panic(err)}
+ result:=map[string]*agent.ClaimReview{}
+ validator:=agent.GroundedAnswerValidator{RequiredCitations:1}
+ for _,c:=range cases {
+  body,err:=json.Marshal(map[string]any{"query":c.Question,"hits":c.Hits});if err!=nil {panic(err)}
+  vr,err:=validator.Validate(context.Background(),c.Candidate,[]agent.Observation{{Name:"knowledge.read",Output:body}})
+  if err!=nil {panic(err)}
+  // Role review only. Do not treat the flattened observation serialization
+  // as a byte-for-byte replay of the original runtime packet or gate score.
+  result[c.Key]=vr.Gate.ClaimReview
+ }
+ if err:=json.NewEncoder(os.Stdout).Encode(result);err!=nil {panic(err)}
+}

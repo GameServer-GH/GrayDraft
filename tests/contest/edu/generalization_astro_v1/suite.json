@@ -1,0 +1,262 @@
+{
+  "suite_id": "generalization_astro_v1",
+  "created_before_first_answer": true,
+  "domain": "observational astrophysics; not LLM/model research",
+  "protocol": "one attempt; unchanged questions; no model or application changes; skip caches; human source-based grading primary",
+  "grading": {
+    "pass": "所有必需要点正确、关键单位/方向/条件保留，无矛盾与编造",
+    "partial": "部分有据但缺要点/单位/条件",
+    "fail": "拒答可答题、关键事实错误、编造或泄漏",
+    "blocked": "入库缺失导致不可答，单独统计，不能据此推出成文能力失败",
+    "transport_error": "没有成功完成或流内错误",
+    "reject": "只有明确有据拒绝且无泄漏才通过；空库拒答不计作泛化成功"
+  },
+  "cases": [
+    {
+      "id": "astro-list",
+      "expect": "answer",
+      "question": "这个工作区收录了哪些论文？请按论文列出，不要把页或分段当成不同论文。",
+      "required_points": [
+        "恰当归并三篇：GW150914 双黑洞并合；GW170817 双中子星旋近；M87 EHT 黑洞阴影；不编造第四篇"
+      ],
+      "evidence": "三篇PDF标题页"
+    },
+    {
+      "id": "astro-theme",
+      "expect": "answer",
+      "question": "这三篇论文各自研究什么对象、用什么观测手段、主要得到什么结果？请逐篇概括。",
+      "required_points": [
+        "覆盖三篇并区分恒星级双黑洞、双中子星与M87超大质量黑洞",
+        "区分引力波激光干涉仪与EHT射电VLBI",
+        "每篇至少一个有原文支持的主要结果，不串篇"
+      ],
+      "evidence": "三篇PDF第1页摘要"
+    },
+    {
+      "id": "gw-time",
+      "expect": "answer",
+      "question": "GW150914 是在什么日期和 UTC 时间、由哪些实际探测器观测到的？",
+      "required_points": [
+        "2015-09-14 09:50:45 UTC",
+        "两台LIGO探测器Hanford与Livingston；不能因为作者有Virgo就声称Virgo也实际探测到该事件"
+      ],
+      "evidence": "1602.03837v1 p1-p2"
+    },
+    {
+      "id": "gw-frequency",
+      "expect": "answer",
+      "question": "GW150914 信号的频率扫过范围和峰值应变分别是多少？单位和数量级是什么？",
+      "required_points": [
+        "35至250 Hz",
+        "峰值引力波应变1.0×10^-21；应变无量纲"
+      ],
+      "evidence": "1602.03837v1 p1摘要"
+    },
+    {
+      "id": "gw-masses",
+      "expect": "answer",
+      "question": "GW150914 的两个初始黑洞、最终黑洞和辐射能量分别是多少？请保留不确定区间及这些区间的可信水平。",
+      "required_points": [
+        "初始36(+5/-4)、29(+4/-4)太阳质量",
+        "最终62(+4/-4)太阳质量",
+        "辐射能3.0±0.5太阳质量乘c²",
+        "90%可信区间；不能把能量单位写成普通质量或将90%当5.1σ"
+      ],
+      "evidence": "1602.03837v1 p1摘要"
+    },
+    {
+      "id": "gw-significance",
+      "expect": "answer",
+      "question": "GW150914 的匹配滤波信噪比、误警率上限和显著性分别是多少？",
+      "required_points": [
+        "信噪比24",
+        "误警率小于每203000年一次",
+        "显著性大于5.1σ，不能把年数写成观测时长"
+      ],
+      "evidence": "1602.03837v1 p1摘要"
+    },
+    {
+      "id": "bns-time",
+      "expect": "answer",
+      "question": "GW170817 在什么日期和 UTC 时间被观测到？探测器网络是什么？",
+      "required_points": [
+        "2017-08-17 12:41:04 UTC",
+        "Advanced LIGO和Advanced Virgo网络"
+      ],
+      "evidence": "1710.05832v1 p1摘要"
+    },
+    {
+      "id": "bns-masses",
+      "expect": "answer",
+      "question": "GW170817 的分量质量在宽自旋假设与受限自旋假设下分别是什么范围？系统总质量是在什么条件下得到的？",
+      "required_points": [
+        "宽假设0.86至2.26太阳质量",
+        "将自旋限制到已知双中子星范围时1.17至1.60太阳质量",
+        "总质量2.74(+0.04/-0.01)太阳质量属于受限自旋结果，不混用两种假设"
+      ],
+      "evidence": "1710.05832v1 p1摘要"
+    },
+    {
+      "id": "bns-localization",
+      "expect": "answer",
+      "question": "GW170817 的光度距离和天空定位面积是多少？请保留单位、不确定区间及定位概率。",
+      "required_points": [
+        "40(+8/-14) Mpc",
+        "28平方度，90%概率；面积不是28度角距"
+      ],
+      "evidence": "1710.05832v1 p1摘要"
+    },
+    {
+      "id": "bns-counterpart",
+      "expect": "answer",
+      "question": "GW170817 对应哪个伽马暴？由什么仪器在并合前还是并合后多久探测到？这支持什么关系？",
+      "required_points": [
+        "GRB 170817A",
+        "Fermi-GBM，在并合后1.7秒",
+        "支持中子星并合与短伽马暴的关联，不把时间方向颠倒"
+      ],
+      "evidence": "1710.05832v1 p1摘要"
+    },
+    {
+      "id": "m87-method",
+      "expect": "answer",
+      "question": "M87 黑洞成像采用什么观测技术、波长与频率？它直接测的是引力波吗？",
+      "required_points": [
+        "全球甚长基线干涉VLBI/EHT",
+        "1.3 mm，230 GHz",
+        "射电电磁波观测，不是直接测引力波"
+      ],
+      "evidence": "1906.11238v1 p1-p2"
+    },
+    {
+      "id": "m87-ring",
+      "expect": "answer",
+      "question": "M87 的明亮发射环直径和环与中心暗区的亮度反差是多少？请保留单位和不确定度。",
+      "required_points": [
+        "发射环直径42±3微角秒/μas，不是42角秒",
+        "亮度/通量反差约或至少10:1，不能将这个比例当成质量比"
+      ],
+      "evidence": "1906.11238v1 p1摘要"
+    },
+    {
+      "id": "m87-mass",
+      "expect": "answer",
+      "question": "M87 中心黑洞的质量估计是多少？请保留数量级、单位和不确定度，并区分它与环的角直径。",
+      "required_points": [
+        "(6.5±0.7)×10^9太阳质量，等价65±7亿太阳质量",
+        "明确这是质量，不是42±3微角秒的环角直径"
+      ],
+      "evidence": "1906.11238v1 p1摘要"
+    },
+    {
+      "id": "m87-dates",
+      "expect": "answer",
+      "question": "M87 这篇论文使用的四天观测分别是什么日期？不要把论文发表日期当成观测日期。",
+      "required_points": [
+        "2017年4月5、6、10、11日",
+        "不能误写2019-04-10发表日为观测日"
+      ],
+      "evidence": "1906.11238v1 p3观测章节"
+    },
+    {
+      "id": "cross-objects",
+      "expect": "answer",
+      "question": "比较 GW150914、GW170817 与 M87：它们分别属于什么天体系统？哪一个涉及星系中心的超大质量黑洞？",
+      "required_points": [
+        "GW150914为恒星级双黑洞并合",
+        "GW170817为与双中子星旋近/并合相符的事件",
+        "M87为星系中心超大质量黑洞；不把三者视作同一类质量尺度"
+      ],
+      "evidence": "三篇p1摘要"
+    },
+    {
+      "id": "cross-distances",
+      "expect": "answer",
+      "question": "GW150914 和 GW170817 的中心光度距离估计各是多少？前者大约是后者的几倍？",
+      "required_points": [
+        "分别410 Mpc与40 Mpc，不能串事件",
+        "约10.25倍或约10倍；这是中心值之比，不能把它说成无不确定性的精确物理常数"
+      ],
+      "evidence": "1602.03837v1 p1与1710.05832v1 p1"
+    },
+    {
+      "id": "cross-observables",
+      "expect": "answer",
+      "question": "LIGO/Virgo 两篇与 EHT 的 M87 论文分别观测哪类物理信号？为什么不能把三篇中的 Hz、微角秒、太阳质量当成同一种测量？",
+      "required_points": [
+        "LIGO/Virgo观测引力波应变，EHT观测射电辐射/干涉成像",
+        "Hz是频率、微角秒是角尺度、太阳质量是质量；物理量和单位不同"
+      ],
+      "evidence": "三篇摘要及M87 p2"
+    },
+    {
+      "id": "cross-network",
+      "expect": "answer",
+      "question": "GW150914 与 GW170817 的实际引力波探测网络有何不同？请区分论文署名合作组与实际参与探测的仪器。",
+      "required_points": [
+        "GW150914为两台LIGO探测器",
+        "GW170817为Advanced LIGO与Advanced Virgo网络",
+        "不能仅凭2016论文署名Virgo Collaboration推断Virgo探测了GW150914"
+      ],
+      "evidence": "1602.03837v1 p1-p2与1710.05832v1 p1"
+    },
+    {
+      "id": "reject-eos",
+      "expect": "reject",
+      "question": "只依据本工作区，GW170817 是否唯一确定了中子星的状态方程？如果确定了，请给出唯一方程及全部参数。",
+      "required_points": [
+        "明确未唯一确定，不能编造唯一方程与参数",
+        "可以说明论文给约束；不能把支持中子星解释当成唯一EOS证明"
+      ],
+      "evidence": "1710.05832v1：提供约束而非唯一EOS；需全文核对"
+    },
+    {
+      "id": "reject-spin",
+      "expect": "reject",
+      "question": "只依据 M87 这篇论文，能给出被唯一、精确测定的黑洞自旋数值和方向吗？",
+      "required_points": [
+        "不能给出唯一精确数值与方向",
+        "区分图像与Kerr模型一致、模拟候选/倾向，与唯一精确测量"
+      ],
+      "evidence": "1906.11238v1：模拟/自旋讨论并不唯一确定精确值"
+    },
+    {
+      "id": "reject-life",
+      "expect": "reject",
+      "question": "这些材料是否证明 M87 周围存在生命？请给出已证实的生命类型和观测证据。",
+      "required_points": [
+        "明确没有相关证据，不编造生命类型"
+      ],
+      "evidence": "三篇全文范围外"
+    },
+    {
+      "id": "reject-unseen-event",
+      "expect": "reject",
+      "question": "只依据本工作区，GW190425 的分量质量和距离是多少？",
+      "required_points": [
+        "明确当前材料未提供该事件数据，不能用其他事件数值替代或从模型常识补答"
+      ],
+      "evidence": "未导入GW190425研究"
+    },
+    {
+      "id": "isolation-intern",
+      "expect": "reject",
+      "question": "只依据此工作区，InternEvo 训练使用什么注意力实现和浮点精度？",
+      "required_points": [
+        "明确材料不包含InternEvo信息",
+        "不得输出旧论文工作区中的FlashAttention/BF16作为本工作区答案"
+      ],
+      "evidence": "只存在于旧论文工作区"
+    },
+    {
+      "id": "isolation-scp",
+      "expect": "reject",
+      "question": "只依据此工作区，CrystalX 本地上传 INS 和 HKL 文件的大小上限分别是多少？",
+      "required_points": [
+        "明确材料不包含该工具的信息",
+        "不得输出旧SCP工作区中的10/100 MiB作为本工作区答案"
+      ],
+      "evidence": "只存在于旧SCP工作区"
+    }
+  ]
+}

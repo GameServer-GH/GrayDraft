@@ -318,8 +318,17 @@ func (p *Processor) processOne(ctx context.Context, filename, mime string, raw [
 		return ExtractionResult{Text: text, Route: routeText, Filename: filename, MimeType: mime, MD5: md5hex, PHash: phash, MediaURL: mediaURL}, nil
 	}
 
+	if mime == "application/pdf" {
+		if text, err := extractPDFText(ctx, raw); err == nil {
+			p.storeCache(ctx, md5hex, mime, phash, "pdf_text", text, "")
+			return ExtractionResult{Text: text, Route: "pdf_text", Filename: filename, MimeType: mime, MD5: md5hex, PHash: phash, MediaURL: mediaURL}, nil
+		} else if p.docIntel == nil {
+			return ExtractionResult{}, fmt.Errorf("unsupported_media: %w; document OCR is not configured", err)
+		}
+	}
 	route := routeVLM
-	if p.cfg == nil || !p.cfg.Multimodal.ForceVLMOnly {
+	// PDF capability takes precedence over the image-only force-VLM setting.
+	if mime == "application/pdf" || p.cfg == nil || !p.cfg.Multimodal.ForceVLMOnly {
 		route = heuristicTriage(mime, raw)
 	}
 
@@ -334,6 +343,9 @@ func (p *Processor) processOne(ctx context.Context, filename, mime string, raw [
 				parsed.Text = docRes.Markdown
 				parsed.StructuredKV = docRes.StructuredKV
 			} else {
+				if mime == "application/pdf" {
+					return ExtractionResult{}, fmt.Errorf("PDF document OCR failed: %w", derr)
+				}
 				slog.Warn("doc intel failed, fallback vl ocr", "error", derr)
 			}
 		}

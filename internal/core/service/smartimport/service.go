@@ -2,6 +2,7 @@ package smartimport
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -97,18 +98,18 @@ func (s *Service) Run(ctx context.Context, req model.SmartImportRequest) (*model
 	}
 	if sess != nil {
 		mmFields := map[string]any{
-			"extractions":     mmSummary,
-			"raw_len":         len(req.RawText),
+			"extractions": mmSummary,
+			"raw_len":     len(req.RawText),
 		}
 		if len(mmResults) > 0 {
 			texts := make([]map[string]any, 0, len(mmResults))
 			for _, r := range mmResults {
 				texts = append(texts, map[string]any{
-					"filename":  r.Filename,
-					"route":     r.Route,
-					"md5":       r.MD5,
-					"text":      r.Text,
-					"cached":    r.Cached,
+					"filename": r.Filename,
+					"route":    r.Route,
+					"md5":      r.MD5,
+					"text":     r.Text,
+					"cached":   r.Cached,
 				})
 			}
 			mmFields["extraction_texts"] = texts
@@ -209,11 +210,11 @@ func (s *Service) runSingle(ctx context.Context, req model.SmartImportRequest, m
 	}
 	if sess != nil {
 		sess.Step("analyze_result", map[string]any{
-			"kb_type":    preview.KBType,
-			"title":      preview.Title,
-			"confidence": preview.Confidence,
-			"action":     preview.Action,
-			"method":     preview.Method,
+			"kb_type":      preview.KBType,
+			"title":        preview.Title,
+			"confidence":   preview.Confidence,
+			"action":       preview.Action,
+			"method":       preview.Method,
 			"content_head": truncateRunes(preview.Content, 500),
 		})
 	}
@@ -287,6 +288,14 @@ func (s *Service) runSplit(ctx context.Context, req model.SmartImportRequest, mi
 		}
 	}
 
+	plan = preserveSourcePlan(req.RawText, plan)
+	if req.Extensions == nil {
+		req.Extensions = model.Extensions{}
+	}
+	req.Extensions["source_integrity_method"] = plan.Method
+	if data, err := json.Marshal(plan); err == nil {
+		req.Extensions[extImportLLMSplitPlanJSON] = string(data)
+	}
 	resp := s.baseResp(minRequired, false, true, "")
 	resp.DocAnalysis = toModelDocAnalysis(plan.DocAnalysis)
 	resp.SplittingStrategy = plan.Strategy
@@ -586,28 +595,28 @@ func (s *Service) analyzeOne(ctx context.Context, req model.SmartImportRequest, 
 	// Log confidence check results
 	if sess != nil {
 		sess.Step("confidence_check", map[string]any{
-		"label":            string(cr.Label),
-		"structure_ok":     cr.StructureOk,
-		"entity_ok":        cr.EntityOk,
-		"noise_ok":         cr.NoiseOk,
-		"title_ok":         cr.TitleOk,
-		"entity_trace_ok":  cr.EntityTraceOk,
-		"short_exempt":     cr.ShortExempt,
-		"failed_checks":    cr.FailedChecks,
-		"explain":          cr.Explain,
-		"info_density":     density.Score,
-		"ngram_repeat":     ngramRate,
-		"needs_llm_cleaning": needsLLMCleaning || hasNoiseSignals,
-		"content_head":     truncateRunes(content, 300),
-		"title_used":       draft.Title,
-		"is_multimodal":    isMultimodalImport(req.Extensions),
-	})
+			"label":              string(cr.Label),
+			"structure_ok":       cr.StructureOk,
+			"entity_ok":          cr.EntityOk,
+			"noise_ok":           cr.NoiseOk,
+			"title_ok":           cr.TitleOk,
+			"entity_trace_ok":    cr.EntityTraceOk,
+			"short_exempt":       cr.ShortExempt,
+			"failed_checks":      cr.FailedChecks,
+			"explain":            cr.Explain,
+			"info_density":       density.Score,
+			"ngram_repeat":       ngramRate,
+			"needs_llm_cleaning": needsLLMCleaning || hasNoiseSignals,
+			"content_head":       truncateRunes(content, 300),
+			"title_used":         draft.Title,
+			"is_multimodal":      isMultimodalImport(req.Extensions),
+		})
 	}
 
 	return model.SmartImportPreview{
 		KBType:          kbType,
 		Title:           draft.Title,
-		Content:         CleanMarkdownForIngest(draft.Content),
+		Content:         draft.Content,
 		ContentHash:     draft.ContentHash,
 		MimeType:        draft.MimeType,
 		Action:          dedup.Action,
@@ -615,7 +624,7 @@ func (s *Service) analyzeOne(ctx context.Context, req model.SmartImportRequest, 
 		ExistingVersion: dedup.ExistingVersion,
 		Confidence:      draft.Confidence,
 		ImportAllowed:   importAllowed,
-		Reason:          draft.Reason + "; " + dedup.Reason + " [" + string(cr.Label) + "]",
+		Reason:          draft.Reason + "; " + dedup.Reason + " [" + string(cr.Label) + "] " + cr.Explain,
 		Method:          draft.Method,
 	}, nil
 }
@@ -678,7 +687,7 @@ func toModelDocAnalysis(a DocAnalysis) *model.SmartImportDocAnalysis {
 		return nil
 	}
 	return &model.SmartImportDocAnalysis{
-		Subject: a.Subject,
+		Subject:     a.Subject,
 		Version:     a.Version,
 		DocType:     a.DocType,
 		ParentTitle: a.ParentTitle,
@@ -697,7 +706,6 @@ func (s *Service) baseResp(minRequired float64, allowed, split bool, msg string)
 		Skipped:               []model.SmartImportSkipped{},
 	}
 }
-
 
 // isMultimodalImport reports whether the request went through multimodal
 // attachment processing (VLM/OCR extraction of images/videos).

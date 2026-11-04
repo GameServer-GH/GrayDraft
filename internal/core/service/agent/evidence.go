@@ -7,15 +7,20 @@ import (
 
 // EvidenceHit is one retrieved chunk exposed to the Agent answer gate.
 type EvidenceHit struct {
-	ChunkID     string  `json:"id"`
-	DocID       string  `json:"doc_id,omitempty"`
-	Title       string  `json:"title,omitempty"`
-	MediaURL    string  `json:"media_url,omitempty"`
-	Content     string  `json:"content"`
-	Score       float64 `json:"score"`
-	RerankScore float64 `json:"rerank_score,omitempty"`
-	RecallLane  string  `json:"recall_lane,omitempty"`
-	Source      string  `json:"source,omitempty"`
+	Truncated             bool    `json:"truncated,omitempty"`
+	SourceRevision        string  `json:"source_revision_sha256,omitempty"`
+	OriginalContentSHA256 string  `json:"original_content_sha256,omitempty"`
+	ContentStartRune      int     `json:"content_start_rune,omitempty"`
+	ContentEndRune        int     `json:"content_end_rune,omitempty"`
+	ChunkID               string  `json:"id"`
+	DocID                 string  `json:"doc_id,omitempty"`
+	Title                 string  `json:"title,omitempty"`
+	MediaURL              string  `json:"media_url,omitempty"`
+	Content               string  `json:"content"`
+	Score                 float64 `json:"score"`
+	RerankScore           float64 `json:"rerank_score,omitempty"`
+	RecallLane            string  `json:"recall_lane,omitempty"`
+	Source                string  `json:"source,omitempty"`
 }
 
 // EvidenceBundle aggregates retrieval output from tool observations.
@@ -30,6 +35,7 @@ type EvidenceBundle struct {
 }
 
 type knowledgeSearchPayload struct {
+	RetrievalQuery string        `json:"retrieval_query,omitempty"`
 	Query          string        `json:"query"`
 	Total          int           `json:"total"`
 	Strategy       string        `json:"strategy,omitempty"`

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -19,6 +20,16 @@ func pickGroupSpan(all []model.Chunk, anchorTitle, anchorID, query string, limit
 	}
 	if limit <= 0 {
 		limit = 8
+	}
+	// Revision-aware documents must not be merged by title or UUID order.
+	for _, anchor := range all {
+		if anchor.ID != anchorID {
+			continue
+		}
+		revision, _ := anchor.DocExtensions["source_revision_sha256"].(string)
+		if revision != "" {
+			return pickRevisionSpan(all, anchor, revision, limit)
+		}
 	}
 	group := sliceGroupTitle(anchorTitle)
 	part, _ := slicePart(anchorTitle)
@@ -54,9 +65,16 @@ func pickGroupSpan(all []model.Chunk, anchorTitle, anchorID, query string, limit
 		}
 	}
 	picked := append([]model.Chunk{}, byPart[bestPart]...)
-	if hasAnchor && anchor.DocTitle != "" && slicePartOr(anchor.DocTitle, bestPart) != bestPart {
-		picked = append([]model.Chunk{anchor}, picked...)
+	if hasAnchor {
+		rest := make([]model.Chunk, 0, len(picked))
+		for _, c := range picked {
+			if c.ID != anchor.ID {
+				rest = append(rest, c)
+			}
+		}
+		picked = append([]model.Chunk{anchor}, rest...)
 	}
+
 	if len(picked) > limit {
 		// The selected slice's opening defines the term. Later repetitions stay out.
 		picked = picked[:limit]
@@ -120,7 +138,6 @@ func pickGroupOpenings(all []model.Chunk, groups []string) []model.Chunk {
 		}
 	}
 	bestPart := map[string]int{}
-	bestDoc := map[string]string{}
 	for _, c := range all {
 		g := sliceGroupTitle(c.DocTitle)
 		if !want[g] {
@@ -133,21 +150,39 @@ func pickGroupOpenings(all []model.Chunk, groups []string) []model.Chunk {
 		cur, seen := bestPart[g]
 		if !seen || part < cur {
 			bestPart[g] = part
-			bestDoc[g] = c.DocID
 		}
 	}
-	out := make([]model.Chunk, 0, len(bestDoc)*4)
-	for _, g := range groups {
-		docID := bestDoc[strings.TrimSpace(g)]
-		if docID == "" {
-			continue
+	ordered := append([]model.Chunk(nil), all...)
+	segment := func(c model.Chunk) float64 {
+		if v, ok := c.DocExtensions["segment_index"].(float64); ok {
+			return v
 		}
-		for _, c := range all {
-			if c.DocID == docID {
+		return 0
+	}
+	sort.SliceStable(ordered, func(i, j int) bool {
+		a, b := ordered[i], ordered[j]
+		if segment(a) != segment(b) {
+			return segment(a) < segment(b)
+		}
+		if a.DocID != b.DocID {
+			return a.DocID < b.DocID
+		}
+		return a.ChunkIndex < b.ChunkIndex
+	})
+	out := make([]model.Chunk, 0)
+	for _, g := range groups {
+		perDoc := map[string]int{}
+		count := 0
+		for _, c := range ordered {
+			part, _ := slicePart(c.DocTitle)
+			if sliceGroupTitle(c.DocTitle) == g && part == bestPart[g] && perDoc[c.DocID] < 4 && count < 12 {
 				out = append(out, c)
+				perDoc[c.DocID]++
+				count++
 			}
 		}
 	}
+
 	return out
 }
 
@@ -159,4 +194,58 @@ func chunkHasTerm(content string, terms []string) bool {
 		}
 	}
 	return false
+}
+
+// Reserve source openings alongside the anchor neighborhood. Openings contain
+// definitions and scope that a later table or local observation may omit.
+func pickRevisionSpan(all []model.Chunk, anchor model.Chunk, revision string, limit int) []model.Chunk {
+	ordered := make([]model.Chunk, 0)
+	for _, c := range all {
+		if c.DocExtensions["source_revision_sha256"] == revision {
+			ordered = append(ordered, c)
+		}
+	}
+	segment := func(c model.Chunk) float64 { v, _ := c.DocExtensions["segment_index"].(float64); return v }
+	sort.SliceStable(ordered, func(i, j int) bool {
+		a, b := ordered[i], ordered[j]
+		if segment(a) != segment(b) {
+			return segment(a) < segment(b)
+		}
+		if a.DocID != b.DocID {
+			return a.DocID < b.DocID
+		}
+		if a.ChunkIndex != b.ChunkIndex {
+			return a.ChunkIndex < b.ChunkIndex
+		}
+		return a.ID < b.ID
+	})
+	out := []model.Chunk{}
+	seen := map[string]bool{}
+	add := func(c model.Chunk) {
+		if len(out) < limit && !seen[c.ID] {
+			out = append(out, c)
+			seen[c.ID] = true
+		}
+	}
+	add(anchor)
+	openings := limit / 2
+	for i := 0; i < len(ordered) && i < openings; i++ {
+		add(ordered[i])
+	}
+	at := 0
+	for i, c := range ordered {
+		if c.ID == anchor.ID {
+			at = i
+			break
+		}
+	}
+	for distance := 1; distance < len(ordered) && len(out) < limit; distance++ {
+		if at-distance >= 0 {
+			add(ordered[at-distance])
+		}
+		if at+distance < len(ordered) {
+			add(ordered[at+distance])
+		}
+	}
+	return out
 }

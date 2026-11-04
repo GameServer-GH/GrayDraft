@@ -2,6 +2,8 @@ package agent
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -49,7 +51,8 @@ func StreamFinalAnswer(
 	}
 	onReasoning := ReasoningSinkFrom(ctx)
 	system := `你是书生资料学习助手。根据证据如实作答，使用简体中文 Markdown。
-不要编造证据中没有的数值、参数或版本。证据不足时明确说明资料里没有这部分内容。
+不要编造证据中没有的数值、参数或版本。证据不足时说明当前证据未覆盖这部分内容。
+truncated或omitted_hits表示上下文经过截取，不能据此断言整个工作区没有这部分资料。
 型号、版本和参数名按证据原文保留，不要换成同一段里出现的另一个名称。`
 	if onReasoning != nil {
 		system += "\n推理与思考过程也请全程使用简体中文。"
@@ -96,7 +99,7 @@ func StreamFinalAnswer(
 func buildAnswerStreamPrompt(prompt []byte, obs []Observation, draft string) string {
 	var b strings.Builder
 	b.WriteString("用户问题：\n")
-	b.WriteString(string(prompt))
+	b.WriteString(CurrentUserQuery(string(prompt)))
 	b.WriteString("\n\n证据：\n")
 	if len(obs) == 0 {
 		b.WriteString("（无工具观测）\n")
@@ -106,10 +109,13 @@ func buildAnswerStreamPrompt(prompt []byte, obs []Observation, draft string) str
 			continue
 		}
 		limit := 2400
-		if o.Name == "knowledge.read" {
+		if strings.HasPrefix(o.Name, "knowledge.") {
 			limit = 12000
 		}
-		fmt.Fprintf(&b, "[%d] tool=%s\n%s\n\n", i+1, o.Name, truncateRunes(string(o.Output), limit))
+		if !strings.HasPrefix(o.Name, "knowledge.") {
+			b.WriteString("辅助上下文（不是用户问题或可引用事实证据）：\n")
+		}
+		fmt.Fprintf(&b, "[%d] tool=%s\n%s\n\n", i+1, o.Name, answerObservation(o, limit))
 	}
 	if d := strings.TrimSpace(draft); d != "" {
 		b.WriteString("可选提纲（不要照抄，请依据证据重写完整答案）：\n")
@@ -119,6 +125,80 @@ func buildAnswerStreamPrompt(prompt []byte, obs []Observation, draft string) str
 	b.WriteString("\n请直接输出最终答案，不要输出 JSON。证据不足时明确说明本工作区资料没有。")
 
 	return b.String()
+}
+
+// Budget evidence contents individually instead of cutting serialized JSON in
+// the middle of a hit. Retain source diversity before additional same-doc hits.
+func answerObservation(o Observation, limit int) string {
+	if o.AnswerPrepared {
+		return string(o.Output)
+	}
+	var payload knowledgeSearchPayload
+	if !strings.HasPrefix(o.Name, "knowledge.") || json.Unmarshal(o.Output, &payload) != nil || len(payload.Hits) == 0 {
+		return truncateRunes(string(o.Output), limit)
+	}
+
+	ordered := make([]EvidenceHit, 0, len(payload.Hits))
+	var rest []EvidenceHit
+	seen := map[string]bool{}
+	for _, h := range payload.Hits {
+		key := h.DocID
+		if key == "" {
+			key = h.Title
+		}
+		if seen[key] {
+			rest = append(rest, h)
+			continue
+		}
+		seen[key] = true
+		ordered = append(ordered, h)
+	}
+	ordered = append(ordered, rest...)
+	if len(ordered) > 12 {
+		ordered = ordered[:12]
+	}
+	budget := limit / len(ordered)
+	for {
+		hits := make([]EvidenceHit, 0, len(ordered))
+		for _, h := range ordered {
+			original := h.Content
+			sum := sha256.Sum256([]byte(original))
+			h.OriginalContentSHA256 = hex.EncodeToString(sum[:])
+			h.ContentStartRune = 0
+			h.ContentEndRune = len([]rune(original))
+			if h.ContentEndRune > budget {
+				h.ContentEndRune = budget
+				h.Truncated = true
+			}
+			h.Content = truncateRunes(original, budget)
+			h.Title = truncateRunes(h.Title, 200)
+			h.Source = truncateRunes(h.Source, 200)
+			h.MediaURL = truncateRunes(h.MediaURL, 512)
+			hits = append(hits, h)
+		}
+		copyPayload := payload
+		copyPayload.Hits = hits
+		body, _ := json.Marshal(struct {
+			knowledgeSearchPayload
+			Omitted int `json:"omitted_hits,omitempty"`
+		}{copyPayload, len(payload.Hits) - len(hits)})
+		over := len([]rune(string(body))) - limit
+		if over <= 0 {
+			return string(body)
+		}
+		if budget == 0 && len(ordered) > 1 {
+			ordered = ordered[:len(ordered)-1]
+			budget = limit / len(ordered)
+			continue
+		}
+		if budget == 0 {
+			return string(body)
+		}
+		budget -= (over + len(hits) - 1) / len(hits)
+		if budget < 0 {
+			budget = 0
+		}
+	}
 }
 
 func groupTitlesFromRead(obs []Observation) []string {

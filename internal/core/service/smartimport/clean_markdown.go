@@ -9,24 +9,25 @@ import (
 )
 
 var (
-	reMdHeading     = regexp.MustCompile(`(?m)^#{1,6}\s+`)
-	reMdBold        = regexp.MustCompile(`\*{1,2}([^*]+)\*{1,2}`)
-	reMdItalic      = regexp.MustCompile(`(?m)(?:^|\s)_([^_\n]+)_(?:\s|$)`)
-	reMdLink        = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
-	reMdImage       = regexp.MustCompile(`!\[[^\]]*\]\([^)]*\)`)
-	reMdCodeInline  = regexp.MustCompile("`([^`\n]+)`")
-	reMdCodeBlock   = regexp.MustCompile("(?s)```[^`]*```")
-	reMdHr          = regexp.MustCompile(`(?m)^\s*[-=*_]{3,}\s*$`)
-	reMdBlockquote  = regexp.MustCompile(`(?m)^>\s?`)
-	reMdListBullet  = regexp.MustCompile(`(?m)^\s*[-*+]\s+`)
-	reMdListNumber  = regexp.MustCompile(`(?m)^\s*\d+[.)]\s+`)
-	reMdTableRow    = regexp.MustCompile(`(?m)^\|.*\|$`)
-	reMediaURLLine  = regexp.MustCompile(`(?m)^media_url:\s*/api/v1/multimodal/media/[a-f0-9]+\s*$`)
-	reMultiNewline  = regexp.MustCompile(`\n{3,}`)
-	reHTMLTag       = regexp.MustCompile(`<[^>]*>`)
+	reMdHeading    = regexp.MustCompile(`(?m)^#{1,6}\s+`)
+	reMdBold       = regexp.MustCompile(`\*{1,2}([^*]+)\*{1,2}`)
+	reMdItalic     = regexp.MustCompile(`(?m)(?:^|\s)_([^_\n]+)_(?:\s|$)`)
+	reMdLink       = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
+	reMdImage      = regexp.MustCompile(`!\[[^\]]*\]\([^)]*\)`)
+	reMdCodeInline = regexp.MustCompile("`([^`\n]+)`")
+	reMdCodeBlock  = regexp.MustCompile("(?s)```[^`]*```")
+	reMdHr         = regexp.MustCompile(`(?m)^\s*[-=*_]{3,}\s*$`)
+	reMdBlockquote = regexp.MustCompile(`(?m)^>\s?`)
+	reMdListBullet = regexp.MustCompile(`(?m)^\s*[-*+]\s+`)
+	reMdListNumber = regexp.MustCompile(`(?m)^\s*\d+[.)]\s+`)
+	reMdTableRow   = regexp.MustCompile(`(?m)^\|.*\|$`)
+	reMediaURLLine = regexp.MustCompile(`(?m)^media_url:\s*/api/v1/multimodal/media/[a-f0-9]+\s*$`)
+	reMultiNewline = regexp.MustCompile(`\n{3,}`)
+	reHTMLTag      = regexp.MustCompile(`<[^>]*>`)
 )
 
-// CleanMarkdownForIngest converts markdown-formatted text to pure natural language
+// CleanMarkdownForIngest is a lossy presentation helper, never a canonical source transform.
+// It converts markdown-formatted text to pure natural language
 // suitable for vector embedding and knowledge retrieval.
 //
 // Transformations:
@@ -209,7 +210,7 @@ var (
 		"ｔ", "t", "ｕ", "u", "ｖ", "v", "ｗ", "w", "ｘ", "x",
 		"ｙ", "y", "ｚ", "z",
 	)
-	reURLStrict = regexp.MustCompile(`https?://[^\s\n]{4,}`)
+	reURLStrict      = regexp.MustCompile(`https?://[^\s\n]{4,}`)
 	reHTMLCharEntity = map[string]string{
 		"&amp;":  "&",
 		"&lt;":   "<",

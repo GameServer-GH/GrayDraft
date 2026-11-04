@@ -45,7 +45,7 @@ def check_content(
     smart-import unified LLM; this gate only validates structural quality.
     """
     # Collapse long identical-char runs before spam checks (arXiv HTML / OCR noise).
-    # Ingest also normalizes via long_narrative; this keeps direct API checks aligned.
+    # This is a derived validation view only; ingestion preserves canonical runs.
     from worker.pipeline.long_narrative import collapse_spam_runs
 
     text = collapse_spam_runs((content or "").strip())
@@ -90,12 +90,6 @@ def check_content(
     if is_smart_import:
         entity_count = _count_entities(extensions)
 
-        if not re.search(r"[\u4e00-\u9fff]", text):
-            return GateResult(
-                False, "no_chinese_characters",
-                0.0, is_smart_import=True, needs_llm_cleaning=needs_llm_cleaning,
-            )
-
         url_ratio = len(re.findall(r"https?://[^\s]+", text)) / max(len(text), 1)
         if url_ratio > 0.3:
             return GateResult(
@@ -105,7 +99,11 @@ def check_content(
 
     # ── Information density ────────────────────────────────────────
     unique_chars = len(set(text))
-    score = min(1.0, 0.3 + unique_chars / max(len(text), 1) * 2)
+    diversity = unique_chars / max(len(text), 1)
+    words = re.findall(r"[a-zA-Z]+(?:['-][a-zA-Z]+)*", text.lower())
+    if len(words) >= 20 and sum(map(len, words)) * 2 > len(text):
+        diversity = max(diversity, len(set(words)) / len(words))
+    score = min(1.0, 0.3 + diversity * 2)
     if score < 0.35:
         if is_smart_import and entity_count >= 2:
             warnings.append("low_information_density_with_entities")

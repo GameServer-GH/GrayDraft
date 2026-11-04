@@ -111,10 +111,11 @@ def prepare_for_ingest(
     max_length: int = 50000,
     extensions: dict | None = None,
 ) -> list[NarrativePart]:
-    """Normalize spam runs, then optionally auto-split into doc_group segments."""
+    """Split canonical content without rewriting repeated scientific symbols."""
     ext = extensions if isinstance(extensions, dict) else {}
     already = ext.get("segment_index") is not None or bool(ext.get("doc_group"))
-    text = collapse_spam_runs(content or "")
+    # Quality checks may use a cleaned view; accepted source content stays intact.
+    text = content or ""
     parent = str(ext.get("parent_title") or title or "").strip() or (title or "untitled")
     existing_group = str(ext.get("doc_group") or "").strip() or None
 

@@ -468,7 +468,7 @@ func (r *ChunkRepo) GroupSpan(ctx context.Context, kbType, chunkID, query string
 	}
 	rows, err := r.client.pool.Query(ctx, `
 		WITH cur AS (
-			SELECT c.id, c.doc_id, c.kb_type, d.title AS doc_title,
+			SELECT c.id, c.doc_id, c.kb_type, d.title AS doc_title, d.extensions->>'source_revision_sha256' AS source_revision,
 				btrim(regexp_replace(regexp_replace(d.title, '^论文[[:space:]]*', ''), '[（(][0-9]+/[0-9]+[）)]', '', 'g')) AS g
 			FROM kb_chunks c
 			JOIN kb_documents d ON d.id = c.doc_id
@@ -485,8 +485,9 @@ func (r *ChunkRepo) GroupSpan(ctx context.Context, kbType, chunkID, query string
 		FROM kb_chunks c
 		JOIN kb_documents d ON d.id = c.doc_id
 		JOIN cur ON c.kb_type = cur.kb_type
-			AND btrim(regexp_replace(regexp_replace(d.title, '^论文[[:space:]]*', ''), '[（(][0-9]+/[0-9]+[）)]', '', 'g')) = cur.g
-		ORDER BY d.title, c.chunk_index
+			AND ((COALESCE(cur.source_revision, '') <> '' AND d.extensions->>'source_revision_sha256' = cur.source_revision)
+                OR (COALESCE(cur.source_revision, '') = '' AND btrim(regexp_replace(regexp_replace(d.title, '^论文[[:space:]]*', ''), '[（(][0-9]+/[0-9]+[）)]', '', 'g')) = cur.g))
+		ORDER BY d.title, d.id, c.chunk_index
 	`, chunkID, kbType)
 	if err != nil {
 		return nil, fmt.Errorf("group span: %w", err)
@@ -531,10 +532,13 @@ func (r *ChunkRepo) GroupOpenings(ctx context.Context, kbType string, groups []s
 			`+chunkExtensionsSelect+`,
 			`+docExtensionsSelect+`,
 			1.0 AS score
-		FROM kb_chunks c
-		JOIN kb_documents d ON d.id = c.doc_id
-		WHERE ($1 = '' OR c.kb_type = $1)
-		  AND c.chunk_index BETWEEN 1 AND 4
+		FROM kb_documents d
+        JOIN LATERAL (
+            SELECT x.* FROM kb_chunks x
+            WHERE x.doc_id=d.id AND x.kb_type=d.kb_type AND x.chunk_index>=0
+            ORDER BY x.chunk_index,x.id LIMIT 4
+        ) c ON TRUE
+        WHERE ($1 = '' OR d.kb_type = $1)
 		ORDER BY d.title, c.chunk_index
 	`, kbType)
 	if err != nil {
@@ -564,7 +568,7 @@ func (r *ChunkRepo) Openings(ctx context.Context, kbType string, docIDs []string
 		JOIN kb_documents d ON d.id = c.doc_id
 		WHERE ($1 = '' OR c.kb_type = $1)
 		  AND d.id::text = ANY($2)
-		  AND c.chunk_index > 0
+		  AND c.chunk_index >= 0
 		ORDER BY d.id, c.chunk_index
 	`, kbType, docIDs)
 	if err != nil {

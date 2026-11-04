@@ -45,7 +45,19 @@ func (v GroundedAnswerValidator) Validate(ctx context.Context, answer string, ob
 		gate.ShouldRefuse = true
 		gate.RefuseReason = "version_conflict"
 	}
-	hardRefusal := gate.ShouldRefuse && (gate.RefuseReason == "no_evidence" || gate.RefuseReason == "insufficient_citations" || gate.RefuseReason == "high_risk_no_official_source" || gate.RefuseReason == "version_conflict")
+	review := reviewAnswerClaims(answer, bundle)
+	gate.ClaimReview = &review
+	for _, operation := range review.Numeric {
+		if operation.Action == "reject" {
+			gate.NumericConsistencyIssues = append(gate.NumericConsistencyIssues, "explicit_same_unit_scale_mismatch")
+		}
+	}
+	gate.EvidencePacketSHA256 = answerEvidenceDigest(obs)
+	if len(gate.NumericConsistencyIssues) > 0 && gate.RefuseReason != "no_evidence" && gate.RefuseReason != "insufficient_citations" && gate.RefuseReason != "high_risk_no_official_source" && gate.RefuseReason != "version_conflict" {
+		gate.ShouldRefuse = true
+		gate.RefuseReason = "numeric_inconsistency"
+	}
+	hardRefusal := gate.ShouldRefuse && (gate.RefuseReason == "no_evidence" || gate.RefuseReason == "insufficient_citations" || gate.RefuseReason == "high_risk_no_official_source" || gate.RefuseReason == "version_conflict" || gate.RefuseReason == "numeric_inconsistency")
 	if hardRefusal {
 		RecordAnswerMetric(gate.Groundedness, true)
 		return ValidationResult{Answer: refusalMessage(gate), Rejected: true, Gate: gate}, nil
@@ -90,6 +102,8 @@ func summarizeHits(hits []EvidenceHit) []EvidenceHitSummary {
 
 func refusalMessage(gate AnswerGateResult) string {
 	switch gate.RefuseReason {
+	case "numeric_inconsistency":
+		return "生成答案中的数值换算存在矛盾，暂无法提供可靠结果。请核对原文中的数值、单位与不确定区间。"
 	case "no_evidence":
 		return "当前资料里没有可靠依据，无法回答。请缩小到某个概念、参数或文档。"
 	case "version_conflict":

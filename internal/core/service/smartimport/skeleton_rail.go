@@ -106,7 +106,7 @@ func alignSplitPlanToSkeletonRails(plan SplitPlan, sk DocumentSkeleton, raw stri
 		start := plan.Segments[i].LineRange[0]
 		end := plan.Segments[i].LineRange[1]
 		if i > 0 {
-			if a := nearestAnchor(start, anchorLines, 3); a > 0 && a < end {
+			if a := nearestAnchor(start, anchorLines, 3); a > plan.Segments[i-1].LineRange[0] && a < end {
 				start = a
 				plan.Segments[i-1].LineRange[1] = a - 1
 			}
@@ -121,7 +121,11 @@ func alignSplitPlanToSkeletonRails(plan SplitPlan, sk DocumentSkeleton, raw stri
 			plan.Segments[i].Content = ExtractByLineRange(raw, start, end)
 		}
 	}
-	return plan
+	for i := range plan.Segments {
+		seg := &plan.Segments[i]
+		seg.Content = ExtractByLineRange(raw, seg.LineRange[0], seg.LineRange[1])
+	}
+	return preserveSourcePlan(raw, plan)
 }
 
 func nearestAnchor(line int, anchors []int, maxDist int) int {

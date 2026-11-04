@@ -10,7 +10,7 @@ COPY internal/core/ .
 RUN go mod tidy && CGO_ENABLED=0 go build -o /graydraft-core ./cmd/gateway
 
 FROM alpine:3.20
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates poppler-utils
 WORKDIR /app
 COPY --from=builder /graydraft-core .
 COPY internal/core/config/config.dev.yaml ./config/config.dev.yaml

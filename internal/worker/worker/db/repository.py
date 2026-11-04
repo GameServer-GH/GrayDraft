@@ -487,6 +487,10 @@ class DocumentRepository:
                 chunk_count,
             )
 
+    async def is_ugc_task_completed(self, task_id: str) -> bool:
+        async with self._pool.acquire() as conn:
+            return bool(await conn.fetchval("SELECT status = 'completed' FROM ugc_ingest_tasks WHERE id=$1::uuid", uuid.UUID(task_id)))
+
     async def update_ugc_task_failed(self, *, task_id: uuid.UUID, error_message: str) -> None:
         async with self._pool.acquire() as conn:
             # V1-28: protect writes from long-running transactions
@@ -496,7 +500,7 @@ class DocumentRepository:
                 """
                 UPDATE ugc_ingest_tasks
                 SET status = 'failed', error_message = $2, updated_at = now()
-                WHERE id = $1::uuid
+                WHERE id = $1::uuid AND status <> 'completed'
                 """,
                 str(task_id),
                 error_message[:2000],
@@ -511,7 +515,7 @@ class DocumentRepository:
                 """
                 UPDATE ugc_ingest_tasks
                 SET status = 'processing', current_stage = 'accepted', updated_at = now()
-                WHERE id = $1::uuid
+                WHERE id = $1::uuid AND status <> 'completed'
                 """,
                 str(task_id),
             )

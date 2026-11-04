@@ -92,7 +92,13 @@ func clipPlannerRaw(raw string) string {
 }
 
 func buildPlannerPrompt(in PlannerInput) string {
-	obs, _ := json.Marshal(in.Observations)
+	safeObs := append([]Observation(nil), in.Observations...)
+	for i := range safeObs {
+		if len(safeObs[i].Output) > 0 && !json.Valid(safeObs[i].Output) {
+			safeObs[i].Output = contextObservationJSON(string(safeObs[i].Output))
+		}
+	}
+	obs, _ := json.Marshal(safeObs)
 	kbs := strings.Join(in.AuthorizedKBs, ", ")
 	if kbs == "" {
 		kbs = "(none)"
@@ -126,5 +132,5 @@ Reasoning language: think and reason in Simplified Chinese. thought_summary is o
 Citations in the final answer must point at original chunk text, not summaries or edges.
 Step: %d
 User request: %s
-Observations: %s`, toolHint, kbs, in.Step, string(in.Prompt), string(obs))
+Observations: %s`, toolHint, kbs, in.Step, CurrentUserQuery(string(in.Prompt)), string(obs))
 }

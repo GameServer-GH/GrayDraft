@@ -12,7 +12,14 @@ import (
 )
 
 func TestClient_Rerank_L1L2(t *testing.T) {
+	var paths []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		// This test exercises sequential fallback, not the preferred combined route.
+		if r.URL.Path == "/v1/rerank/combined" {
+			http.NotFound(w, r)
+			return
+		}
 		var req rerankRequest
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		top := req.TopN
@@ -48,5 +55,8 @@ func TestClient_Rerank_L1L2(t *testing.T) {
 	}
 	if out[0].Source != "rerank_l2" {
 		t.Fatalf("expected rerank_l2 source, got %s", out[0].Source)
+	}
+	if len(paths) != 3 || paths[1] != "/v1/rerank/l1" || paths[2] != "/v1/rerank/l2" {
+		t.Fatalf("fallback route sequence: %v", paths)
 	}
 }
