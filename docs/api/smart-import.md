@@ -124,7 +124,7 @@ Agent v2 中，`knowledge.semantic` 工具输出与 `answer.validated` / BFF `do
 ```
 
 - 无检索结果时 grade 为 `D`、`retrieval_score` 为 0  
-- 有结果时由 `confidence/gate.go` 分级（见 [检索分级](../learning/03-algorithms/04-retrieval-grading-and-gating.md)）
+- 有结果时由 `confidence/gate.go` 分级（见 [系统逻辑总览](../architecture/系统逻辑总览.md#74-rag-工具与可靠性门禁)）
 
 ## H5 测试页
 

@@ -1,6 +1,6 @@
 # GrayDraft 文档中心
 
-> **基线日期**：2026-10-28
+> **基线日期**：2026-11-04
 
 文档描述 GrayDraft 的当前实现，以代码为准。产品介绍见仓库根目录 [README](../README.md)。
 
@@ -13,16 +13,6 @@
 | 3 | [本地开发指南](development.md) | 开发者：启动、调试、端口 |
 | 4 | [部署手册](deployment.md) | 运维：Compose、Nginx、环境变量 |
 | 5 | [API 索引](#api-文档) | 集成方：HTTP 契约与示例 |
-| — | [学习目录](learning/README.md) | 按入库、检索、对话阅读代码 |
-
-## 学习目录
-
-| 文档 | 内容 |
-|------|------|
-| [learning/README.md](learning/README.md) | 按入库、检索、对话阅读代码 |
-| [知识点规划](learning/00-overview/learning-map.md) | 工程知识点与阅读路线 |
-| [动手路径](learning/05-practice/learning-roadmap-ai-agent.md) | 从启动到一次带引用的讲解 |
-| [BFF](learning/04-architecture/05-bff.md) · [GrayDraft BFF 代理](learning/04-architecture/06-bff-proxy-capabilities.md) | 工作台如何调用 Core |
 
 ## 架构与设计
 
@@ -32,6 +22,8 @@
 | [设计理念](architecture/设计理念.md) | AI 为操作主体；质量靠自动门禁与使用约定，不靠逐条人审 |
 | [Agent 实现说明](architecture/Agent流程技术实现方案.md) | `edu_workspace_v1` 的 Loop、工具、证据层与记忆 |
 | [架构决策记录 (ADR)](architecture/README.md) | Monorepo、pgvector、JetStream、缓存等决策 |
+| [正确性架构与验收边界](architecture/correctness-architecture.md) | 共享证据、导入与检索修复、数值及角色复核 |
+| [52 题复跑与旁路决策](architecture/correctness-rebaseline-shadow-decision-2026-11-04.md) | 最新完整基线与接入条件 |
 | [性能优化 1.0 方案](architecture/performance-optimization-v1.md) | 导入流水线、Embedding 微批、检索缓存、索引与可观测性优化 |
 | [赛事联调驱动升级优化](architecture/upgrade-optimization-contest-2026-10-29.md) | 2026-10-29 双工作区实测差异分析与热路径升级验收 |
 | [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | 仓库目录与 Core/Worker 分层速查 |

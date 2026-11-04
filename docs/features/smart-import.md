@@ -4,6 +4,8 @@
 > 代码：`internal/core/service/smartimport/`  
 > API：[smart-import.md](../api/smart-import.md)
 
+原始 PDF 优先尝试文本层提取，导入保留可追溯的原文位置。分段结果仍需通过质量门，Worker 对不可重试错误保留终态。[正确性架构](../architecture/correctness-architecture.md)
+
 ## 1. 能力概述
 
 将用户粘贴的长文、说明文字与图片附件，转为可入库的知识文档：

@@ -4,6 +4,8 @@
 > 检索：`internal/core/service/retriever/`、`classifier/`、`cache/`  
 > 对话：`internal/core/service/agent/`（Runtime）；分级/缓存复用 `confidence/`、`answercache/`
 
+当前运行时将用户问题与配置分开，成文与门禁使用同一个有界证据包。门禁独立核对摘要，并记录可复算的数值拒绝和待复核的角色歧义。[正确性架构](../architecture/correctness-architecture.md)
+
 ## 1. 混合检索
 
 入口：`POST /api/v1/retrieval/search`
@@ -88,4 +90,4 @@ flowchart LR
 - [classifier API](../api/classifier.md)
 - [语义驱动检索](../architecture/semantic-driven-retrieval.md)
 - [工作区背景](workspace-background.md)
-- [Agent v2 学习文档](../learning/02-pipeline/03-agent-v2-sse.md)
+- [正确性架构与验收边界](../architecture/correctness-architecture.md)

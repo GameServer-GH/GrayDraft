@@ -1,6 +1,6 @@
 # Agent 实现说明
 
-> 基线日期：2026-10-28。运行时行为以代码和 [系统逻辑总览](系统逻辑总览.md) 为准。
+> 基线日期：2026-11-04。运行时行为以代码和 [系统逻辑总览](系统逻辑总览.md) 为准。
 > 本文说明 GrayDraft 的 Agent Runtime：按工作区资料取证、作答和沉淀笔记。策略是 `edu_workspace_v1`。可观测、可回放，并按租户隔离。
 
 ## 1. 实施目标与边界
@@ -266,15 +266,7 @@ score(d) = rrf(d) × freshness(d) × authority(d) × version_match(d)
 
 ### 5.3 答案可信度与拒答
 
-对答案拆分 Claims `c_i`，每个 Claim 与证据 `e_j` 计算蕴含分数 `entail(c_i,e_j)`：
-
-```text
-groundedness = Σ max_j entail(c_i,e_j) / |C|
-citation_coverage = |{c_i: 有有效引用}| / |C|
-answer_confidence = 0.5·groundedness + 0.3·citation_coverage + 0.2·retrieval_grade_score
-```
-
-当 `answer_confidence < 0.62`、存在版本冲突或无有效证据时，输出“信息不足/需要澄清”，不得编造具体数值。高风险领域（账号、充值、封禁）阈值提高到 0.80，并要求官方来源。
+BFF 将问题与运行配置分开，Runtime 在成文前准备有界证据包。门禁独立复算实际收到的包摘要，并对照成文摘要。明确的同单位数量级矛盾可硬拒绝并独立复算。计数范围、参数名、统计量角色和结论强度通过规则标记歧义。详细规则和离线纠错状态见 [正确性架构与验收边界](correctness-architecture.md)。
 
 ### 5.4 记忆写入与检索
 
@@ -373,7 +365,7 @@ LLM Judge 仅作辅助；上线门禁以人工标注集、规则校验和可复�
 
 1. `AgentRun`、事件投影、TenantContext、预算、取消和 SSE 断线续传在 `POST /api/v2/agent-runs`。
 2. 工具是 `knowledge.lexical`、`knowledge.semantic`、`knowledge.read`、`knowledge.expand`、`note.draft`。
-3. 笔记经确认后入库。未授权知识库拒绝访问。
+3. 带引用的笔记通过自动门禁后入库。未授权知识库拒绝访问。
 4. 专名题应出现词法查找，相邻步骤题应出现读窗口，跨文档题应出现关系扩展，引用落在终点切片上。
 
 ## 11. 风险与回滚

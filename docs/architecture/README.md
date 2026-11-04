@@ -17,6 +17,7 @@
 | [**设计理念**](设计理念.md) | AI 为操作主体；笔记、降噪与同类关卡不走逐条人审 |
 | [**系统逻辑总览**](系统逻辑总览.md) | 当前实现的端到端逻辑；**§0 含 BFF 五项代理 + Core 模块 Mermaid 图** |
 | [**教育场景 Agent 实现说明**](Agent流程技术实现方案.md) | `edu_workspace_v1` 的 Loop、工具、记忆与评测 |
+| [正确性架构与验收边界](correctness-architecture.md) | 最近实现、证据边界与离线纠错接入条件 |
 | [**性能优化 1.0 方案**](performance-optimization-v1.md) | 导入与问答性能优化的 1.0 落地路线 |
 | [**智能语义驱动检索方案**](semantic-driven-retrieval-scheme.md) | 语义 Blueprint / 瀑布 / 进化：已实现逻辑与待办 |
 | [**赛事联调驱动升级优化**](upgrade-optimization-contest-2026-10-29.md) | SCP vs 论文差异技术分析 + 热路径收窄与验收目标 |

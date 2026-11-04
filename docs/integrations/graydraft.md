@@ -1,6 +1,6 @@
 # GrayDraft 集成（BFF + Web）
 
-> **基线日期**：2026-10-28  
+> **基线日期**：2026-11-04
 > 仓库：`GrayDraft_Go`、`GrayDraft_Web`（与 GrayDraft 独立部署）
 
 ## 1. 调用链
@@ -26,7 +26,6 @@ GrayDraft Web (Vue3 + Pinia)
 
 ## 3. BFF 五项代理能力
 
-> **概念**：[BFF 是什么？](../learning/04-architecture/05-bff.md) · **架构图**：[系统逻辑总览 §0.2](../architecture/系统逻辑总览.md#02-graydraft-bff-五项代理能力) · **详解**：[GrayDraft BFF 代理能力](../learning/04-architecture/06-bff-proxy-capabilities.md)
 
 ```mermaid
 flowchart LR
@@ -72,8 +71,6 @@ flowchart LR
 
 ## 相关文档
 
-- [BFF 是什么？（通用概念）](../learning/04-architecture/05-bff.md)
-- [GrayDraft BFF 代理能力详解](../learning/04-architecture/06-bff-proxy-capabilities.md)
 - [系统逻辑总览](../architecture/系统逻辑总览.md)
 - [Agent v2 API](../api/agent-v2.md)
 - [智能导入](../features/smart-import.md)
