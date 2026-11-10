@@ -21,7 +21,23 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const canvas = useCanvasStore()
-const { listRows, isGroupExpanded, toggleGroup, selectEntry, segmentLabel } = useKnowledgeLibrary()
+const {
+  listRows,
+  isGroupExpanded,
+  toggleGroup,
+  selectEntry,
+  segmentLabel,
+  chatFilter,
+  chattedDocIds,
+  setChatFilter,
+} = useKnowledgeLibrary()
+
+type ChatFilterOption = { value: 'all' | 'chatted' | 'unchatted'; label: string }
+const chatFilterOptions = computed<ChatFilterOption[]>(() => [
+  { value: 'all', label: t('knowledge.sidebar.filterAll') },
+  { value: 'chatted', label: t('knowledge.sidebar.filterChatted') },
+  { value: 'unchatted', label: t('knowledge.sidebar.filterUnchatted') },
+])
 
 const rows = computed(() => {
   const q = props.searchQuery.trim().toLowerCase()
@@ -79,6 +95,21 @@ function importingStatusLabel(status: string) {
 
 <template>
   <div class="kb-list">
+    <!-- 已对话 / 未对话筛选：帮助在大量知识点中定位聊过的条目 -->
+    <div class="kb-list__chat-filter" role="group" :aria-label="t('knowledge.sidebar.filterAria')">
+      <button
+        v-for="opt in chatFilterOptions"
+        :key="opt.value"
+        type="button"
+        class="kb-list__chat-filter-btn"
+        :class="{ 'kb-list__chat-filter-btn--active': chatFilter === opt.value }"
+        :aria-pressed="chatFilter === opt.value"
+        @click="setChatFilter(opt.value)"
+      >
+        {{ opt.label }}
+      </button>
+    </div>
+
     <!-- Importing placeholder cards with masked overlay -->
     <div v-if="canvas.importingCards.length > 0" class="kb-list__importing">
         <div
@@ -120,6 +151,11 @@ function importingStatusLabel(status: string) {
         >
           <div class="kb-list__item-head">
             <span class="kb-list__name">{{ row.entry.title }}</span>
+            <span
+              v-if="chattedDocIds.has(row.entry.id)"
+              class="kb-list__chatted-dot"
+              :title="t('knowledge.sidebar.chattedTooltip')"
+            ></span>
             <span v-if="segmentLabel(row.entry)" class="kb-list__seg-badge">{{ segmentLabel(row.entry) }}</span>
           </div>
           <p v-if="row.entry.preview?.trim()" class="kb-list__preview">{{ row.entry.preview }}</p>
@@ -157,6 +193,11 @@ function importingStatusLabel(status: string) {
             >
               <div class="kb-list__item-head">
                 <span class="kb-list__name">{{ seg.title }}</span>
+                <span
+                  v-if="chattedDocIds.has(seg.id)"
+                  class="kb-list__chatted-dot"
+                  :title="t('knowledge.sidebar.chattedTooltip')"
+                ></span>
                 <span v-if="segmentLabel(seg)" class="kb-list__seg-badge">{{ segmentLabel(seg) }}</span>
               </div>
               <p v-if="seg.preview?.trim()" class="kb-list__preview">{{ seg.preview }}</p>
@@ -219,14 +260,58 @@ function importingStatusLabel(status: string) {
   box-shadow: 2px 0 6px rgba(60, 60, 67, 0.04);
 }
 
+/* 正在对话的知识点：黄色高亮，与普通选中/悬停区分 */
 .kb-list__item--active {
-  background: var(--color-selected-soft);
-  border-left-color: var(--color-selected);
+  background: rgba(255, 193, 7, 0.18);
+  border-left-color: #f0a500;
   box-shadow: none;
 }
 
 .kb-list__item--active .kb-list__name {
   color: #1a1a1e;
+}
+
+.kb-list__item--active:hover {
+  background: rgba(255, 193, 7, 0.24);
+  border-left-color: #f0a500;
+}
+
+.kb-list__chatted-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #34c759;
+  opacity: 0.85;
+}
+
+.kb-list__chat-filter {
+  display: flex;
+  gap: 6px;
+}
+
+.kb-list__chat-filter-btn {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid rgba(60, 60, 67, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.kb-list__chat-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--color-text);
+}
+
+.kb-list__chat-filter-btn--active {
+  background: rgba(0, 122, 255, 0.12);
+  border-color: rgba(0, 122, 255, 0.35);
+  color: var(--color-accent);
 }
 
 .kb-list__item--nested {
@@ -236,7 +321,7 @@ function importingStatusLabel(status: string) {
 }
 
 .kb-list__item--nested.kb-list__item--active {
-  border-left: 3px solid var(--color-selected);
+  border-left: 3px solid #f0a500;
 }
 
 .kb-list__item-head {

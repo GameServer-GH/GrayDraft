@@ -12,6 +12,8 @@ type stubStreamer struct {
 	err    error
 }
 
+// 乐观流式：部分文本已逐 delta 发出，但失败/中断的流绝不提交为最终答案；
+// 已发内容由 run.completed 的权威终态覆盖。
 func TestAnswerDoesNotCommitPartialOrEmptyGeneration(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -23,10 +25,16 @@ func TestAnswerDoesNotCommitPartialOrEmptyGeneration(t *testing.T) {
 		{"empty", nil, nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			emitted := false
-			out, err := StreamFinalAnswer(context.Background(), stubStreamer{deltas: tc.deltas, err: tc.err}, []byte("q"), nil, "旧草稿", func(string) error { emitted = true; return nil })
-			if err == nil || out != "" || emitted {
-				t.Fatalf("out=%q err=%v emitted=%v", out, err, emitted)
+			var emitted []string
+			out, err := StreamFinalAnswer(context.Background(), stubStreamer{deltas: tc.deltas, err: tc.err}, []byte("q"), nil, "旧草稿", func(d string) error {
+				emitted = append(emitted, d)
+				return nil
+			})
+			if err == nil || out != "" {
+				t.Fatalf("out=%q err=%v", out, err)
+			}
+			if want := strings.Join(tc.deltas, ""); strings.Join(emitted, "") != want {
+				t.Fatalf("emitted=%q want=%q", emitted, want)
 			}
 		})
 	}

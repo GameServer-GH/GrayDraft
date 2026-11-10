@@ -400,6 +400,9 @@ func (a *App) handleAgentSmartImport(ctx context.Context, w http.ResponseWriter,
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
+	if override == nil {
+		override = nexus.DefaultTextLLMOverride()
+	}
 	body := in.SmartImportBody
 	body.LLMOverride = override
 	if wsPrompt, err := workspace.ReadAgentUnstructuredPrompt(wsRoot); err == nil && strings.TrimSpace(body.WorkspacePromptOverride) == "" {

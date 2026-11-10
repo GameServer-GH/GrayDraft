@@ -18,8 +18,8 @@ const maxVideoBytes = 100 * 1024 * 1024
 
 // allowedVideoMimes lists accepted video MIME types.
 var allowedVideoMimes = map[string]bool{
-	"video/mp4":  true,
-	"video/webm": true,
+	"video/mp4":       true,
+	"video/webm":      true,
 	"video/quicktime": true, // .mov
 }
 
@@ -244,6 +244,9 @@ func (a *App) handleKnowledgeChatStream(w http.ResponseWriter, r *http.Request) 
 		runErr = err
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
+	}
+	if override == nil {
+		override = nexus.DefaultTextLLMOverride()
 	}
 
 	if sess != nil {

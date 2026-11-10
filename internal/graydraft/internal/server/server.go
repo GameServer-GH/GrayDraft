@@ -214,6 +214,16 @@ func (a *App) handleAPIPost(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": "nexus kb_type: " + err.Error()})
 			return
 		}
+		if withIntern, changed, err := workspace.EnsureBuiltinInternVendor(settings); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		} else if changed {
+			settings = withIntern
+			if err := workspace.WriteSettings(workspace.SettingsPath(root), settings); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+		}
 		writeJSON(w, http.StatusOK, map[string]any{
 			"created":       created,
 			"notebooks":     notebooks,

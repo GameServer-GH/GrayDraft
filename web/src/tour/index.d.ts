@@ -5,6 +5,8 @@ declare module '@/tour' {
   export { default as TourOverlay } from '@/tour/TourOverlay.vue'
   export function getGrayDraftTourSteps(callbacks?: { openSidebar?: () => void; openAgent?: () => void }): TourStep[]
   export function shouldShowGrayDraftTour(): boolean
+  export function markGrayDraftTourSeen(): void
+  export function resetGrayDraftTour(): void
 }
 
 declare module '@/tour/TourOverlay.vue' {

@@ -31,10 +31,13 @@ func (e *AnswerGenerationError) Error() string            { return e.Cause.Error
 func (e *AnswerGenerationError) Unwrap() error            { return e.Cause }
 func (e *AnswerGenerationError) TerminalRunFailure() bool { return true }
 
-// StreamFinalAnswer generates the user-facing answer via token streaming, emitting
-// answer.delta events after successful completion. A failed or interrupted stream
-// never commits its partial text. Drafts are used only when no streamer is configured.
-// Model reasoning (if any) is forwarded via ReasoningSinkFrom(ctx).
+// StreamFinalAnswer generates the user-facing answer via token streaming.
+// Each content delta is forwarded to emit optimistically as it arrives so the
+// user watches the answer type out. A failed or interrupted stream still
+// returns an error (never a committed answer); already-emitted partial text is
+// superseded by the authoritative run.completed message, which may also carry
+// the answer gate's safe replacement. Drafts are used only when no streamer is
+// configured. Model reasoning (if any) is forwarded via ReasoningSinkFrom(ctx).
 func StreamFinalAnswer(
 	ctx context.Context,
 	streamer TokenStreamer,
@@ -66,6 +69,12 @@ truncated或omitted_hits表示上下文经过截取，不能据此断言整个�
 			return nil
 		}
 		b.WriteString(delta)
+		// 乐观逐 token 转发；失败/被门禁替换时由 run.completed 的权威答案覆盖。
+		if emit != nil {
+			if err := emit(delta); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 
@@ -87,11 +96,6 @@ truncated或omitted_hits表示上下文经过截取，不能据此断言整个�
 	}
 	if out == "" {
 		return "", fmt.Errorf("answer generation returned no content")
-	}
-	if emit != nil {
-		if err := emit(out); err != nil {
-			return "", err
-		}
 	}
 	return out, nil
 }

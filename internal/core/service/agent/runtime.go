@@ -304,6 +304,7 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 			}
 			isRefuseTemplate := strings.TrimSpace(out.Answer) == refuseNoEvidenceTemplate
 			catalogOnly := false
+			answerStreamed := false
 			if decision.Decision == DecisionFinal && !isRefuseTemplate {
 				if isCatalogListQuestion(CurrentUserQuery(string(req.Prompt))) && !hasChunkEvidence(out.Observations) {
 					if overview := catalogOverviewAnswer(out.Observations); overview != "" {
@@ -317,8 +318,9 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 						return failFinal(err)
 					}
 				}
-				// The model produces a candidate only. No answer.delta may be
-				// emitted until transport completion and the answer gate pass.
+				// The model's answer streams optimistically as answer.delta. If the
+				// answer gate rejects or replaces the candidate, run.completed
+				// carries the authoritative final answer that supersedes the stream.
 				if !catalogOnly && r.streamer != nil {
 					if !req.DisableThinking {
 						if err := r.emit(ctx, Event{Type: "answer.generating", State: StateFinalizing, Message: "正在生成回答…"}, &seq); err != nil {
@@ -334,8 +336,14 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 							return r.emit(ctx, Event{Type: "llm.reasoning.delta", State: StateFinalizing, Message: delta, StepID: stepID}, &seq)
 						})
 					}
-					answerCtx, answerCancel := context.WithTimeout(streamCtx, answerStreamTimeout)
-					answer, streamErr := StreamFinalAnswer(answerCtx, r.streamer, req.Prompt, answerObs, out.Answer, nil)
+				answerCtx, answerCancel := context.WithTimeout(streamCtx, answerStreamTimeout)
+				answer, streamErr := StreamFinalAnswer(answerCtx, r.streamer, req.Prompt, answerObs, out.Answer, func(delta string) error {
+					if delta == "" {
+						return nil
+					}
+					answerStreamed = true
+					return r.emit(ctx, Event{Type: "answer.delta", State: StateFinalizing, Message: delta, StepID: stepID}, &seq)
+				})
 					answerCancel()
 					if streamErr != nil {
 						return failFinal(&AnswerGenerationError{Cause: streamErr})
@@ -396,8 +404,11 @@ func (r *Runtime) Run(ctx context.Context, req Request) (Result, error) {
 			if err := ctx.Err(); err != nil {
 				return failFinal(err)
 			}
-			if err := r.emit(ctx, Event{Type: "answer.delta", State: StateFinalizing, Message: out.Answer}, &seq); err != nil {
-				return failFinal(err)
+			// 已逐 token 流式发出的回答不再整体重发（run.completed 携带权威终态）。
+			if !answerStreamed {
+				if err := r.emit(ctx, Event{Type: "answer.delta", State: StateFinalizing, Message: out.Answer}, &seq); err != nil {
+					return failFinal(err)
+				}
 			}
 			out.State = StateCompleted
 			if err := r.emit(ctx, Event{Type: "run.completed", State: out.State, Message: out.Answer}, &seq); err != nil {

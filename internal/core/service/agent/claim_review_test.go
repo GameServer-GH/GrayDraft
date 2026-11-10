@@ -149,7 +149,8 @@ func TestRuntimeNeverCommitsAnIndependentlyMismatchedPacket(t *testing.T) {
 		t.Fatalf("%+v %v", out, err)
 	}
 	for _, e := range sink.events {
-		if e.Type == "answer.delta" || e.Type == "run.completed" {
+		// 乐观流式下候选 answer.delta 允许；权威提交（run.completed）绝不出现。
+		if e.Type == "run.completed" {
 			t.Fatal("mismatched packet committed")
 		}
 	}
@@ -176,8 +177,10 @@ func TestRuntimeRejectsKnownWrongConversionWithMinimalReproducibleAudit(t *testi
 			}
 			found = true
 		}
-		if e.Type == "answer.delta" && strings.Contains(e.Message, "7千万") {
-			t.Fatal("rejected candidate leaked into answer")
+		// 乐观流式：被拒候选可能已作为 answer.delta 流出，
+		// 但权威终态（run.completed）绝不能包含错误换算。
+		if e.Type == "run.completed" && strings.Contains(e.Message, "7千万") {
+			t.Fatal("rejected candidate leaked into final answer")
 		}
 	}
 	if !found {

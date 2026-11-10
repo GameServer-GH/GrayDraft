@@ -108,3 +108,6 @@ redisdata*/
 
 # 本地学习笔记
 /docs/learning/
+
+# Competition (兴智杯) submission materials — kept local, never committed
+/event-submission/

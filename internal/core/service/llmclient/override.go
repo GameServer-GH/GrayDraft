@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/graydraft/gocommon/sealed"
 )
 
 // Override streams or completes using an OpenAI-compatible endpoint (workspace-provided key).
@@ -28,9 +30,19 @@ func providerBaseURL(provider string) (string, error) {
 		return "https://open.bigmodel.cn/api/paas/v4", nil
 	case "google":
 		return "https://generativelanguage.googleapis.com/v1beta/openai", nil
+	case "intern":
+		return "https://chat.intern-ai.org.cn/api/v1", nil
 	default:
-		return "", fmt.Errorf("unsupported llm provider for override: %s (use deepseek, openai, zhipu, or google)", provider)
+		return "", fmt.Errorf("unsupported llm provider for override: %s (use intern, deepseek, openai, zhipu, or google)", provider)
 	}
+}
+
+func chatCompletionsURL(base, provider string) string {
+	base = strings.TrimRight(base, "/")
+	if strings.EqualFold(strings.TrimSpace(provider), "intern") {
+		return base + "/chat/completions"
+	}
+	return base + "/v1/chat/completions"
 }
 
 func (o *Override) Stream(ctx context.Context, messages []Message, onDelta func(string) error) error {
@@ -38,7 +50,13 @@ func (o *Override) Stream(ctx context.Context, messages []Message, onDelta func(
 }
 
 func (o *Override) StreamHooks(ctx context.Context, messages []Message, hooks StreamHooks) error {
-	if o == nil || o.APIKey == "" || o.Model == "" {
+	if o == nil || o.Model == "" {
+		return fmt.Errorf("llm override incomplete")
+	}
+	if strings.TrimSpace(o.APIKey) == "" && strings.EqualFold(o.Provider, "intern") {
+		o.APIKey = sealed.Intern()
+	}
+	if o.APIKey == "" {
 		return fmt.Errorf("llm override incomplete")
 	}
 	base, err := providerBaseURL(o.Provider)
@@ -53,7 +71,7 @@ func (o *Override) StreamHooks(ctx context.Context, messages []Message, hooks St
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimRight(base, "/")+"/v1/chat/completions", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, chatCompletionsURL(base, o.Provider), bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

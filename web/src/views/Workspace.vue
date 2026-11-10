@@ -26,7 +26,7 @@ import {
   refreshKnowledgeLibrary,
 } from '@/composables/useKnowledgeLibrarySync'
 import { agentDockClampedWidth } from '@/utils/agentDockLayout'
-import { useTourGuide, getGrayDraftTourSteps, shouldShowGrayDraftTour } from '@/tour'
+import { useTourGuide, getGrayDraftTourSteps, shouldShowGrayDraftTour, markGrayDraftTourSeen } from '@/tour'
 import TourOverlay from '@/tour/TourOverlay.vue'
 
 const { t } = useI18n()
@@ -71,9 +71,12 @@ function activateTourIfNeeded() {
 watch(() => tour.isActive.value, (active) => {
   if (!active && hasTourQuery.value) {
     hasTourQuery.value = false
+    markGrayDraftTourSeen()
     const url = new URL(window.location.href)
-    url.searchParams.delete('tour')
-    window.history.replaceState({}, '', url.toString())
+    if (url.searchParams.has('tour')) {
+      url.searchParams.delete('tour')
+      window.history.replaceState({}, '', url.toString())
+    }
   }
 })
 
@@ -118,6 +121,13 @@ watch(
   (open) => {
     if (!open) notebookSearchQuery.value = ''
   },
+)
+
+// 知识点过多时默认关闭画布（用户手动设置过开关则不覆盖）
+watch(
+  () => canvasStore.notebooks.length,
+  (count) => ui.autoDisableCanvasForLibrarySize(count),
+  { immediate: true },
 )
 
 async function loadNotebooksFromServer(syncGalaxy = true) {
@@ -268,6 +278,21 @@ onMounted(async () => {
       />
     </main>
     </template>
+    <!-- 画布关闭时的空白区域：点击可取消选中知识点，切回工作区维度对话 -->
+    <main
+      v-else
+      class="workspace__canvas-layer workspace__canvas-layer--off"
+      :class="{ 'workspace__canvas-layer--deselected': !canvasStore.activeNotebookId }"
+      role="button"
+      :tabindex="canvasStore.activeNotebookId ? 0 : -1"
+      :aria-label="t('workspace.canvasOffDeselectAria')"
+      @click="canvasStore.selectNotebook(null)"
+      @keydown.enter="canvasStore.selectNotebook(null)"
+    >
+      <p v-if="canvasStore.activeNotebookId" class="workspace__canvas-off-hint">
+        {{ t('workspace.canvasOffHint') }}
+      </p>
+    </main>
 
     <div class="workspace__top">
       <TopBar />
@@ -449,6 +474,30 @@ onMounted(async () => {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
+}
+
+.workspace__canvas-layer--off {
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.workspace__canvas-layer--deselected {
+  cursor: default;
+}
+
+.workspace__canvas-off-hint {
+  margin: 0;
+  padding: 10px 16px;
+  max-width: min(520px, calc(100vw - 48px));
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(60, 60, 67, 0.1);
+  border-radius: 12px;
+  pointer-events: none;
 }
 
 .workspace__legacy-banner {

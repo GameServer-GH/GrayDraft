@@ -13,6 +13,7 @@ import { useUiStore } from '@/stores/ui'
 import SettingsPluginsPanel from '@/components/floating/SettingsPluginsPanel.vue'
 import SettingsDataPanel from '@/components/floating/SettingsDataPanel.vue'
 import SettingsAgentPanel from '@/components/floating/SettingsAgentPanel.vue'
+import { resetGrayDraftTour } from '@/tour'
 
 const emit = defineEmits<{
   close: []
@@ -26,21 +27,39 @@ const agentModels = useAgentModelConfigStore()
 
 const tab = ref<'general' | 'models' | 'agent' | 'plugins' | 'data'>('general')
 
+/** 重新进入教学引导：二次确认后清除引导缓存并刷新页面 */
+const replayTourConfirming = ref(false)
+
+function onReplayTourClick() {
+  if (!replayTourConfirming.value) {
+    replayTourConfirming.value = true
+    return
+  }
+  resetGrayDraftTour()
+  window.location.reload()
+}
+
 const newVendorKind = ref<VendorKindId>('deepseek')
 const newVendorKey = ref('')
 const selectedVendorId = ref<string | null>(null)
 const newModelName = ref('')
 
 const modelNamePlaceholder = computed(() => {
+  if (selectedVendor.value?.kindId === 'intern') return 'intern-s2'
   if (selectedVendor.value?.kindId === 'zhipu') return 'glm-5.1'
   return 'deepseek-v4-flash'
 })
+
+const vendorKeyPlaceholder = computed(() =>
+  newVendorKind.value === 'intern' ? t('settings.modelsVendorKeyBuiltin') : t('settings.modelsVendorKey'),
+)
 
 function vendorKindLabel(kind: VendorKindId): string {
   if (kind === 'anthropic') return t('settings.vendorAnthropic')
   if (kind === 'openai') return t('settings.vendorOpenai')
   if (kind === 'google') return t('settings.vendorGoogle')
   if (kind === 'zhipu') return t('settings.vendorZhipu')
+  if (kind === 'intern') return t('settings.vendorIntern')
   return t('settings.vendorDeepseek')
 }
 
@@ -291,6 +310,36 @@ function onToggleUsePlugin(ev: Event) {
                 <span class="settings-view__switch-track"></span>
               </label>
             </div>
+
+            <div class="settings-view__switch-row">
+              <span class="settings-view__switch-label">{{ t('settings.replayTour') }}</span>
+              <div v-if="!replayTourConfirming" class="settings-view__tour-actions">
+                <button
+                  type="button"
+                  class="settings-view__tour-btn"
+                  @click="onReplayTourClick"
+                >
+                  {{ t('settings.replayTourBtn') }}
+                </button>
+              </div>
+              <div v-else class="settings-view__tour-actions">
+                <span class="settings-view__tour-confirm-hint">{{ t('settings.replayTourConfirmHint') }}</span>
+                <button
+                  type="button"
+                  class="settings-view__tour-btn settings-view__tour-btn--ghost"
+                  @click="replayTourConfirming = false"
+                >
+                  {{ t('settings.replayTourCancel') }}
+                </button>
+                <button
+                  type="button"
+                  class="settings-view__tour-btn"
+                  @click="onReplayTourClick"
+                >
+                  {{ t('settings.replayTourConfirm') }}
+                </button>
+              </div>
+            </div>
           </section>
 
           <section v-else-if="tab === 'agent'" class="settings-view__section settings-view__section--agent">
@@ -321,13 +370,13 @@ function onToggleUsePlugin(ev: Event) {
                   class="settings-view__input settings-view__input--active"
                   type="password"
                   autocomplete="off"
-                  :placeholder="t('settings.modelsVendorKey')"
+                  :placeholder="vendorKeyPlaceholder"
                 />
               </label>
               <button
                 type="button"
                 class="settings-view__add-btn"
-                :disabled="!newVendorKey.trim()"
+                :disabled="newVendorKind !== 'intern' && !newVendorKey.trim()"
                 @click="onAddVendor"
               >
                 {{ t('settings.modelsAddVendorBtn') }}
@@ -738,6 +787,48 @@ function onToggleUsePlugin(ev: Event) {
 .settings-view__switch-label {
   font-size: 14px;
   font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ── 重新进入教学引导 ── */
+.settings-view__tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.settings-view__tour-confirm-hint {
+  max-width: 200px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.settings-view__tour-btn {
+  padding: 6px 12px;
+  border: 1px solid rgba(0, 122, 255, 0.35);
+  border-radius: 8px;
+  background: rgba(0, 122, 255, 0.1);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-view__tour-btn:hover {
+  background: rgba(0, 122, 255, 0.18);
+}
+
+.settings-view__tour-btn--ghost {
+  border-color: rgba(60, 60, 67, 0.16);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-secondary);
+}
+
+.settings-view__tour-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.8);
   color: var(--color-text);
 }
 

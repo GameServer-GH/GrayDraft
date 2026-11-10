@@ -2,6 +2,9 @@ import { defineStore } from 'pinia'
 import { getWorkspaceContextKey } from '@/services/workspaceContext'
 import { readUiPanelsLocal, writeUiPanelsLocal } from '@/services/uiPanelStorage'
 
+/** 知识点数量达到该阈值且用户未手动设置过开关时，默认关闭画布，避免大量节点拖慢浏览器 */
+export const CANVAS_AUTO_DISABLE_THRESHOLD = 50
+
 /** 打开设置前暂存的侧栏 / Agent / 底栏输入显隐，用于关闭设置后还原 */
 export type UiSettingsSuspendedSnapshot = {
   sidebarOpen: boolean
@@ -67,6 +70,20 @@ export const useUiStore = defineStore('ui', {
     setCanvasDisabled(v: boolean) {
       this.canvasDisabled = v
       this._persistCanvasDisabled()
+    },
+    /**
+     * 知识点过多时默认关闭画布。仅在用户从未手动设置过开关（localStorage 无记录）时生效，
+     * 用户在设置中的选择始终优先。
+     */
+    autoDisableCanvasForLibrarySize(count: number) {
+      try {
+        if (localStorage.getItem('graydraft:canvas-disabled') !== null) return
+      } catch {
+        return
+      }
+      if (count >= CANVAS_AUTO_DISABLE_THRESHOLD && !this.canvasDisabled) {
+        this.setCanvasDisabled(true)
+      }
     },
 
     openWorkspaceContextSetup() {

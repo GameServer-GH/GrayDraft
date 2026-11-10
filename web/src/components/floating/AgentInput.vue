@@ -70,6 +70,7 @@ function vendorKindLabel(kind: VendorKindId): string {
   if (kind === 'openai') return t('settings.vendorOpenai')
   if (kind === 'google') return t('settings.vendorGoogle')
   if (kind === 'zhipu') return t('settings.vendorZhipu')
+  if (kind === 'intern') return t('settings.vendorIntern')
   return t('settings.vendorDeepseek')
 }
 

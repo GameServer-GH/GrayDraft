@@ -43,6 +43,8 @@ export const useCanvasStore = defineStore('canvas', {
     selectedIds: [] as string[],
     notebooks: [] as NotebookMeta[],
     activeNotebookId: null as string | null,
+    /** 用户显式取消选中（工作区维度对话）后，列表刷新不再自动回选第一个知识点 */
+    _selectionCleared: false,
     notebookLoadError: null as string | null,
     /** Masked placeholder cards shown during async smart-import */
     importingCards: [] as ImportingCard[],
@@ -124,8 +126,12 @@ export const useCanvasStore = defineStore('canvas', {
       this.notebookLoadError = null
       if (list.length === 0) {
         this.activeNotebookId = null
+      } else if (this._selectionCleared) {
+        if (this.activeNotebookId && !list.some((n) => n.id === this.activeNotebookId)) {
+          this.activeNotebookId = null
+        }
       } else if (!this.activeNotebookId || !list.some((n) => n.id === this.activeNotebookId)) {
-        this.activeNotebookId = list[0].id
+        this.activeNotebookId = null
       }
       const nextLayouts = { ...this.notebookLayouts }
       for (const n of list) {
@@ -172,6 +178,7 @@ export const useCanvasStore = defineStore('canvas', {
     },
     selectNotebook(id: string | null) {
       this.activeNotebookId = id
+      this._selectionCleared = id === null
     },
     /**
      * 将新建笔记卡片放在锚点卡片右侧，两卡外缘间距 20px（纵向与锚点中心对齐）。

@@ -106,10 +106,37 @@ function getGrayDraftTourSteps(callbacks = {}) {
   return steps
 }
 
+/** 浏览器本地记录：看过或跳过教程后不再自动弹出。地址栏 ?tour 仍可强制再看一次。 */
+const TOUR_SEEN_STORAGE_KEY = 'graydraft.tour.seen'
+
 function shouldShowGrayDraftTour() {
   if (typeof window === 'undefined') return false
   const params = new URLSearchParams(window.location.search)
-  return params.has('tour')
+  if (params.has('tour')) return true
+  try {
+    return window.localStorage.getItem(TOUR_SEEN_STORAGE_KEY) !== '1'
+  } catch {
+    return true
+  }
 }
 
-export { steps, getGrayDraftTourSteps, shouldShowGrayDraftTour }
+function markGrayDraftTourSeen() {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(TOUR_SEEN_STORAGE_KEY, '1')
+  } catch {
+    /* 无痕模式等无法写入时，本次关闭即可 */
+  }
+}
+
+/** 清除“已完成引导”标记，刷新页面后可重新进入教学引导（设置页按钮调用）。 */
+function resetGrayDraftTour() {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(TOUR_SEEN_STORAGE_KEY)
+  } catch {
+    /* 无痕模式等无法写入时忽略 */
+  }
+}
+
+export { steps, getGrayDraftTourSteps, shouldShowGrayDraftTour, markGrayDraftTourSeen, resetGrayDraftTour }

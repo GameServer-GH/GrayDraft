@@ -9,6 +9,23 @@ const session = useWorkspaceSessionStore()
 const keyInput = ref('')
 const busy = ref(false)
 const localError = ref('')
+const copiedKey = ref('')
+
+const sampleWorkspaces = [
+  { key: 'contest-scp-skills', content: '书生 SCP 技能与工具', docs: '36 篇，260 段' },
+  { key: 'contest-papers', content: 'InternLM2、InternVL、InternVL 2.5', docs: '44 篇，250 段' },
+]
+
+async function copySampleKey(k: string) {
+  localError.value = ''
+  keyInput.value = k
+  try {
+    await navigator.clipboard.writeText(k)
+    copiedKey.value = k
+  } catch {
+    copiedKey.value = ''
+  }
+}
 
 async function onSubmit() {
   localError.value = ''
@@ -44,6 +61,27 @@ async function onSubmit() {
         @keydown.enter.prevent="onSubmit"
       />
       <p v-if="localError" class="ws-gate__error">{{ localError }}</p>
+      <div class="ws-gate__samples">
+        <p class="ws-gate__samples-title">
+          {{ t('workspace.gateSamplesTitle') }}
+          <span v-if="copiedKey" class="ws-gate__samples-copied">
+            {{ t('workspace.gateSampleCopied') }}
+          </span>
+        </p>
+        <button
+          v-for="sample in sampleWorkspaces"
+          :key="sample.key"
+          type="button"
+          class="ws-gate__sample"
+          :class="{ 'ws-gate__sample--active': copiedKey === sample.key }"
+          :title="sample.key"
+          @click="copySampleKey(sample.key)"
+        >
+          <span class="ws-gate__sample-key">{{ sample.key }}</span>
+          <span class="ws-gate__sample-content">{{ sample.content }}</span>
+          <span class="ws-gate__sample-docs">{{ sample.docs }}</span>
+        </button>
+      </div>
       <button type="button" class="ws-gate__submit" :disabled="busy" @click="onSubmit">
         {{ busy ? t('workspace.gateSubmitting') : t('workspace.gateSubmit') }}
       </button>
@@ -120,5 +158,77 @@ async function onSubmit() {
 .ws-gate__submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.ws-gate__samples {
+  margin-top: var(--space-3);
+}
+
+.ws-gate__samples-title {
+  margin: 0 0 var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.ws-gate__samples-copied {
+  color: #2e7d32;
+}
+
+.ws-gate__sample {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: var(--space-2);
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border, rgba(60, 60, 67, 0.18));
+  background: var(--color-surface, rgba(255, 255, 255, 0.65));
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ws-gate__sample:hover {
+  border-color: var(--color-accent, #007aff);
+  background: var(--color-surface, rgba(255, 255, 255, 0.9));
+}
+
+.ws-gate__sample--active {
+  border-color: #2e7d32;
+}
+
+.ws-gate__sample-key {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--color-accent, #007aff);
+  word-break: break-all;
+}
+
+.ws-gate__sample-content {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ws-gate__sample-docs {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
 }
 </style>

@@ -610,6 +610,23 @@ async function onKnowledgeChatSubmit(
   }
 }
 
+function isInvalidImportContent(err: unknown): boolean {
+  const raw = err instanceof Error ? err.message : String(err)
+  return (
+    /importable=0\/total=0/.test(raw) ||
+    /content too short/i.test(raw) ||
+    /no segments after split/i.test(raw)
+  )
+}
+
+function reportImportError(threadId: string, err: unknown) {
+  if (isInvalidImportContent(err)) {
+    showToast(t('agentDock.importContentInvalid'))
+    return
+  }
+  agent.setLastError(threadId, formatNexusError(err))
+}
+
 async function onKnowledgeSubmit(
   threadId: string,
   rawUser: string,
@@ -635,7 +652,7 @@ async function onKnowledgeSubmit(
   } catch (e) {
     const aborted = ac.signal.aborted || (e instanceof DOMException && e.name === 'AbortError')
     if (!aborted) {
-      agent.setLastError(threadId, formatNexusError(e))
+      reportImportError(threadId, e)
     }
   } finally {
     streamAbort.value = null
@@ -740,7 +757,7 @@ async function onSubmit() {
     } catch (e: any) {
       const aborted = ac.signal.aborted || (e instanceof DOMException && e.name === 'AbortError')
       if (!aborted) {
-        agent.setLastError(threadId, formatNexusError(e))
+        reportImportError(threadId, e)
       }
     } finally {
       streamAbort.value = null

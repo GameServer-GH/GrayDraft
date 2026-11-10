@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { requestWorkspaceSettingsSave } from '@/services/workspaceSettingsHub'
 
 /** 预设供应商类型（用户添加一条配置时选择） */
-export const VENDOR_KIND_IDS = ['anthropic', 'openai', 'google', 'deepseek', 'zhipu'] as const
+export const VENDOR_KIND_IDS = ['anthropic', 'openai', 'google', 'deepseek', 'zhipu', 'intern'] as const
 export type VendorKindId = (typeof VENDOR_KIND_IDS)[number]
 
 export function isVendorKindId(v: string): v is VendorKindId {
@@ -108,7 +108,8 @@ export const useAgentModelConfigStore = defineStore('agentModelConfig', {
     },
     addVendor(kindId: VendorKindId, apiKey: string) {
       const key = apiKey.trim()
-      if (!key) return
+      // 书生未填 Key 时留空，由服务端使用内置加密密钥。
+      if (!key && kindId !== 'intern') return
       this.vendors.push({
         id: newId(),
         kindId,

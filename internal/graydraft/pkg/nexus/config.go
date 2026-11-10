@@ -87,3 +87,26 @@ func SystemLLMOverride() *LLMOverride {
 		APIKey:   apiKey,
 	}
 }
+
+// DefaultTextLLMOverride is the built-in 书生 text model used when a workspace
+// has not configured its own provider key. The key is the sealed intern secret.
+// Vision models such as internvl stay on the media path and are not reused here.
+func DefaultTextLLMOverride() *LLMOverride {
+	if o := SystemLLMOverride(); o != nil && o.Provider == "intern" && !isVisionModel(o.Model) {
+		return o
+	}
+	key := sealed.Intern()
+	if strings.TrimSpace(key) == "" {
+		return nil
+	}
+	return &LLMOverride{
+		Provider: "intern",
+		Model:    "intern-s2",
+		APIKey:   key,
+	}
+}
+
+func isVisionModel(model string) bool {
+	m := strings.ToLower(strings.TrimSpace(model))
+	return strings.Contains(m, "internvl") || strings.Contains(m, "-vl")
+}
